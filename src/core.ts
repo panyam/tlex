@@ -34,6 +34,12 @@ export abstract class Regex {
     return "";
   }
 
+  // Tells if this regex is of a variable size (ie has quantifiers)
+  // or is of a static size.
+  get isVariable(): boolean {
+    return false;
+  }
+
   // Returns an expression that can match the reverse of strings
   // accepted by this expression
   abstract reverse(): Regex;
@@ -143,6 +149,12 @@ export class Quant extends Regex {
     super();
   }
 
+  // Tells if this regex is of a variable size (ie has quantifiers)
+  // or is of a static size.
+  get isVariable(): boolean {
+    return this.minCount != this.maxCount || !this.expr.isVariable;
+  }
+
   reverse(): Quant {
     return new Quant(this.expr.reverse(), this.minCount, this.maxCount, this.greedy);
   }
@@ -177,6 +189,13 @@ export class Cat extends Regex {
     for (const child of children) {
       this.add(child);
     }
+  }
+
+  get isVariable(): boolean {
+    for (const child of this.children) {
+      if (child.isVariable) return true;
+    }
+    return false;
   }
 
   protected evalREString(): string {
@@ -215,6 +234,13 @@ export class Union extends Regex {
     for (const option of options) {
       this.add(option);
     }
+  }
+
+  get isVariable(): boolean {
+    for (const child of this.options) {
+      if (child.isVariable) return true;
+    }
+    return false;
   }
 
   protected evalREString(): string {

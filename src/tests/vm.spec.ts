@@ -101,7 +101,7 @@ describe("VM Tests", () => {
     testInput(prog, "aaaa", [
       ["aaa", 2],
       ["a", 0],
-    ]);
+    ], true);
   });
 
   test("Test a*", () => {

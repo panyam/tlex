@@ -46,11 +46,19 @@ export class Compiler {
   ) {}
 
   compile(rules: Rule[]): Prog {
+    // Sort rules so high priority ones get put out first
+    const sortedRules: [Rule, number][] = rules.map((rule, index) => [rule, index]);
+    sortedRules.sort((x, y) => {
+      const [r1, i1] = x;
+      const [r2, i2] = y;
+      if (r1.priority != r2.priority) return r2.priority - r1.priority;
+      return i1 - i2;
+    });
     // Split across each of our expressions
     const out = new Prog();
     // only add the split instruction if we have more than one rule
     const split: Instr = rules.length <= 1 ? new Instr(OpCode.Split) : out.add(OpCode.Split);
-    rules.forEach((rule, i) => {
+    sortedRules.forEach(([rule, i]) => {
       if (rule.tokenType != null) {
         split.add(out.instrs.length);
         this.compileExpr(rule.expr, out);
