@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { Rule } from "../core";
 import { Prog } from "../vm";
-import { Tape } from "../../tape";
+import { Tape } from "../tape";
 import { InstrDebugValue, VM } from "../pikevm";
 import { compile, VMTracer, layoutThreadNodes } from "./utils";
 
