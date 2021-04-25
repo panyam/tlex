@@ -5,7 +5,7 @@ import { Prog } from "../vm";
 import { Tape } from "../tape";
 import { InstrDebugValue, VM } from "../pikevm";
 import { Lexer } from "../lexer";
-import { compile, VMTracer, layoutThreadNodes } from "./utils";
+import { VMTracer, layoutThreadNodes } from "./utils";
 
 function testInput(
   prog: Prog,

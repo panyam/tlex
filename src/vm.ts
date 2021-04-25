@@ -62,28 +62,3 @@ export class Instr {
     else return `${this.opcode} ${this.args.join(" ")}`;
   }
 }
-
-export class VM {
-  constructor(
-    public readonly prog: Prog,
-    public readonly start = 0,
-    public readonly end = -1,
-    public readonly forward = true,
-  ) {
-    if (end < 0) {
-      end = prog.length - 1;
-    }
-  }
-
-  match(tape: Tape): Match | null {
-    return null;
-  }
-
-  instrDebugValue(instr: Instr): any {
-    return `${instr.opcode} ${instr.args.join(" ")}`;
-  }
-
-  progDebugValue(prog: Prog): any {
-    return prog.instrs.map((instr, index) => `L${index}: ${this.instrDebugValue(instr)}`);
-  }
-}

@@ -2,8 +2,8 @@ const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "../tape";
 import { Regex } from "../core";
-import { parse } from "../parser";
-import { compile } from "./utils";
+import { RegexParser } from "../parser";
+import { parse, compile } from "./utils";
 import { Match } from "../vm";
 import { InstrDebugValue, VM } from "../pikevm";
 
@@ -854,13 +854,24 @@ describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would 
   test(caseLabel("15.10.2.5_A1_T1"), () => {
     testMatch("a[a-z]{2,4}", "abcdefghi", 0, 5);
   });
-  test(caseLabel("15.10.2.5_A1_T2"), () => {
-    testMatch("a[a-z]{2,4}?", "abcdefghi", 0, 3);
+  test(caseLabel("15.10.2.5_A1_T2 - Needs to be fixed to handle greedy"), () => {
+    testMatchD("a[a-z]{2,4}?", "abcdefghi", 0, 3);
   });
   test(caseLabel("15.10.2.5_A1_T3"), () => {
     testMatch("(aa|aabaac|ba|b|c)*", "aabaac", 0, 6);
   });
   test(caseLabel("15.10.2.5_A1_T4"), () => {
     testMatch("(z)((a+)?(b+)?(c))*", "zaacbbbcac", 0, 10);
+  });
+  test(caseLabel("15.10.2.5_A1_T5"), () => {
+    // Not working
+    testMatch("(a*)b\\1+", "aabaac", 0, 5);
+  });
+});
+
+describe("ECMA Tests - Section 15.10.2.6", () => {
+  test(caseLabel("15.10.2.6_A1_T1"), () => {
+    // /s$/.test("pairs\nmakes\tdouble");
+    testMatch("s+$|\n", "sss\nss\nsssss\n", 0, 3, 4, 6, 7, 12);
   });
 });

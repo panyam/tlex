@@ -2,10 +2,14 @@ const util = require("util");
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { Regex, Rule } from "../core";
-import { parse } from "../parser";
+import { RegexParser } from "../parser";
 import { Prog } from "../vm";
 import { Lexer } from "../lexer";
 import { Compiler, VM, Thread } from "../pikevm";
+
+export function parse(input: string): Regex {
+  return new RegexParser(input).parse();
+}
 
 // Read lexer tokens from contents.
 // Our lexer spec is very simple.  Just a bunch

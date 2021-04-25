@@ -2,7 +2,7 @@ import * as TSU from "@panyam/tsutils";
 import { Tape } from "./tape";
 import { Rule, RegexType, Quant, Regex, Cat, Neg, Char, CharRange, Ref, LookAhead, LookBack, Union } from "./core";
 import { CharClassHelpers } from "./charclasses";
-import { Prog, Instr, Match, VM as VMBase } from "./vm";
+import { Prog, Instr, Match } from "./vm";
 
 export enum OpCode {
   Match,
@@ -74,6 +74,9 @@ export class Compiler {
   compileExpr(expr: Regex, prog: Prog): number {
     const start = prog.length;
     const currOffset = prog.length;
+    if (expr.groupIndex >= 0) {
+      prog.add(OpCode.Save, expr.groupIndex * 2);
+    }
     if (expr.tag == RegexType.CHAR) {
       const char = expr as Char;
       const instr = prog.add(char.neg ? OpCode.NegChar : OpCode.Char, char.start, char.end);
@@ -105,6 +108,9 @@ export class Compiler {
       this.compileLookBack(expr as LookBack, prog);
     } else {
       throw new Error("Regex Type not yet supported: " + expr.tag);
+    }
+    if (expr.groupIndex >= 0) {
+      prog.add(OpCode.Save, 1 + expr.groupIndex * 2);
     }
     if (this.listener) {
       this.listener(expr, prog, currOffset, prog.length - currOffset);
@@ -171,68 +177,95 @@ export class Compiler {
     // optimize the special cases of *, ? and +
     if (quant.minCount == 0 && quant.maxCount == TSU.Constants.MAX_INT) {
       // *
-      const split = prog.add(OpCode.Split);
-      const l1 = split.offset;
-      const l2 = prog.length;
-      this.compileExpr(quant.expr, prog);
-      prog.add(OpCode.Jump, l1);
-      const l3 = prog.length;
-      if (quant.greedy) {
-        split.add(l2, l3);
-      } else {
-        split.add(l3, l2);
-      }
+      this.compileAtleast0(quant.expr, prog, quant.greedy);
     } else if (quant.minCount == 1 && quant.maxCount == TSU.Constants.MAX_INT) {
       // +
-      const l1 = prog.length;
-      this.compileExpr(quant.expr, prog);
-      const split = prog.add(OpCode.Split);
-      const l3 = prog.length;
-      if (quant.greedy) {
-        split.add(l1, l3);
-      } else {
-        split.add(l3, l1);
-      }
+      this.compileAtleast1(quant.expr, prog, quant.greedy);
     } else if (quant.minCount == 0 && quant.maxCount == 1) {
       // ?
-      const split = prog.add(OpCode.Split);
-      const l1 = prog.length;
-      this.compileExpr(quant.expr, prog);
-      const l2 = prog.length;
-      if (quant.greedy) {
-        split.add(l2, l1);
-      } else {
-        split.add(l1, l2);
-      }
+      this.compileOptional(quant.expr, prog, quant.greedy);
     } else {
       // general case
-      const split = quant.minCount <= 0 ? prog.add(OpCode.Split) : null;
 
-      const l0 = prog.add(OpCode.RegAcquire).offset;
-      const l1 = l0 + 1;
-      this.compileExpr(quant.expr, prog);
+      if (true) {
+        // Option 1 - convert x{a,b} to xxxxxx (a) times followed by x? b - a times
+        for (let i = 0; i < quant.minCount; i++) {
+          this.compileExpr(quant.expr, prog);
+        }
+        // generateo x? b - a times
+        for (let i = quant.minCount; i < quant.maxCount; i++) {
+          this.compileOptional(quant.expr, prog, quant.greedy);
+        }
+      } else {
+        // Option 2 - Experimental - Use registers to hold counts - but this is not tested
+        /*
+        const split = quant.minCount <= 0 ? prog.add(OpCode.Split) : null;
 
-      // Increment match count
-      prog.add(OpCode.RegInc, l0);
+        const l0 = prog.add(OpCode.RegAcquire).offset;
+        const l1 = l0 + 1;
+        this.compileExpr(quant.expr, prog);
 
-      // Next two jumps perform if (A <= val <= B) ...
-      // Jump back to start of code until val < A
-      if (quant.minCount > 0) {
-        prog.add(OpCode.JumpIfLt, l0, quant.minCount, l1);
+        // Increment match count
+        prog.add(OpCode.RegInc, l0);
+
+        // Next two jumps perform if (A <= val <= B) ...
+        // Jump back to start of code until val < A
+        if (quant.minCount > 0) {
+          prog.add(OpCode.JumpIfLt, l0, quant.minCount, l1);
+        }
+
+        // If over max then stop
+        const jumpIfGt = prog.add(OpCode.JumpIfGt, l0, quant.maxCount - 1); // Add L10 here
+
+        // Have the option of repeat if we are here
+        const split2 = prog.add(OpCode.Split, l1);
+
+        // Release the register for reuse
+        const lEnd = prog.add(OpCode.RegRelease, l0).offset;
+        jumpIfGt.add(lEnd);
+        split2.add(prog.length);
+
+        if (split != null) split.add(l0, prog.length);
+        */
       }
+    }
+  }
 
-      // If over max then stop
-      const jumpIfGt = prog.add(OpCode.JumpIfGt, l0, quant.maxCount - 1 /* Add L10 here */);
+  compileAtleast1(expr: Regex, prog: Prog, greedy = true): void {
+    const l1 = prog.length;
+    this.compileExpr(expr, prog);
+    const split = prog.add(OpCode.Split);
+    const l3 = prog.length;
+    if (greedy) {
+      split.add(l1, l3);
+    } else {
+      split.add(l3, l1);
+    }
+  }
 
-      // Have the option of repeat if we are here
-      const split2 = prog.add(OpCode.Split, l1);
+  compileAtleast0(expr: Regex, prog: Prog, greedy = true): void {
+    const split = prog.add(OpCode.Split);
+    const l1 = split.offset;
+    const l2 = prog.length;
+    this.compileExpr(expr, prog);
+    prog.add(OpCode.Jump, l1);
+    const l3 = prog.length;
+    if (greedy) {
+      split.add(l2, l3);
+    } else {
+      split.add(l3, l2);
+    }
+  }
 
-      // Release the register for reuse
-      const lEnd = prog.add(OpCode.RegRelease, l0).offset;
-      jumpIfGt.add(lEnd);
-      split2.add(prog.length);
-
-      if (split != null) split.add(l0, prog.length);
+  compileOptional(expr: Regex, prog: Prog, greedy = true): void {
+    const split = prog.add(OpCode.Split);
+    const l1 = prog.length;
+    this.compileExpr(expr, prog);
+    const l2 = prog.length;
+    if (greedy) {
+      split.add(l1, l2);
+    } else {
+      split.add(l2, l1);
     }
   }
 
@@ -289,6 +322,12 @@ export class Thread {
    */
   constructor(public readonly offset: number = 0, public readonly gen: number = 0) {}
 
+  ensurePosition(index: number): void {
+    while (this.positions.length <= index) {
+      this.positions.push(-1);
+    }
+  }
+
   regIncr(regId: number): void {
     if (!(regId in this.registers)) {
       throw new Error(`Register at offset ${regId} is invalid`);
@@ -324,7 +363,7 @@ export interface VMTracer {
   threadQueued(thread: Thread, tapeIndex: number): void;
 }
 
-export class VM extends VMBase {
+export class VM {
   // TODO - To prevent excessive heap activity and GC
   // create a pool of threads and just have a cap on
   // match sizes
@@ -348,6 +387,17 @@ export class VM extends VMBase {
   // ensures that are linearly bounded on the number of
   // number threads as we match.
   threadForOffset: TSU.NumMap<Thread> = {};
+
+  constructor(
+    public readonly prog: Prog,
+    public readonly start = 0,
+    public readonly end = -1,
+    public readonly forward = true,
+  ) {
+    if (end < 0) {
+      end = prog.length - 1;
+    }
+  }
 
   jumpBy(thread: Thread, delta = 1): Thread {
     return this.jumpTo(thread, thread.offset + delta);
@@ -534,6 +584,7 @@ export class VM extends VMBase {
           (nextMatch.priority == currMatch.priority && nextMatch.end > currMatch.end)
         ) {
           currMatch = nextMatch;
+          break;
         } else if (currMatch != nextMatch) {
           // Since we kill of lower priority matches becuase of matchedInGen
           // we should not be here

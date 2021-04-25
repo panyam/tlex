@@ -1,5 +1,5 @@
 import { Regex, Union, Rule } from "./core";
-import { parse } from "./parser";
+import { RegexParser } from "./parser";
 import { Prog, Match } from "./vm";
 import { Compiler, VM } from "./pikevm";
 import { Tape } from "./tape";
@@ -29,7 +29,7 @@ export class Lexer {
 
   addVar(name: string, regex: string | Regex): this {
     if (typeof regex === "string") {
-      regex = parse(regex);
+      regex = new RegexParser(regex).parse();
     }
     let currValue = this.variables.get(name) || null;
     if (currValue == null) {
@@ -60,7 +60,7 @@ export class Lexer {
     } else {
       this.allRules.push(rule);
     }
-    rule.expr = parse(rule.pattern);
+    rule.expr = new RegexParser(rule.pattern).parse();
     return this;
   }
 

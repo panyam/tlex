@@ -1,7 +1,7 @@
 const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Regex, Char, CharRange } from "../core";
-import { parse } from "../parser";
+import { parse } from "./utils";
 
 function testRegex(input: string, expected: any, debug = false, enforce = true): Regex {
   const found = parse(input);
@@ -64,8 +64,9 @@ describe("Regex Tests", () => {
     testRegex("a(bc){10, 20}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,20}"]]]]);
     testRegex("a(bc){10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,10}"]]]]);
     testRegex("a(bc){,10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{0,10}"]]]]);
-    testRegex("((ab)*)*", ["Quant", [["Cat", ["a", "b"]], "*"]]);
+    testRegex("((ab)*)*", ["Quant", [["Quant", [["Cat", ["a", "b"]], "*"]], "*"]]);
     expect(() => testRegex("a{1,2,3}", [])).toThrowError();
+    testRegex("a[a-z]{2,4}?", ["Cat", ["a", ["QuantLazy", [["a-z"], "{2,4}"]]]]);
   });
 
   test("Test Char Ranges", () => {

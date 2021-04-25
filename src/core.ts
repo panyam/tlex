@@ -23,6 +23,12 @@ export abstract class Regex {
   readonly tag: RegexType;
   parent: TSU.Nullable<Regex> = null;
   protected reString = null as string | null;
+  // If a group index is provided then this can be "referred" by
+  // other parts of the regex.  These must be unique within a root.
+  groupIndex = -1;
+  // Name of the group corresponding to this part of the regex - MUST
+  // be unique within the subtree.
+  groupName: TSU.Nullable<string> = null;
 
   get debugValue(): any {
     return "";
