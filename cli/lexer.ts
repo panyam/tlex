@@ -2,9 +2,9 @@ const tm1 = Date.now();
 
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
-import { newLexer, VMTracer, layoutThreadNodes } from "../src/regex/tests/utils";
+import { newLexer, VMTracer, layoutThreadNodes } from "../src/tests/utils";
 import { Tape } from "../src/tape";
-import { InstrDebugValue, VM } from "../src/regex/pikevm";
+import { InstrDebugValue, VM } from "../src/pikevm";
 
 const t0 = Date.now();
 const args = process.argv.slice(2);

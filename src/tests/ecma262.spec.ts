@@ -824,7 +824,7 @@ describe("ECMA Tests - Section 15.10.2.15", () => {
 
 describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would be by matching longest rather than first alternative", () => {
   test(caseLabel("15.10.2.3_A1_T1"), () => {
-    testMatch("a|ab", "abc", 0, 2);
+    testMatch("a|ab", "abc", 0, 1);
   });
   test(caseLabel("15.10.2.3_A1_T2"), () => {
     testMatch("((a)|(ab))((c)|(bc))", "abbcac", 0, 4, 6);
@@ -849,16 +849,16 @@ describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would 
     testMatch(".+: gr(a|e)y", "color: grey", 0, 11);
   });
   test(caseLabel("15.10.2.3_A1_T15"), () => {
-    testMatch("(Rob)|(Bob)|(Robert)|(Bobby)", "BobRobertRobBobby", 0, 3, 9, 12, 17);
+    testMatch("(Robert)|(Bobby)|(Bob)|(Rob)", "BobRobertRobBobby", 0, 3, 9, 12, 17);
   });
   test(caseLabel("15.10.2.5_A1_T1"), () => {
     testMatch("a[a-z]{2,4}", "abcdefghi", 0, 5);
   });
   test(caseLabel("15.10.2.5_A1_T2 - Needs to be fixed to handle greedy"), () => {
-    testMatchD("a[a-z]{2,4}?", "abcdefghi", 0, 3);
+    testMatch("a[a-z]{2,4}?", "abcdefghi", 0, 3);
   });
   test(caseLabel("15.10.2.5_A1_T3"), () => {
-    testMatch("(aa|aabaac|ba|b|c)*", "aabaac", 0, 6);
+    testMatch("(aa|aabaac|ba|b|c)*", "aabaac", 0, 4);
   });
   test(caseLabel("15.10.2.5_A1_T4"), () => {
     testMatch("(z)((a+)?(b+)?(c))*", "zaacbbbcac", 0, 10);
@@ -872,6 +872,6 @@ describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would 
 describe("ECMA Tests - Section 15.10.2.6", () => {
   test(caseLabel("15.10.2.6_A1_T1"), () => {
     // /s$/.test("pairs\nmakes\tdouble");
-    testMatch("s+$|\n", "sss\nss\nsssss\n", 0, 3, 4, 6, 7, 12);
+    testMatch("s+$|\n", "sss\nss\nsssss\n", 0, 3, 4, 6, 7, 12, 13);
   });
 });

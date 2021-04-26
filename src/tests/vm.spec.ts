@@ -99,9 +99,22 @@ describe("VM Tests", () => {
   test("Test a|aa|aaa without priority", () => {
     const prog = compile(null, "a", "aa", "aaa");
     testInput(prog, "aaaa", [
-      ["aaa", 2],
       ["a", 0],
-    ], true);
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+    ]);
+  });
+
+  test("Test a|aa|aaa without priority", () => {
+    const prog = compile(null, "a|aa|aaa");
+    testInput(prog, "aaaaa", [
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+    ]);
   });
 
   test("Test a*", () => {
@@ -114,13 +127,28 @@ describe("VM Tests", () => {
     testInput(prog, "abbbaaaba", [["abbbaaaba", 0]]);
   });
 
-  test("Test (a|b){0, 10}?", () => {
-    const prog = compile(null, "(a|b){0,2}?");
+  test("Test (a|b){0, 2}", () => {
+    const prog = compile(null, "(a|b){0,2}");
     testInput(prog, "abbbaaaba", [
       ["ab", 0],
       ["bb", 0],
       ["aa", 0],
       ["ab", 0],
+      ["a", 0],
+    ]);
+  });
+
+  test("Test (a|b){0, 2}?", () => {
+    const prog = compile(null, "(a|b){0,2}?");
+    testInput(prog, "abbbaaaba", [
+      ["a", 0],
+      ["b", 0],
+      ["b", 0],
+      ["b", 0],
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+      ["b", 0],
       ["a", 0],
     ]);
   });
@@ -143,7 +171,13 @@ describe("VM Tests", () => {
 
   test("Test a*? | aa without priority", () => {
     const prog = compile(null, "a*?", "aa");
-    testInput(prog, "aaaaa", [["aaaaa", 0]]);
+    testInput(prog, "aaaaa", [
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+      ["a", 0],
+    ]);
   });
 
   test("Test a*? | aa with priority", () => {

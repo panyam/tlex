@@ -17,12 +17,6 @@ export enum OpCode {
   Save,
   Split,
   Jump,
-  JumpIfLt,
-  JumpIfGt,
-  RegAcquire,
-  RegInc,
-  RegRelease,
-  RegSave,
   Begin,
   End,
 }
@@ -160,6 +154,13 @@ export class Compiler {
   /**
    * Compiles a repetition (with quantifiers) into its instructions.
    *
+   * Option 1 (currently used) - convert x{a,b} to xxxxxx (a) times followed by x? b - a times
+   *  Problem with this is that it can have unbounded sizes on regexes.
+   *
+   * Option 2 - Experimental
+   *  Problem is here is we must allow for duplicate threads for an offset in a given
+   *  generation - possibly causing an exponential blowup.
+   *
    * For Regex{A,B} do something like:
    * L0: AcquireReg     # acquire new register at L0 and set value to 0
    * L1: CodeFor expr   # Emit code for expr
@@ -193,48 +194,15 @@ export class Compiler {
       // ?
       this.compileOptional(quant.expr, prog, quant.greedy);
     } else {
-      // general case
-
-      if (true) {
-        // Option 1 - convert x{a,b} to xxxxxx (a) times followed by x? b - a times
-        for (let i = 0; i < quant.minCount; i++) {
-          this.compileExpr(quant.expr, prog);
-        }
-        // generateo x? b - a times
-        for (let i = quant.minCount; i < quant.maxCount; i++) {
-          this.compileOptional(quant.expr, prog, quant.greedy);
-        }
-      } else {
-        // Option 2 - Experimental - Use registers to hold counts - but this is not tested
-        /*
-        const split = quant.minCount <= 0 ? prog.add(OpCode.Split) : null;
-
-        const l0 = prog.add(OpCode.RegAcquire).offset;
-        const l1 = l0 + 1;
+      // general case - Currently going with Option 1
+      //
+      // - convert x{a,b} to xxxxxx (a) times followed by x? b - a times
+      for (let i = 0; i < quant.minCount; i++) {
         this.compileExpr(quant.expr, prog);
-
-        // Increment match count
-        prog.add(OpCode.RegInc, l0);
-
-        // Next two jumps perform if (A <= val <= B) ...
-        // Jump back to start of code until val < A
-        if (quant.minCount > 0) {
-          prog.add(OpCode.JumpIfLt, l0, quant.minCount, l1);
-        }
-
-        // If over max then stop
-        const jumpIfGt = prog.add(OpCode.JumpIfGt, l0, quant.maxCount - 1); // Add L10 here
-
-        // Have the option of repeat if we are here
-        const split2 = prog.add(OpCode.Split, l1);
-
-        // Release the register for reuse
-        const lEnd = prog.add(OpCode.RegRelease, l0).offset;
-        jumpIfGt.add(lEnd);
-        split2.add(prog.length);
-
-        if (split != null) split.add(l0, prog.length);
-        */
+      }
+      // generate x? b - a times
+      for (let i = quant.minCount; i < quant.maxCount; i++) {
+        this.compileOptional(quant.expr, prog, quant.greedy);
       }
     }
   }
@@ -394,7 +362,7 @@ export class VM {
   // thread is a duplicate (and avoided if so).  This
   // ensures that are linearly bounded on the number of
   // number threads as we match.
-  threadForOffset: TSU.NumMap<Thread> = {};
+  genForOffset: TSU.NumMap<number> = {};
 
   constructor(
     public readonly prog: Prog,
@@ -432,45 +400,18 @@ export class VM {
   }
 
   addThread(thread: Thread, list: Thread[], tape: Tape, delta = 0): void {
-    if (this.threadForOffset[thread.offset - this.start]?.gen == this.gen) {
+    if (this.genForOffset[thread.offset - this.start] == this.gen) {
       // duplicate
       return;
     }
-    this.threadForOffset[thread.offset - this.start] = thread;
+    this.genForOffset[thread.offset - this.start] = this.gen;
     const instr = this.prog.instrs[thread.offset];
     let newThread: Thread;
     // if (this.tracer) this.tracer.threadStepped(thread, tape.index, this.gen);
     switch (instr.opcode) {
-      case OpCode.RegInc:
-        thread.regIncr(instr.args[0]);
-        this.addThread(this.jumpBy(thread, 1), list, tape);
-        break;
-      case OpCode.RegRelease:
-        thread.regRelease(instr.args[0]);
-        this.addThread(this.jumpBy(thread, 1), list, tape);
-        break;
-      case OpCode.RegAcquire:
-        thread.regAcquire(instr.offset);
-        this.addThread(this.jumpBy(thread, 1), list, tape);
-        break;
       case OpCode.Jump:
-        this.addThread(this.jumpTo(thread, instr.args[0]), list, tape);
-        break;
-      case OpCode.JumpIfLt:
-        {
-          const [regOffset, checkValue, goto] = [instr.args[0], instr.args[1], instr.args[2]];
-          const regValue = thread.regValue(regOffset);
-          newThread = regValue < checkValue ? this.jumpTo(thread, goto) : this.jumpBy(thread, 1);
-          this.addThread(newThread, list, tape);
-        }
-        break;
-      case OpCode.JumpIfGt:
-        {
-          const [regOffset, checkValue, goto] = [instr.args[0], instr.args[1], instr.args[2]];
-          const regValue = thread.regValue(regOffset);
-          newThread = regValue > checkValue ? this.jumpTo(thread, goto) : this.jumpBy(thread, 1);
-          this.addThread(newThread, list, tape);
-        }
+        newThread = this.jumpTo(thread, instr.args[0]);
+        this.addThread(newThread, list, tape);
         break;
       case OpCode.Split:
         // add in reverse order so backtracking happens correctly
@@ -509,7 +450,10 @@ export class VM {
         }
         break;
       case OpCode.Begin:
-        // This results in a new VM being created for this sub program
+        // This results in a new VM being created for this sub program and
+        // kicking off a backtracking execution - Making these as explicit
+        // constructs for the user to use means the user can make this choice
+        // on their own voilition
         const [forward, consume, negate, end] = instr.args;
         if (consume == 1) {
           // since this results in the consumption of a character (similar to "Char")
@@ -549,6 +493,7 @@ export class VM {
    * [matchId, matchStart, matchEnd]
    */
   match(tape: Tape): Match | null {
+    // this.gen = 0; this.genForOffset = {};
     this.startMatching(tape);
     let bestMatch: TSU.Nullable<Match> = null;
     while (this.currThreads.length > 0) {
@@ -582,14 +527,15 @@ export class VM {
   stepChar(tape: Tape, currMatch: TSU.Nullable<Match> = null): TSU.Nullable<Match> {
     // At this point all our threads are point to the next "transition" or "match" action.
     this.gen++;
+    // console.log(`Ch (@${tape.index}): ${tape.currChCode}, Gen (${this.gen})`);
     for (let i = 0; i < this.currThreads.length; i++) {
       const thread = this.currThreads[i];
+      // console.log(`Thread (${i}): ${thread.offset}(${thread.gen})`);
       const nextMatch = this.stepThread(tape, thread);
       if (nextMatch != null) {
-        if (currMatch == null) currMatch = nextMatch;
-        if (
+        if (currMatch == null || (
           nextMatch.priority > currMatch.priority ||
-          (nextMatch.priority == currMatch.priority && nextMatch.end > currMatch.end)
+          (nextMatch.priority == currMatch.priority && nextMatch.end > currMatch.end))
         ) {
           currMatch = nextMatch;
           break;
@@ -615,6 +561,7 @@ export class VM {
     const instr = instrs[thread.offset];
     const opcode = instr.opcode;
     const args = instr.args;
+    const delta = this.forward ? 1 : -1;
     // Do char match based actions
     let advanceTape = false;
     let ch: number;
@@ -634,34 +581,6 @@ export class VM {
         // Return back to calling VM - very similar to a match
         return new Match(-1, -1, this.startPos, tape.index);
         break;
-      case OpCode.Any:
-        if (this.hasMore(tape)) advanceTape = true;
-        break;
-      case OpCode.NegChar:
-        ch = tape.currChCode;
-        advanceTape = !matchChar(ch, args[0], args[1]);
-        break;
-      case OpCode.Char:
-        ch = tape.currChCode;
-        advanceTape = matchChar(ch, args[0], args[1]);
-        break;
-      case OpCode.NegCharRange:
-        ch = tape.currChCode;
-        advanceTape = true;
-        for (let a = 0; a < args.length; a += 2) {
-          if ((advanceTape = !matchChar(ch, args[0], args[1]))) {
-            break;
-          }
-        }
-        break;
-      case OpCode.CharRange:
-        ch = tape.currChCode;
-        for (let a = 0; a < args.length; a += 2) {
-          if ((advanceTape = matchChar(ch, args[a], args[a + 1]))) {
-            break;
-          }
-        }
-        break;
       case OpCode.Match:
         // we have a match on this thread so return it
         // Update the match if we are a higher prioirty or longer match
@@ -676,9 +595,38 @@ export class VM {
           currMatch.matchIndex = matchIndex;
         }
         break;
+      case OpCode.NegChar:
+        ch = tape.currChCode;
+        advanceTape = !matchChar(ch, args[0], args[1]);
+        break;
+      case OpCode.Char:
+        ch = tape.currChCode;
+        advanceTape = matchChar(ch, args[0], args[1]);
+        break;
+      case OpCode.NegCharRange:
+        ch = tape.currChCode;
+        advanceTape = true;
+        for (let a = 0; a < args.length; a += 2) {
+          if (matchChar(ch, args[a], args[a + 1])) {
+            advanceTape = false;
+            break;
+          }
+        }
+        break;
+      case OpCode.CharRange:
+        ch = tape.currChCode;
+        for (let a = 0; a < args.length; a += 2) {
+          if (matchChar(ch, args[a], args[a + 1])) {
+            advanceTape = true;
+            break;
+          }
+        }
+        break;
+      case OpCode.Any:
+        advanceTape = this.hasMore(tape);
+        break;
     }
     if (advanceTape && this.hasMore(tape)) {
-      const delta = this.forward ? 1 : -1;
       this.addThread(this.jumpBy(thread, 1), this.nextThreads, tape, delta);
     }
     return currMatch;
@@ -723,16 +671,6 @@ export function InstrDebugValue(instr: Instr): string {
       return `Split ${instr.args.join(", ")}`;
     case OpCode.Jump:
       return `Jump ${instr.args[0]}`;
-    case OpCode.JumpIfLt:
-      return `JumpIfLt L${instr.args[0]} ${instr.args[1]} L${instr.args[2]}`;
-    case OpCode.JumpIfGt:
-      return `JumpIfGt L${instr.args[0]} ${instr.args[1]} L${instr.args[2]}`;
-    case OpCode.RegAcquire:
-      return `RegAcquire`;
-    case OpCode.RegInc:
-      return `RegInc L${instr.args[0]}`;
-    case OpCode.RegRelease:
-      return `RegRelease L${instr.args[0]}`;
     case OpCode.Begin:
       return `Begin ${instr.args.join(" ")}`;
     case OpCode.End:
