@@ -428,6 +428,7 @@ export class VM {
         break;
       case OpCode.Save:
         newThread = this.forkTo(thread, thread.offset + 1);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
         newThread.positions[instr.args[0]] = tape.index;
         this.addThread(newThread, list, tape);
         break;
@@ -530,7 +531,7 @@ export class VM {
     // console.log(`Ch (@${tape.index}): ${tape.currChCode}, Gen (${this.gen})`);
     for (let i = 0; i < this.currThreads.length; i++) {
       const thread = this.currThreads[i];
-      // console.log(`Thread (${i}): ${thread.offset}(${thread.gen})`);
+      // console.log(`   Thread (${i}): ${thread.offset}(${thread.gen})`);
       const nextMatch = this.stepThread(tape, thread);
       if (nextMatch != null) {
         if (currMatch == null || (

@@ -195,17 +195,15 @@ describe("VM Tests", () => {
   });
 
   test("Test Comments", () => {
-    const prog = compile(null, `/\\*(^\\*/)*\\*/`, `[ \t\n\r]+`);
+    const prog = compile(null, `/\\*.*?\\*/`, `[ \t\n\r]+`);
     // const prog = compile(null, `/\*.*\*/`, `\"(?<!\\\\)\"`, "//.*$");
     testInput(
       prog,
-      `/* hello comment in one line */   /** How about multi line?
-              
-              */  `,
+      `/* c1 */ /** C2\n */  `,
       [
-        ["/* hello comment in one line */", 0],
-        ["   ", 1],
-        ["/** How about multi line?\n              \n              */", 0],
+        ["/* c1 */", 0],
+        [" ", 1],
+        ["/** C2\n */", 0],
         ["  ", 1],
       ],
     );

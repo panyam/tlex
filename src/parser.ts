@@ -109,21 +109,22 @@ export class RegexParser {
     if (stack.length <= 0) {
       throw new SyntaxError("Quantifier cannot appear before an expression");
     }
-    if (pattern[curr - 1] == "*" || pattern[curr - 1] == "?" || pattern[curr - 1] == "+" || pattern[curr - 1] == "}") {
-      throw new SyntaxError("Nothing to repeat");
-    }
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
-    const last = (stack[stack.length - 1] = new Quant(stack[stack.length - 1]));
+    const last = stack[stack.length - 1];
+    if (last.tag == RegexType.QUANT && (pattern[curr - 1] == "*" || pattern[curr - 1] == "?" || pattern[curr - 1] == "+" || pattern[curr - 1] == "}")) {
+      throw new SyntaxError("Nothing to repeat");
+    }
+    const quant = stack[stack.length - 1] = new Quant(last);
     if (pattern[curr] == "*") {
-      last.minCount = 0;
-      last.maxCount = TSU.Constants.MAX_INT;
+      quant.minCount = 0;
+      quant.maxCount = TSU.Constants.MAX_INT;
     } else if (pattern[curr] == "+") {
-      last.minCount = Math.min(last.minCount, 1);
-      last.maxCount = TSU.Constants.MAX_INT;
+      quant.minCount = Math.min(quant.minCount, 1);
+      quant.maxCount = TSU.Constants.MAX_INT;
     } else if (pattern[curr] == "?") {
-      last.minCount = 0;
-      last.maxCount = Math.max(last.maxCount, 1);
+      quant.minCount = 0;
+      quant.maxCount = Math.max(quant.maxCount, 1);
     } else if (pattern[curr] == "{") {
       // find the next "}"
       const clPos = pattern.indexOf("}", curr + 1);
@@ -134,11 +135,11 @@ export class RegexParser {
         if (isNaN(parts[0])) {
           throw new SyntaxError(`Invalid quantifier: /${sub}/`);
         }
-        last.minCount = last.maxCount = parts[0];
+        quant.minCount = quant.maxCount = parts[0];
       } else if (parts.length == 2) {
-        last.minCount = isNaN(parts[0]) ? 0 : parts[0];
-        last.maxCount = isNaN(parts[1]) ? TSU.Constants.MAX_INT : parts[1];
-        if (last.minCount > last.maxCount) {
+        quant.minCount = isNaN(parts[0]) ? 0 : parts[0];
+        quant.maxCount = isNaN(parts[1]) ? TSU.Constants.MAX_INT : parts[1];
+        if (quant.minCount > quant.maxCount) {
           throw new SyntaxError(`Invalid Quant /${sub}/: Min must be <= Max`);
         }
       } else if (parts.length > 2) {
@@ -148,9 +149,9 @@ export class RegexParser {
     }
     curr++;
     // check if there is an extra lazy quantifier
-    if (curr <= end && pattern[curr] == "?" && last.greedy) {
+    if (curr <= end && pattern[curr] == "?" && quant.greedy) {
       curr++;
-      last.greedy = false;
+      quant.greedy = false;
     }
     return curr;
   }

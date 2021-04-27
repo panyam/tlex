@@ -32,8 +32,7 @@ while (next != null && next.end > next.start) {
   next = vm.match(tape);
 }
 console.log("Found Tokens: ", found);
-/*
-if (false) {
+if (reportFile) {
   const reportHtml = `<html>
         <head>
           <style>
@@ -44,12 +43,9 @@ if (false) {
         </head>
         <body>${layoutThreadNodes(teststring, tracer.allThreadNodes)}</body>
        </html>`;
-  if (reportFile != null) {
-    if (reportFile.trim().length > 0) {
-      fs.writeFileSync(reportFile, reportHtml);
-    } else {
-      console.log(reportHtml);
-    }
+  if (reportFile.trim().length > 0) {
+    fs.writeFileSync(reportFile, reportHtml);
+  } else {
+    console.log(reportHtml);
   }
 }
-*/

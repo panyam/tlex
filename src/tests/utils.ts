@@ -94,7 +94,9 @@ export class VMTracer {
     const threadNode = this.allThreadNodes[thread.id];
     if (thread.parentId >= 0) {
       // parent *must* exist
-      TSU.assert(thread.parentId in this.allThreadNodes, `Parent node ${thread.parentId} not found`);
+      if (!(thread.parentId in this.allThreadNodes)) {
+        throw new Error(`Parent node ${thread.parentId} not found`);
+      }
       const parentNode: ThreadNode = this.allThreadNodes[thread.parentId];
       if (!(thread.id in parentNode.children)) {
         threadNode.parent = parentNode;
