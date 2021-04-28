@@ -1137,13 +1137,12 @@ describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
 
     const __html = "<html>\n" + __body + "\n</html>";
     // ignore case not yet implemented
-    testMatchO({ debug: false, ignoreCase: true }, "<body.*>((.*\\n?)*?)<\\/body>|.", __html, 0, 7 + __body.length);
+    testMatchO({ ignoreCase: true }, "<BoDy.*>((.*\\n?)*?)<\\/bOdY>|.", __html,
+      0, 1, 2, 3, 4, 5, 6, 7, 96, 97, 98, 99, 100, 101, 102, 103, 104);
   });
-  test.skip(caseLabel("15.10.2.8_A3_T18"), () => {
-    // TBD
-  });
+  test.todo(caseLabel("15.10.2.8_A3_T18"));
   test(caseLabel("15.10.2.8_A3_T19"), () => {
-    testMatch("([\\S]+([ \\t]+[\\S]+)*)[ \\t]*=[ \\t]*[\\S]+", "Course_Creator = Test", 0, 21);
+    testMatch("([\\S]+([ \t]+[\\S]+)*)[ \t]*=[ \t]*[\\S]+", "Course_Creator = Test", 0, 21);
   });
   test(caseLabel("15.10.2.8_A3_T20-T33"), () => {
     // TODO - In all these tests also verify the submatch groups

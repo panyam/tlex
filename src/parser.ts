@@ -286,17 +286,17 @@ export class RegexParser {
     switch (ch) {
       // char classes
       case "w":
-        return [Char.CharClass(CharClassType.JS_WORD_CHAR), 2];
+        return [Char.CharClass(CharClassType.WORD_CHAR), 2];
       case "W":
-        return [Char.CharClass(CharClassType.JS_WORD_CHAR, true), 2];
+        return [Char.CharClass(CharClassType.NOT_WORD_CHAR), 2];
       case "d":
         return [Char.CharClass(CharClassType.DIGITS), 2];
       case "D":
-        return [Char.CharClass(CharClassType.DIGITS, true), 2];
+        return [Char.CharClass(CharClassType.NOT_DIGITS), 2];
       case "s":
         return [Char.CharClass(CharClassType.SPACES), 2];
       case "S":
-        return [Char.CharClass(CharClassType.SPACES, true), 2];
+        return [Char.CharClass(CharClassType.NOT_SPACES), 2];
       case "r":
         return [Char.of("\r"), 2];
       case "n":

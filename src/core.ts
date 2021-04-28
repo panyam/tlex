@@ -332,7 +332,7 @@ export class Char extends Regex {
   // start == end => Single char
   // start < end => Char range
   // Start == -1 => end = char class
-  constructor(public start = 0, public end = 0, public neg = false) {
+  constructor(public start = 0, public end = 0) {
     super();
     if (end < start) {
       throw new SyntaxError("End cannot be less than Start");
@@ -343,8 +343,8 @@ export class Char extends Regex {
     return this;
   }
 
-  static CharClass(charClass: CharClassType, neg = false): Char {
-    return new Char(-1, charClass, neg);
+  static CharClass(charClass: CharClassType): Char {
+    return new Char(-1, charClass);
   }
 
   static of(ch: string | number): Char {
@@ -371,7 +371,7 @@ export class Char extends Regex {
 
   protected evalREString(): string {
     if (this.isCharClass) {
-      return CharClassHelpers[this.end].reString(this.neg);
+      return CharClassHelpers[this.end].reString();
     } else {
       return this.start == this.end
         ? String.fromCharCode(this.start)

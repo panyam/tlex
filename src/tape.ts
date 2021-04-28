@@ -6,18 +6,22 @@
 export class Tape {
   lineLengths: number[] = [];
   index = 0;
-  input: string;
+  protected _rawInput: string;
+  readonly input: string[];
 
   constructor(input: string) {
-    this.input = input;
+    this._rawInput = input;
+    this.input = [...input];
   }
 
   push(content: string): void {
-    this.input += content;
+    this._rawInput += content;
+    this.input.push(...content);
   }
 
   substring(startIndex: number, endIndex: number): string {
-    return this.input.substring(startIndex, endIndex);
+    return this._rawInput.substring(startIndex, endIndex);
+    // return this.input.slice(startIndex, endIndex).join("");
   }
 
   advance(delta = 1): this {
@@ -42,7 +46,7 @@ export class Tape {
   advanceTill(pattern: string, ensureNoPrefixSlash = true): number {
     let lastIndex = this.index;
     while (true) {
-      const endIndex = this.input.indexOf(pattern, lastIndex);
+      const endIndex = this._rawInput.indexOf(pattern, lastIndex);
       if (endIndex < 0) {
         throw new Error(`Unexpected end of input before (${pattern})`);
       } else if (ensureNoPrefixSlash) {
@@ -97,7 +101,18 @@ export class Tape {
 
   get currChCode(): number {
     if (!this.hasMore) return -1;
-    return this.input.charCodeAt(this.index);
+    return this.input[this.index].charCodeAt(0);
+    // return this.input.charCodeAt(this.index);
+  }
+
+  get currChCodeLower(): number {
+    if (!this.hasMore) return -1;
+    return this.input[this.index].toLowerCase().charCodeAt(0);
+  }
+
+  get currChCodeUpper(): number {
+    if (!this.hasMore) return -1;
+    return this.input[this.index].toUpperCase().charCodeAt(0);
   }
 
   nextCh(): string {

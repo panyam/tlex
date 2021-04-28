@@ -10,7 +10,7 @@ describe("Tape Tests", () => {
     expect(t1.index).toBe(1);
     expect(t1.substring(4, 6)).toBe("o ");
     t1.push(" And Universe");
-    expect(t1.input).toBe("Hello World And Universe");
+    expect(t1.input).toEqual([..."Hello World And Universe"]);
   });
 
   test("Advance Tests", () => {

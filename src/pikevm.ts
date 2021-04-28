@@ -36,15 +36,6 @@ function isSpaceChar(ch: string): boolean {
   return ch == " " || ch == "\t";
 }
 
-function matchChar(ch: number, arg0: number, arg1: number): boolean {
-  if (arg0 < 0) {
-    // char class
-    const helper = CharClassHelpers[arg1];
-    return helper.match(ch);
-  }
-  return ch >= arg0 && ch <= arg1;
-}
-
 export class Compiler {
   constructor(
     public regexResolver: TSU.Nullable<RegexResolver>,
@@ -94,7 +85,8 @@ export class Compiler {
     }
     if (expr.tag == RegexType.CHAR) {
       const char = expr as Char;
-      const instr = prog.add(char.neg ? OpCode.NegChar : OpCode.Char, char.start, char.end);
+      // prog.add(char.neg ? OpCode.NegChar : OpCode.Char, char.start, char.end);
+      prog.add(OpCode.Char, char.start, char.end);
     } else if (expr.tag == RegexType.CHAR_RANGE) {
       const charRange = expr as CharRange;
       const instr = prog.add(charRange.neg ? OpCode.NegCharRange : OpCode.CharRange);
@@ -549,6 +541,22 @@ export class VM {
     }
   }
 
+  matchChar(ch: number, arg0: number, arg1: number): boolean {
+    if (arg0 < 0) {
+      const helper = CharClassHelpers[arg1];
+      return helper.match(ch);
+    }
+    return ch >= arg0 && ch <= arg1;
+  }
+
+  matchCurrPos(tape: Tape, arg0: number, arg1: number): boolean {
+    if (this.ignoreCase) {
+      return this.matchChar(tape.currChCodeLower, arg0, arg1) || this.matchChar(tape.currChCodeUpper, arg0, arg1);
+    } else {
+      return this.matchChar(tape.currChCode, arg0, arg1);
+    }
+  }
+
   protected hasMore(tape: Tape): boolean {
     return this.forward ? tape.hasMore : tape.index > 0;
   }
@@ -677,27 +685,23 @@ export class VM {
         }
         break;
       case OpCode.NegChar:
-        ch = tape.currChCode;
-        advanceTape = !matchChar(ch, args[0], args[1]);
+        advanceTape = !this.matchCurrPos(tape, args[0], args[1]);
         break;
       case OpCode.Char:
-        ch = tape.currChCode;
-        advanceTape = matchChar(ch, args[0], args[1]);
+        advanceTape = this.matchCurrPos(tape, args[0], args[1]);
         break;
       case OpCode.NegCharRange:
-        ch = tape.currChCode;
         advanceTape = true;
         for (let a = 0; a < args.length; a += 2) {
-          if (matchChar(ch, args[a], args[a + 1])) {
+          if (this.matchCurrPos(tape, args[a], args[a + 1])) {
             advanceTape = false;
             break;
           }
         }
         break;
       case OpCode.CharRange:
-        ch = tape.currChCode;
         for (let a = 0; a < args.length; a += 2) {
-          if (matchChar(ch, args[a], args[a + 1])) {
+          if (this.matchCurrPos(tape, args[a], args[a + 1])) {
             advanceTape = true;
             break;
           }
@@ -722,7 +726,7 @@ export function InstrDebugValue(instr: Instr): string {
     case OpCode.NegChar:
       if (instr.args[0] < 0) {
         // Char Class
-        return `Char ${CharClassHelpers[instr.args[1]].reString(instr.opcode == OpCode.NegChar)}`;
+        return `Char ${CharClassHelpers[instr.args[1]].reString(/*instr.opcode == OpCode.NegChar*/)}`;
       } else {
         const start = (+"" + instr.args[0]).toString(16);
         const end = (+"" + instr.args[1]).toString(16);
