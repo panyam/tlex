@@ -48,8 +48,11 @@ export class RegexParser {
     while (curr <= end) {
       const currCh = pattern[curr];
       // see if we have groups so they get highest preference
-      if (currCh == "<") {
+      if (currCh == ".") {
+        stack.push(new Any());
         curr++;
+      } else if (currCh == "\\" && pattern[curr + 1] == "k" && pattern[curr + 2] == "<") {
+        curr += 3;
         let gtPos = curr;
         while (gtPos <= end && pattern[gtPos] != ">") gtPos++;
         if (gtPos > end) throw new SyntaxError("Expected '>' found EOI");
@@ -59,9 +62,6 @@ export class RegexParser {
         }
         stack.push(new Ref(name));
         curr = gtPos + 1;
-      } else if (currCh == ".") {
-        stack.push(new Any());
-        curr++;
       } else if (currCh == "[") {
         // character ranges
         let clPos = curr + 1;
@@ -112,10 +112,13 @@ export class RegexParser {
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
     const last = stack[stack.length - 1];
-    if (last.tag == RegexType.QUANT && (pattern[curr - 1] == "*" || pattern[curr - 1] == "?" || pattern[curr - 1] == "+" || pattern[curr - 1] == "}")) {
+    if (
+      last.tag == RegexType.QUANT &&
+      (pattern[curr - 1] == "*" || pattern[curr - 1] == "?" || pattern[curr - 1] == "+" || pattern[curr - 1] == "}")
+    ) {
       throw new SyntaxError("Nothing to repeat");
     }
-    const quant = stack[stack.length - 1] = new Quant(last);
+    const quant = (stack[stack.length - 1] = new Quant(last));
     if (pattern[curr] == "*") {
       quant.minCount = 0;
       quant.maxCount = TSU.Constants.MAX_INT;

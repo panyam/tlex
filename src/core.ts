@@ -177,6 +177,10 @@ export class Quant extends Regex {
     super();
   }
 
+  get isUnlimited(): boolean {
+    return this.maxCount < 0 || this.maxCount == TSU.Constants.MAX_INT;
+  }
+
   // Tells if this regex is of a variable size (ie has quantifiers)
   // or is of a static size.
   get isVariable(): boolean {
@@ -189,21 +193,21 @@ export class Quant extends Regex {
 
   protected evalREString(): string {
     let quant = "*";
-    if (this.minCount == 1 && this.maxCount == TSU.Constants.MAX_INT) quant = "+";
-    else if (this.minCount == 0 && this.maxCount == TSU.Constants.MAX_INT) quant = "*";
+    if (this.minCount == 1 && this.isUnlimited) quant = "+";
+    else if (this.minCount == 0 && this.isUnlimited) quant = "*";
     else if (this.minCount == 0 && this.maxCount == 1) quant = "?";
     else if (this.minCount != 1 || this.maxCount != 1)
-      quant = `{${this.minCount},${this.maxCount == TSU.Constants.MAX_INT ? "" : this.maxCount}}`;
+      quant = `{${this.minCount},${this.isUnlimited ? "" : this.maxCount}}`;
     return `${this.expr.toString}${quant}`;
   }
 
   get debugValue(): any {
     let quant = "*";
-    if (this.minCount == 1 && this.maxCount == TSU.Constants.MAX_INT) quant = "+";
-    else if (this.minCount == 0 && this.maxCount == TSU.Constants.MAX_INT) quant = "*";
+    if (this.minCount == 1 && this.isUnlimited) quant = "+";
+    else if (this.minCount == 0 && this.isUnlimited) quant = "*";
     else if (this.minCount == 0 && this.maxCount == 1) quant = "?";
     else if (this.minCount != 1 || this.maxCount != 1)
-      quant = `{${this.minCount},${this.maxCount == TSU.Constants.MAX_INT ? "" : this.maxCount}}`;
+      quant = `{${this.minCount},${this.isUnlimited ? "" : this.maxCount}}`;
     return [this.greedy ? "Quant" : "QuantLazy", [this.expr.debugValue, quant]];
   }
 }

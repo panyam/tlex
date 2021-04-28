@@ -48,7 +48,7 @@ describe("Regex Tests", () => {
   });
 
   test("Test Named Refs", () => {
-    testRegex("a|b|<Hello>|e", ["Union", ["a", "b", "<Hello>", "e"]]);
+    testRegex("a|b|\\k<Hello>|e", ["Union", ["a", "b", "<Hello>", "e"]]);
     expect(() => testRegex("<  >", [])).toThrowError();
   });
 

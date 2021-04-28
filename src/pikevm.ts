@@ -219,8 +219,13 @@ export class Compiler {
         this.compileExpr(quant.expr, prog);
       }
       // generate x? b - a times
-      for (let i = quant.minCount; i < quant.maxCount; i++) {
-        this.compileOptional(quant.expr, prog, quant.greedy);
+      if (quant.isUnlimited) {
+        // then generate a a* here
+        this.compileAtleast0(quant.expr, prog, quant.greedy);
+      } else {
+        for (let i = quant.minCount; i < quant.maxCount; i++) {
+          this.compileOptional(quant.expr, prog, quant.greedy);
+        }
       }
     }
   }
@@ -455,31 +460,31 @@ export class VM {
     switch (instr.opcode) {
       case OpCode.Jump:
         newThread = this.jumpTo(thread, instr.args[0]);
-        this.addThread(newThread, list, tape);
+        this.addThread(newThread, list, tape, delta);
         break;
       case OpCode.Split:
         for (let j = 0; j < instr.args.length; j++) {
           const newOff = instr.args[j];
           // TODO - only fork on position/group write instead of always forking on a split
           const newThread = j == 0 ? this.jumpTo(thread, newOff) : this.forkTo(thread, newOff);
-          this.addThread(newThread, list, tape);
+          this.addThread(newThread, list, tape, delta);
         }
         break;
       case OpCode.Save:
         newThread = this.jumpTo(thread, thread.offset + 1);
-        this.savePosition(newThread, instr.args[0], tape.index);
-        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
-        this.addThread(newThread, list, tape);
+        this.savePosition(newThread, instr.args[0], tape.index + delta);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index + delta);
+        this.addThread(newThread, list, tape, delta);
         break;
       case OpCode.GroupStart:
-        newThread = this.startGroup(thread, instr.args[0], tape.index);
-        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
-        this.addThread(newThread, list, tape);
+        newThread = this.startGroup(thread, instr.args[0], tape.index + delta);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index + delta);
+        this.addThread(newThread, list, tape, delta);
         break;
       case OpCode.GroupEnd:
-        newThread = this.endGroup(thread, instr.args[0], tape.index);
-        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
-        this.addThread(newThread, list, tape);
+        newThread = this.endGroup(thread, instr.args[0], tape.index + delta);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index + delta);
+        this.addThread(newThread, list, tape, delta);
         break;
       case OpCode.StartOfInput:
         // only proceed further if prev was a newline or start
@@ -487,7 +492,7 @@ export class VM {
         if (tape.index == 0 || (this.multiline && isNewLineChar(lastCh))) {
           // have a match so can go forwrd but dont advance tape on
           // the same generation
-          this.addThread(this.jumpBy(thread, 1), list, tape);
+          this.addThread(this.jumpBy(thread, 1), list, tape, delta);
         }
         break;
       case OpCode.EndOfInput:
@@ -496,7 +501,7 @@ export class VM {
         // check if next is end of input
         nextCh = this.nextCh(tape);
         if (nextCh == "" || (this.multiline && isNewLineChar(nextCh))) {
-          this.addThread(this.jumpBy(thread, 1), list, tape);
+          this.addThread(this.jumpBy(thread, 1), list, tape, delta);
         }
         break;
       case OpCode.StartOfWord:
@@ -505,7 +510,7 @@ export class VM {
         if (tape.index == 0 || (this.multiline && (isNewLineChar(lastCh) || isSpaceChar(lastCh)))) {
           // have a match so can go forwrd but dont advance tape on
           // the same generation
-          this.addThread(this.jumpBy(thread, 1), list, tape);
+          this.addThread(this.jumpBy(thread, 1), list, tape, delta);
         }
         break;
       case OpCode.EndOfWord:
@@ -514,7 +519,7 @@ export class VM {
         // check if next is end of input
         nextCh = this.nextCh(tape);
         if (nextCh == "" || (this.multiline && (isNewLineChar(nextCh) || isSpaceChar(nextCh)))) {
-          this.addThread(this.jumpBy(thread, 1), list, tape);
+          this.addThread(this.jumpBy(thread, 1), list, tape, delta);
         }
         break;
       case OpCode.Begin:
@@ -533,7 +538,7 @@ export class VM {
           if (matchSuccess) {
             // TODO - Consider using a DFA for this case so we can mitigate
             // pathological cases with an exponential blowup on a success
-            this.addThread(this.jumpTo(thread, end + 1), list, tape);
+            this.addThread(this.jumpTo(thread, end + 1), list, tape, delta);
           }
         }
         break;

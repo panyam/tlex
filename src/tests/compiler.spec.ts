@@ -202,7 +202,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Named Groups", () => {
-    const prog = compile((name) => parse("abcde"), new Rule("<Hello  >", 10));
+    const prog = compile((name) => parse("abcde"), new Rule("\\k<Hello  >", 10));
     testRegexCompile(
       prog,
       Prog.with((p) => {
