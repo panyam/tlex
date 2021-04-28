@@ -8,24 +8,24 @@ import { Match } from "../vm";
 import { InstrDebugValue, VM } from "../pikevm";
 
 function testMatchD(repattern: string, input: string, ...expected: number[]): Match[] {
-  return testMatchO(true, repattern, input, ...expected);
+  return testMatchO({ debug: true }, repattern, input, ...expected);
 }
 
 function testMatch(repattern: string, input: string, ...expected: number[]): Match[] {
-  return testMatchO(false, repattern, input, ...expected);
+  return testMatchO({ debug: false }, repattern, input, ...expected);
 }
 
-function testMatchO(debug: boolean, repattern: string, input: string, ...expected: number[]): Match[] {
+function testMatchO(configs: any, repattern: string, input: string, ...expected: number[]): Match[] {
   const found = [] as Match[];
   const prog = compile(null, repattern);
-  const vm = new VM(prog);
+  const vm = new VM(prog, 0, -1, true, configs);
   const tape = new Tape(input);
   let next = vm.match(tape);
   while (next != null && next.end > next.start) {
     found.push(next);
     next = vm.match(tape);
   }
-  if (debug) {
+  if (configs.debug) {
     /*
     (found.length == 0 && expected.length != 0) ||
     (expected.length == 0 && found.length != 0) ||
@@ -42,7 +42,12 @@ function testMatchO(debug: boolean, repattern: string, input: string, ...expecte
       "\n\nExpected: ",
       expected,
       "\n\nFound: ",
-      found,
+      util.inspect(found, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
     );
   }
   if (found.length == 0) expect(expected.length).toBe(0);
@@ -864,14 +869,136 @@ describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would 
     testMatch("(z)((a+)?(b+)?(c))*", "zaacbbbcac", 0, 10);
   });
   test(caseLabel("15.10.2.5_A1_T5"), () => {
-    // Not working
+    // Not working yet
     testMatch("(a*)b\\1+", "aabaac", 0, 5);
   });
 });
 
 describe("ECMA Tests - Section 15.10.2.6", () => {
-  test(caseLabel("15.10.2.6_A1_T1"), () => {
+  test(caseLabel("15.10.2.6_A1_T1,T2"), () => {
     // /s$/.test("pairs\nmakes\tdouble");
-    testMatch("s+$|\n", "sss\nss\nsssss\n", 0, 3, 4, 6, 7, 12, 13);
+    testMatch("s+$|\n", "sss\nss\nsssss\nsssss", 0, 3, 4, 6, 7, 12, 13, 18);
+  });
+  test(caseLabel("15.10.2.6_A1_T3,T4,T5"), () => {
+    testMatchO({ multiline: false }, "s+$|.", "s\nssssss", 0, 1, 2, 8);
+    testMatchO({ multiline: false }, "es$|.", "s\n\u0065s", 0, 1, 2, 4);
+  });
+  test(caseLabel("15.10.2.6_A2_T1,T2"), () => {
+    testMatchO({ multiline: false }, "^hello|.", "\nhello", 0, 1, 2, 3, 4, 5, 6);
+    testMatch("^hello|.", "\nhello", 0, 1, 6);
+  });
+  test(caseLabel("15.10.2.6_A2_T3,T4"), () => {
+    testMatchO({ multiline: false }, "^p[a-z]|.", "\npaisa", 0, 1, 2, 3, 4, 5, 6);
+    testMatchO({ multiline: true }, "^p[a-z]|.", "\npaisa", 0, 1, 3, 4, 5, 6);
+  });
+  test(caseLabel("15.10.2.6_A2_T5"), () => {
+    testMatchO({ multiline: false }, "^[^p].|.", "\npaisa\nhola", 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+    testMatchO({ multiline: true }, "^[^p].|.", "\npaisa\nhola", 0, 2, 3, 4, 5, 6, 7, 9, 10, 11);
+  });
+  test(caseLabel("15.10.2.6_A2_T6"), () => {
+    testMatchO({ multiline: true }, "^abc", "abcabcdefgh", 0, 3);
+  });
+  test.skip(caseLabel("15.10.2.6_A2_T7"), () => {
+    // Not correct
+    testMatchO({ multiline: true }, "^..^e", "ab\ncde", 0, 2);
+  });
+  test(caseLabel("15.10.2.6_A2_T8"), () => {
+    testMatchO({ multiline: true }, "^xxx", "yyyyy");
+  });
+  test(caseLabel("15.10.2.6_A2_T9"), () => {
+    testMatchO({ multiline: true }, "^\\^+", "^^^x", 0, 3);
+  });
+  test(caseLabel("15.10.2.6_A2_T10"), () => {
+    testMatchO({ multiline: true }, "^\\d+|\\n", "12345\n67890", 0, 5, 6, 11);
+  });
+});
+
+describe.skip("ECMA Tests - Word Boundary Tests - 15.10.2.6_A3,A4", () => {
+  test(caseLabel("15.10.2.6_A3_T1 to T15 - \\b"), () => {
+    // TODO - Start and End of word matches not implemented
+    // These are similar to ^ and $ but with spaces instead of newline chars
+    // Parsing is an issue here since \b can appear before or after an exp
+    // so this has to be thought through.  Note that compilation and vm
+    // components are implemented - just parsing needs to be figured out.
+    // Alternatively we may get away with just treating \b as a "mix" of
+    // ^ and $ so that a \b will be used for characters "before" and "after"?
+    testMatch("\bhello|.", "hellohello", 0, 5, 6, 7, 8, 9, 10);
+  });
+
+  test(caseLabel("15.10.2.6_A4_T1 to -T8 Inverted word boundary - \\B"), () => {
+    // Not implemented
+  });
+});
+
+describe("ECMA Tests - Multiple boundary markers (^$\\b\\B) - 15.10.2.6_A5", () => {
+  test(caseLabel("15.10.2.6_A5_T1"), () => {
+    testMatch("^^^^^hello$$$$$", "hello", 0, 5);
+  });
+  test.skip(caseLabel("15.10.2.6_A5_T2"), () => {
+    testMatch("\\B\\B\\Bbot\\b\\b\\b|.", "robot wall-e", 0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12);
+  });
+});
+
+describe("ECMA Tests - Assertions in combination - 15.10.2.6", () => {
+  test(caseLabel("15.10.2.6_A6_T1"), () => {
+    testMatch("^.*?$", "hello world", 0, 11);
+  });
+  test.skip(caseLabel("15.10.2.6_A6_T2"), () => {
+    // TODO - We match *atleast* 1 char by design - should this not be the case?
+    testMatch("^.*?", "hello world");
+  });
+  test(caseLabel("15.10.2.6_A6_T3"), () => {
+    testMatch("^.*?(:|$)", "hello: world", 0, 6);
+  });
+  test(caseLabel("15.10.2.6_A6_T4"), () => {
+    testMatch("^.*(:|$)", "hello: world", 0, 12);
+  });
+});
+
+describe("ECMA Tests - Decimal Digits - 15.10.2.7", () => {
+  test(caseLabel("15.10.2.7_A1_T1,T2,T3,T4,T5"), () => {
+    testMatch("\\d{2,4}", "100010", 0, 4, 6);
+    testMatch("\\d{2,4}", "1");
+    testMatch("\\d{2,4}", "100", 0, 3);
+  });
+  test(caseLabel("15.10.2.7_A1_T6,T7"), () => {
+    testMatch("\\d{2,4}", "0\u0031\u0031b", 0, 3);
+    testMatch("\\d{2,4}", "0\u0031\u00312b", 0, 4);
+  });
+  test(caseLabel("15.10.2.7_A1_T8,T9,T10"), () => {
+    testMatch("b{2,4}c", "bbbcd", 0, 4);
+    testMatch("b{100,150}c", "bcd");
+    testMatch("b{0,150}c", "bbbbbbbcd", 0, 8);
+  });
+
+  test(caseLabel("15.10.2.7_A2_T1,T2,T3"), () => {
+    testMatch("\\w{3}\\d?|.", "xabcde123", 0, 3, 7, 8, 9);
+    testMatch("b{2}c|.", "bbbc", 0, 1, 4);
+  });
+
+  test(caseLabel("15.10.2.7_A3_T1-T14"), () => {
+    testMatch("\\s+java\\s+|.", "x    java    ", 0, 1, 13);
+    testMatch("\\s+java\\s+|.", "\t    java    ", 0, 13);
+    testMatch("\\s+java\\s+", "\t    javax    ");
+    testMatch("\\s+java\\s+", "java\n");
+    testMatch("[a-z]+\\d+|.", "5 x2\n", 0, 1, 2, 4, 5);
+    testMatch("[a-z]+(\\d+)|.", "abc1234\n", 0, 7, 8);
+    testMatch("b+c|.", "bbbc", 0, 4);
+    testMatch("b+c", "d");
+    testMatch("b+c", "bc", 0, 2);
+    testMatch("b+b+b+", "bbbbbb", 0, 6);
+    testMatch("(b+)(b+)(b+)", "bbbbbb", 0, 6);
+    testMatch("b+b*", "bbbbbb", 0, 6);
+    testMatch("(b+)((b)+)", "bbbbbb", 0, 6);
+    testMatch("b+b*", "bbbbbb", 0, 6);
+  });
+
+  test(caseLabel("15.10.2.7_A4_T1"), () => {
+    testMatch('[^"]*', '"beast"-nickname');
+    testMatch('[^"]*', 'alice said: "don\'t"', 0, 12);
+    testMatch('[^"]*', "abc'def'ghi", 0, 11);
+    testMatch('[^"]*', 'alice "', 0, 6);
+    testMatch('[^"]*', "alice \u0022", 0, 6);
+    testMatchD(`.*(["'][^"']*["'])`, "alice \u0022sweep\u0022", 0, 13);
   });
 });

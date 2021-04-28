@@ -197,16 +197,12 @@ describe("VM Tests", () => {
   test("Test Comments", () => {
     const prog = compile(null, `/\\*.*?\\*/`, `[ \t\n\r]+`);
     // const prog = compile(null, `/\*.*\*/`, `\"(?<!\\\\)\"`, "//.*$");
-    testInput(
-      prog,
-      `/* c1 */ /** C2\n */  `,
-      [
-        ["/* c1 */", 0],
-        [" ", 1],
-        ["/** C2\n */", 0],
-        ["  ", 1],
-      ],
-    );
+    testInput(prog, `/* c1 */ /** C2\n */  `, [
+      ["/* c1 */", 0],
+      [" ", 1],
+      ["/** C2\n */", 0],
+      ["  ", 1],
+    ]);
   });
 
   test("Test Lines", () => {

@@ -40,7 +40,7 @@ describe("Regex Tests", () => {
   });
 
   test("Test Cat", () => {
-    testRegex("a(b(c(d(e))))", ["Cat", ["a", "b", "c", "d", "e"]]);
+    testRegex("a(?:b(?:c(?:d(?:e))))", ["Cat", ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Union", () => {
@@ -53,7 +53,7 @@ describe("Regex Tests", () => {
   });
 
   test("Test Grouping", () => {
-    testRegex("a|b|(c|d)|e", ["Union", ["a", "b", "c", "d", "e"]]);
+    testRegex("a|b|(?:c|d)|e", ["Union", ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Quants", () => {

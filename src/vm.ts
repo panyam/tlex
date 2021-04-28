@@ -1,6 +1,8 @@
 import { Tape } from "./tape";
 
 export class Match {
+  groups: [number, number][] = [];
+  positions: number[] = [];
   constructor(public priority = 10, public matchIndex = -1, public start = -1, public end = -1) {}
 }
 

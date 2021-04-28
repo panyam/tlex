@@ -19,10 +19,22 @@ export enum OpCode {
   Jump,
   Begin,
   End,
+  StartOfWord,
+  EndOfWord,
+  GroupStart,
+  GroupEnd,
 }
 
 type RegexResolver = (name: string) => Regex;
 type CompilerListener = (expr: Regex, prog: Prog, start: number, length: number) => void;
+
+function isNewLineChar(ch: string): boolean {
+  return ch == "\r" || ch == "\n" || ch == "\u2028" || ch == "\u2029";
+}
+
+function isSpaceChar(ch: string): boolean {
+  return ch == " " || ch == "\t";
+}
 
 function matchChar(ch: number, arg0: number, arg1: number): boolean {
   if (arg0 < 0) {
@@ -77,7 +89,8 @@ export class Compiler {
     const start = prog.length;
     const currOffset = prog.length;
     if (expr.groupIndex >= 0) {
-      prog.add(OpCode.Save, expr.groupIndex * 2);
+      prog.add(OpCode.Save, (1 + expr.groupIndex) * 2);
+      prog.add(OpCode.GroupStart, 1 + expr.groupIndex);
     }
     if (expr.tag == RegexType.CHAR) {
       const char = expr as Char;
@@ -92,6 +105,10 @@ export class Compiler {
       prog.add(OpCode.StartOfInput);
     } else if (expr.tag == RegexType.END_OF_INPUT) {
       prog.add(OpCode.EndOfInput);
+    } else if (expr.tag == RegexType.START_OF_WORD) {
+      prog.add(OpCode.StartOfWord);
+    } else if (expr.tag == RegexType.END_OF_WORD) {
+      prog.add(OpCode.EndOfWord);
     } else if (expr.tag == RegexType.ANY) {
       prog.add(OpCode.Any);
     } else if (expr.tag == RegexType.CAT) {
@@ -112,7 +129,8 @@ export class Compiler {
       throw new Error("Regex Type not yet supported: " + expr.tag);
     }
     if (expr.groupIndex >= 0) {
-      prog.add(OpCode.Save, 1 + expr.groupIndex * 2);
+      prog.add(OpCode.GroupEnd, 1 + expr.groupIndex);
+      prog.add(OpCode.Save, (1 + expr.groupIndex) * 2 + 1);
     }
     if (this.listener) {
       this.listener(expr, prog, currOffset, prog.length - currOffset);
@@ -283,13 +301,14 @@ export class Compiler {
  * A thread that is performing an execution of the regex VM.
  */
 export class Thread {
+  parentId = -1;
+  id = 0;
+  priority = 0;
   /**
    * Saved positions into the input stream for the purpose of
    * partial and custom matches.
    */
-  parentId = -1;
-  id = 0;
-  priority = 0;
+  groups: [number, number][] = [];
   positions: number[] = [];
   registers: TSU.NumMap<number> = {};
 
@@ -297,12 +316,6 @@ export class Thread {
    * Create a thread at the given offset
    */
   constructor(public readonly offset: number = 0, public readonly gen: number = 0) {}
-
-  ensurePosition(index: number): void {
-    while (this.positions.length <= index) {
-      this.positions.push(-1);
-    }
-  }
 
   regIncr(regId: number): void {
     if (!(regId in this.registers)) {
@@ -349,30 +362,44 @@ export class VM {
   //  number[1-2*MaxSubs] = Substitutions
   //  number[2*MaxSubs - 2*MaxSubs + M] = Registers
   //      where M = Max number of NewReg instructions
-  threadCounter = 0;
-  currThreads: Thread[] = [];
-  nextThreads: Thread[] = [];
-  tracer: VMTracer;
-  startPos = 0; // Where the match is beginning from - this will be set to tape.index when match is called
+  protected threadCounter = 0;
+  protected currThreads: Thread[] = [];
+  protected nextThreads: Thread[] = [];
+  protected startPos = 0; // Where the match is beginning from - this will be set to tape.index when match is called
 
-  gen = 0;
+  protected gen = 0;
   // Records which "generation" of the match a particular
   // offset is in.  If a thread is added at a particular
   // offset the generation number is used to see if the
   // thread is a duplicate (and avoided if so).  This
   // ensures that are linearly bounded on the number of
   // number threads as we match.
-  genForOffset: TSU.NumMap<number> = {};
+  protected genForOffset: TSU.NumMap<number> = {};
+
+  tracer: VMTracer;
+  // If true then newline characters are used in the determination of ^ and $ patterns
+  multiline = true;
+
+  // If true characters are matched in a case insensitive manner.
+  ignoreCase = false;
 
   constructor(
     public readonly prog: Prog,
     public readonly start = 0,
     public readonly end = -1,
     public readonly forward = true,
+    configs: any = {},
   ) {
     if (end < 0) {
       end = prog.length - 1;
     }
+    this.multiline = "multiline" in configs ? configs.multiline : true;
+    this.ignoreCase = "ignoreCase" in configs ? configs.ignoreCase : false;
+  }
+
+  savePosition(thread: Thread, pos: number, tapeIndex: number): void {
+    while (thread.positions.length <= pos) thread.positions.push(-1);
+    thread.positions[pos] = tapeIndex;
   }
 
   jumpBy(thread: Thread, delta = 1): Thread {
@@ -380,11 +407,13 @@ export class VM {
   }
 
   jumpTo(thread: Thread, newOffset: number): Thread {
+    // TODO - Why create new thread here?
     const out = new Thread(newOffset, this.gen);
     out.id = thread.id;
     out.parentId = thread.parentId;
     out.priority = thread.priority;
     out.positions = thread.positions;
+    out.groups = thread.groups;
     out.registers = thread.registers;
     return out;
   }
@@ -395,8 +424,21 @@ export class VM {
     out.parentId = thread.id;
     out.priority = thread.priority;
     out.positions = [...thread.positions];
+    out.groups = [...thread.groups];
     out.registers = { ...thread.registers };
     return out;
+  }
+
+  startGroup(thread: Thread, groupIndex: number, tapeIndex: number): Thread {
+    const newThread = this.forkTo(thread, thread.offset + 1);
+    newThread.groups.push([groupIndex, tapeIndex]);
+    return newThread;
+  }
+
+  endGroup(thread: Thread, groupIndex: number, tapeIndex: number): Thread {
+    const newThread = this.forkTo(thread, thread.offset + 1);
+    newThread.groups.push([-groupIndex, tapeIndex]);
+    return newThread;
   }
 
   addThread(thread: Thread, list: Thread[], tape: Tape, delta = 0): void {
@@ -406,6 +448,8 @@ export class VM {
     }
     this.genForOffset[thread.offset - this.start] = this.gen;
     const instr = this.prog.instrs[thread.offset];
+    let nextCh: string;
+    let lastCh: string;
     let newThread: Thread;
     // if (this.tracer) this.tracer.threadStepped(thread, tape.index, this.gen);
     switch (instr.opcode) {
@@ -414,28 +458,33 @@ export class VM {
         this.addThread(newThread, list, tape);
         break;
       case OpCode.Split:
-        // add in reverse order so backtracking happens correctly
         for (let j = 0; j < instr.args.length; j++) {
           const newOff = instr.args[j];
-          const newThread = this.jumpTo(thread, newOff);
-          if (j != 0) {
-            newThread.parentId = thread.id;
-            newThread.id = ++this.threadCounter;
-            newThread.registers = { ...thread.registers };
-          }
+          // TODO - only fork on position/group write instead of always forking on a split
+          const newThread = j == 0 ? this.jumpTo(thread, newOff) : this.forkTo(thread, newOff);
           this.addThread(newThread, list, tape);
         }
         break;
       case OpCode.Save:
-        newThread = this.forkTo(thread, thread.offset + 1);
+        newThread = this.jumpTo(thread, thread.offset + 1);
+        this.savePosition(newThread, instr.args[0], tape.index);
         if (this.tracer) this.tracer.threadQueued(thread, tape.index);
-        newThread.positions[instr.args[0]] = tape.index;
+        this.addThread(newThread, list, tape);
+        break;
+      case OpCode.GroupStart:
+        newThread = this.startGroup(thread, instr.args[0], tape.index);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
+        this.addThread(newThread, list, tape);
+        break;
+      case OpCode.GroupEnd:
+        newThread = this.endGroup(thread, instr.args[0], tape.index);
+        if (this.tracer) this.tracer.threadQueued(thread, tape.index);
         this.addThread(newThread, list, tape);
         break;
       case OpCode.StartOfInput:
         // only proceed further if prev was a newline or start
-        const lastCh = this.prevCh(tape);
-        if (tape.index == 0 || lastCh == "\r" || lastCh == "\n" || lastCh == "\u2028" || lastCh == "\u2029") {
+        lastCh = this.prevCh(tape);
+        if (tape.index == 0 || (this.multiline && isNewLineChar(lastCh))) {
           // have a match so can go forwrd but dont advance tape on
           // the same generation
           this.addThread(this.jumpBy(thread, 1), list, tape);
@@ -445,8 +494,26 @@ export class VM {
         // On end of input we dont advance tape but thread moves on
         // if at end of line boundary
         // check if next is end of input
-        const currCh = this.nextCh(tape);
-        if (currCh == "\r" || currCh == "\n" || currCh == "\u2028" || currCh == "\u2029" || !this.hasMore(tape)) {
+        nextCh = this.nextCh(tape);
+        if (nextCh == "" || (this.multiline && isNewLineChar(nextCh))) {
+          this.addThread(this.jumpBy(thread, 1), list, tape);
+        }
+        break;
+      case OpCode.StartOfWord:
+        // only proceed further if prev was a newline or start
+        lastCh = this.prevCh(tape);
+        if (tape.index == 0 || (this.multiline && (isNewLineChar(lastCh) || isSpaceChar(lastCh)))) {
+          // have a match so can go forwrd but dont advance tape on
+          // the same generation
+          this.addThread(this.jumpBy(thread, 1), list, tape);
+        }
+        break;
+      case OpCode.EndOfWord:
+        // On end of input we dont advance tape but thread moves on
+        // if at end of line boundary
+        // check if next is end of input
+        nextCh = this.nextCh(tape);
+        if (nextCh == "" || (this.multiline && (isNewLineChar(nextCh) || isSpaceChar(nextCh)))) {
           this.addThread(this.jumpBy(thread, 1), list, tape);
         }
         break;
@@ -482,7 +549,9 @@ export class VM {
   }
 
   protected nextCh(tape: Tape): string {
-    return tape.input[tape.index + (this.forward ? 1 : -1)];
+    const next = tape.index + (this.forward ? 1 : -1);
+    if (next < 0 || next >= tape.input.length) return "";
+    return tape.input[next];
   }
 
   protected prevCh(tape: Tape): string {
@@ -534,9 +603,10 @@ export class VM {
       // console.log(`   Thread (${i}): ${thread.offset}(${thread.gen})`);
       const nextMatch = this.stepThread(tape, thread);
       if (nextMatch != null) {
-        if (currMatch == null || (
+        if (
+          currMatch == null ||
           nextMatch.priority > currMatch.priority ||
-          (nextMatch.priority == currMatch.priority && nextMatch.end > currMatch.end))
+          (nextMatch.priority == currMatch.priority && nextMatch.end > currMatch.end)
         ) {
           currMatch = nextMatch;
           break;
@@ -580,7 +650,10 @@ export class VM {
         break;
       case OpCode.End:
         // Return back to calling VM - very similar to a match
-        return new Match(-1, -1, this.startPos, tape.index);
+        const out = new Match(-1, -1, this.startPos, tape.index);
+        out.groups = thread.groups;
+        out.positions = thread.positions;
+        return out;
         break;
       case OpCode.Match:
         // we have a match on this thread so return it
@@ -594,6 +667,8 @@ export class VM {
           currMatch.end = tape.index;
           currMatch.priority = currPriority;
           currMatch.matchIndex = matchIndex;
+          currMatch.groups = thread.groups;
+          currMatch.positions = thread.positions;
         }
         break;
       case OpCode.NegChar:
@@ -668,6 +743,10 @@ export function InstrDebugValue(instr: Instr): string {
       return "$";
     case OpCode.Save:
       return `Save ${instr.args[0]}`;
+    case OpCode.GroupStart:
+      return `GroupStart ${instr.args[0]}`;
+    case OpCode.GroupEnd:
+      return `GroupEnd ${instr.args[0]}`;
     case OpCode.Split:
       return `Split ${instr.args.join(", ")}`;
     case OpCode.Jump:

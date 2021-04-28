@@ -5,6 +5,8 @@ export enum RegexType {
   ANY,
   START_OF_INPUT,
   END_OF_INPUT,
+  START_OF_WORD,
+  END_OF_WORD,
   CHAR,
   CHAR_RANGE,
   UNION,
@@ -92,6 +94,32 @@ export class EndOfInput extends Regex {
   }
   reverse(): this {
     return this;
+  }
+}
+
+export class StartOfWord extends Regex {
+  readonly tag: RegexType = RegexType.START_OF_WORD;
+  get debugValue(): string {
+    return "\\b";
+  }
+  reverse(): this {
+    return this;
+  }
+  protected evalREString(): string {
+    return "\\b";
+  }
+}
+
+export class EndOfWord extends Regex {
+  readonly tag: RegexType = RegexType.END_OF_WORD;
+  get debugValue(): string {
+    return "\\b";
+  }
+  reverse(): this {
+    return this;
+  }
+  protected evalREString(): string {
+    return "\\b";
   }
 }
 
@@ -210,7 +238,7 @@ export class Cat extends Regex {
   }
 
   add(child: Regex): this {
-    if (child.tag != RegexType.CAT) {
+    if (child.tag != RegexType.CAT || child.groupIndex >= 0) {
       this.children.push(child);
     } else {
       for (const opt of (child as Cat).children) {
@@ -255,7 +283,7 @@ export class Union extends Regex {
   }
 
   add(option: Regex): this {
-    if (option.tag != RegexType.UNION) {
+    if (option.tag != RegexType.UNION || option.groupIndex >= 0) {
       this.options.push(option);
     } else {
       for (const opt of (option as Union).options) {
