@@ -36,7 +36,10 @@ describe("Regex Tests", () => {
   });
 
   test("Test Escape Chars", () => {
-    testRegex("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", ["Cat", ["\n", "\r", "\t", "\f", "\b", "\\", '"', "'", "2", "y"]]);
+    testRegex("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", [
+      "Cat",
+      ["\\n", "\\r", "\\t", "\\f", "\\b", "\\", '"', "'", "2", "y"],
+    ]);
   });
 
   test("Test Cat", () => {

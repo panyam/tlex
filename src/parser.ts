@@ -220,6 +220,10 @@ export class RegexParser {
       if (neg) subExpr = new Neg(subExpr);
       // Do the next before the previous call if we want group
       // index to match outer brackets first
+      if (subExpr.groupIndex >= 0) {
+        // Already set so create cat
+        subExpr = new Cat(subExpr);
+      }
       subExpr.groupIndex = groupIndex;
       stack.push(subExpr);
     }

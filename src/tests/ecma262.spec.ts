@@ -1,67 +1,37 @@
-const util = require("util");
 import * as TSU from "@panyam/tsutils";
-import { Tape } from "../tape";
-import { Rule, Regex } from "../core";
-import { RegexParser } from "../parser";
-import { parse, compile } from "./utils";
-import { Prog, Match } from "../vm";
-import { InstrDebugValue, VM } from "../pikevm";
+const util = require("util");
+import fs from "fs";
+import { Rule } from "../core";
+import { parse, execute, runMatchTest } from "./utils";
+import { Match } from "../lexer";
 
-type REType = string | (Rule | string)[];
-function execute(configs: any, repattern: REType, input: string, expected: any): Match[] {
-  const found = [] as Match[];
-  let prog: Prog;
-  if (typeof repattern == "string") {
-    prog = compile(null, repattern);
+function stringRep(ch: number): string {
+  return String.fromCharCode(ch)
+    .replace("\n", "\\n")
+    .replace("\0", "\\0")
+    .replace("\r", "\\r")
+    .replace("\t", "\\t")
+    .replace("\f", "\\f")
+    .replace("\b", "\\b");
+}
+
+function range(start: number, end: number, delta = 1): number[] {
+  const out = [] as number[];
+  if (start < end) {
+    if (delta < 0) delta = -delta;
+    for (let i = start; i < end; i += delta) {
+      out.push(i);
+    }
   } else {
-    prog = compile(null, ...repattern);
+    if (delta > 0) delta = -delta;
+    for (let i = start; i > end; i -= delta) {
+      out.push(i);
+    }
   }
-  const vm = new VM(prog, 0, -1, true, configs);
-  const tape = new Tape(input);
-  let next = vm.match(tape);
-  while (next != null && next.end > next.start) {
-    found.push(next);
-    next = vm.match(tape);
-  }
-  if (configs.debug) {
-    console.log(
-      "Prog: \n",
-      `${prog.debugValue(InstrDebugValue).join("\n")}`,
-      "\n\nRE: ",
-      repattern,
-      "\n\nInput: ",
-      input,
-      "\n\nFound: ",
-      util.inspect(found, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-    );
-    console.log(
-      "\n\nExpected: ",
-      util.inspect(expected, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-    );
-  }
-  return found;
+  return out;
 }
 
-function testMatchD(repattern: REType, input: string, ...expected: number[]): Match[] {
-  return testMatchO({ debug: true }, repattern, input, ...expected);
-}
-
-function testMatch(repattern: REType, input: string, ...expected: number[]): Match[] {
-  return testMatchO({ debug: false }, repattern, input, ...expected);
-}
-
-function testMatchO(configs: any, repattern: REType, input: string, ...expected: number[]): Match[] {
-  const found = execute(configs, repattern, input, expected);
+function expectMatchIndexes(found: Match[], ...expected: number[]): Match[] {
   if (found.length == 0) expect(expected.length).toBe(0);
   else expect(found.length).toBe(expected.length - 1);
   for (let i = 0; i < found.length; i++) {
@@ -69,35 +39,6 @@ function testMatchO(configs: any, repattern: REType, input: string, ...expected:
     expect(found[i].end).toBe(expected[i + 1]);
     // expect(found[i].matchIndex).toBe(expected[i][2]);
   }
-  return found;
-}
-
-function testMatchEx(configs: any, repattern: REType, input: string, expected: any[]): Match[] {
-  const found = execute(configs, repattern, input, expected);
-  return found;
-}
-
-function testRegex(input: string, expected: any, debug = false, enforce = true): Regex {
-  const found = parse(input);
-  if (debug) {
-    console.log(
-      "Found Value: \n",
-      util.inspect(found.debugValue, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-      "\nExpected Value: \n",
-      util.inspect(expected, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-    );
-  }
-  if (enforce) expect(found.debugValue).toEqual(expected);
   return found;
 }
 
@@ -188,38 +129,37 @@ describe("ECMA Tests - Simple Parsing Error Tests", () => {
 
 describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
   test(caseLabel("15.10.2.10_A1.1_T1"), () => {
-    testMatch("\\t", "\u0009", 0, 1);
-    testMatch("\\t\\t", "\u0009\u0009b", 0, 2);
+    runMatchTest("./cases/ecma262/15.10.2.10_A1.1_T1.test");
   });
   test(caseLabel("15.10.2.10_A1.2_T1"), () => {
-    testMatch("\\n", "\u000a", 0, 1);
-    testMatch("\\n\\n", "\u000a\u000ab", 0, 2);
+    expectMatchIndexes(execute({}, "\u000a", /\n/), 0, 1);
+    expectMatchIndexes(execute({}, "\u000a\u000ab", /\n\n/), 0, 2);
   });
   test(caseLabel("15.10.2.10_A1.3_T1"), () => {
-    testMatch("\\v", "\u000B", 0, 1);
-    testMatch("\\v\\v", "\u000B\u000Bb", 0, 2);
+    expectMatchIndexes(execute({}, "\u000B", /\v/), 0, 1);
+    expectMatchIndexes(execute({}, "\u000B\u000Bb", /\v\v/), 0, 2);
   });
   test(caseLabel("15.10.2.10_A1.4_T1"), () => {
-    testMatch("\\f", "\u000C", 0, 1);
-    testMatch("\\f\\f", "\u000C\u000Cb", 0, 2);
+    expectMatchIndexes(execute({}, "\u000C", "\\f"), 0, 1);
+    expectMatchIndexes(execute({}, "\u000C\u000Cb", /\f\f/), 0, 2);
   });
   test(caseLabel("15.10.2.10_A1.D_T1"), () => {
-    testMatch("\\r", "\u000D", 0, 1);
-    testMatch("\\r\\r", "\u000D\u000Db", 0, 2);
+    expectMatchIndexes(execute({}, "\u000D", /\r/), 0, 1);
+    expectMatchIndexes(execute({}, "\u000D\u000Db", /\r\r/), 0, 2);
   });
   test(caseLabel("15.10.2.10_A2.1_T1"), () => {
     // control chars A-Z
     for (let alpha = 0x0041; alpha <= 0x005a; alpha++) {
       const str = String.fromCharCode(alpha % 32);
       const re = "\\c" + String.fromCharCode(alpha);
-      testMatch(re, str, 0, 1);
+      expectMatchIndexes(execute({}, str, re), 0, 1);
     }
   });
   test(caseLabel("15.10.2.10_A3.1_T1 _ Test strings with equal hex and unicode strings"), () => {
-    testMatch("\\x00", "\u0000", 0, 1);
-    testMatch("\\x01", "\u0001", 0, 1);
-    testMatch("\\x0A", "\u000A", 0, 1);
-    testMatch("\\xFF", "\u00FF", 0, 1);
+    expectMatchIndexes(execute({}, "\u0000", "\\x00"), 0, 1);
+    expectMatchIndexes(execute({}, "\u0001", "\\x01"), 0, 1);
+    expectMatchIndexes(execute({}, "\u000A", "\\x0A"), 0, 1);
+    expectMatchIndexes(execute({}, "\u00FF", "\\xFF"), 0, 1);
   });
   test(caseLabel("15.10.2.10_A3.1_T2 _ Test strings with equal hex and unicode strings"), () => {
     let hex = [
@@ -279,7 +219,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
       "Z",
     ];
     // check lower case
-    hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+    hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
 
     hex = [
       "\\x61",
@@ -338,16 +278,16 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
       "z",
     ];
     // Check upper case
-    hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+    hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
   });
   test(caseLabel("15.10.2.10_A4.1_T1 : Regex and input contain unicode symbols"), () => {
-    testMatch("\\u0000", "\u0000", 0, 1);
-    testMatch("\\u0001", "\u0001", 0, 1);
-    testMatch("\\u000A", "\u000a", 0, 1);
-    testMatch("\\u000f", "\u000f", 0, 1);
-    testMatch("\\u00Ff", "\u00fF", 0, 1);
-    testMatch("\\u0FfF", "\u0fFf", 0, 1);
-    testMatch("\\uFFfF", "\uFfFf", 0, 1);
+    expectMatchIndexes(execute({}, "\u0000", /\u0000/), 0, 1);
+    expectMatchIndexes(execute({}, "\u0001", /\u0001/), 0, 1);
+    expectMatchIndexes(execute({}, "\u000a", /\u000A/), 0, 1);
+    expectMatchIndexes(execute({}, "\u000f", /\u000f/), 0, 1);
+    expectMatchIndexes(execute({}, "\u00fF", /\u00Ff/), 0, 1);
+    expectMatchIndexes(execute({}, "\u0fFf", /\u0FfF/), 0, 1);
+    expectMatchIndexes(execute({}, "\uFfFf", /\uFFfF/), 0, 1);
   });
   test(caseLabel("15.10.2.10_A4.1_T2 : Tested string include ENGLISH CAPITAL ALPHABET and english small"), () => {
     let hex = [
@@ -409,7 +349,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
     ];
 
     // check lower case
-    hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+    hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
 
     hex = [
       "\\u0061",
@@ -468,7 +408,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
       "z",
     ];
     // Check upper case
-    hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+    hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
   });
   test(
     caseLabel(
@@ -548,7 +488,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
       ];
 
       // check lower case
-      hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+      hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
 
       hex = [
         "\\u0430",
@@ -623,7 +563,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
       ];
 
       // Check upper case
-      hex.forEach((h, index) => testMatch(h, character[index], 0, 1));
+      hex.forEach((h, index) => expectMatchIndexes(execute({}, character[index], h), 0, 1));
     },
   );
   test(caseLabel("15.10.2.10_A5.1_T1 : Tested string is \"~`!@#$%^&*()-+={[}]|\\\\:;'<,>./?\" + '\"'"), () => {
@@ -631,11 +571,11 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
     for (let k = 0; k < non_ident.length; ++k) {
       // \\Z where Z is above will just match to Z
       const re = "\\" + non_ident[k];
-      testMatch(re, non_ident[k], 0, 1);
+      expectMatchIndexes(execute({}, non_ident[k], re), 0, 1);
     }
   });
   test(caseLabel("15.10.2.11_A1_T1 : Test null chars"), () => {
-    testMatch("\0", "\u0000", 0, 1);
+    expectMatchIndexes(execute({}, "\u0000", /\0/));
   });
 });
 
@@ -644,22 +584,22 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
 // For more details on what the tests are checking for parity
 describe("ECMA Tests - Numbered Group Matching Tests", () => {
   test.skip(caseLabel("15.10.2.11_A1_T4"), () => {
-    testMatch("(A)\\1", "AA", 0, 2);
+    expectMatchIndexes(execute({}, "AA", /(A)\1/), 0, 2);
   });
   test.skip(caseLabel("15.10.2.11_A1_T5"), () => {
-    testMatch("\\1(A)", "AA", 0, 2);
+    expectMatchIndexes(execute({}, "AA", /\1(A)/), 0, 2);
   });
   test.skip(caseLabel("15.10.2.11_A1_T6"), () => {
-    testMatch("(A)\\1(B)\\2", "AABB", 0, 4);
+    expectMatchIndexes(execute({}, "AABB", /(A)\1(B)\2/), 0, 4);
   });
   test.skip(caseLabel("15.10.2.11_A1_T7"), () => {
-    testMatch("\\1(A)\\2(B)", "AABB", 0, 4);
+    expectMatchIndexes(execute({}, "AABB", /\1(A)\2(B)/), 0, 4);
   });
   test.skip(caseLabel("15.10.2.11_A1_T8"), () => {
-    testMatch("((((((((((A))))))))))\\1\\2\\3\\4\\5\\6\\7\\8\\9\\10", "AAAAAAAAAAA", 0, 11);
+    expectMatchIndexes(execute({}, "AAAAAAAAAAA", /((((((((((A))))))))))\1\2\3\4\5\6\7\8\9\10/), 0, 11);
   });
   test.skip(caseLabel("15.10.2.11_A1_T9"), () => {
-    testMatch("((((((((((A))))))))))\\10\\9\\8\\7\\6\\5\\4\\3\\2\\1", "AAAAAAAAAAA", 0, 11);
+    expectMatchIndexes(execute({}, "AAAAAAAAAAA", /((((((((((A))))))))))\10\9\8\7\6\5\4\3\2\1/), 0, 11);
   });
 });
 
@@ -667,120 +607,121 @@ describe("ECMA Tests - Character Classes", () => {
   test(caseLabel("15.10.2.12_A3_T5"), () => {
     const input = "_0123456789_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (let i = 0; i < input.length; i++) {
-      testMatch("\\w", input[i], 0, 1);
+      expectMatchIndexes(execute({}, input[i], /\w/), 0, 1);
     }
   });
   test(caseLabel("15.10.2.12_A4_T5"), () => {
     let input = "_0123456789_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (let i = 0; i < input.length; i++) {
       // should not match
-      testMatch("\\W", input[i]);
+      expectMatchIndexes(execute({}, input[i], /\W/));
     }
 
     // All should match
     input = "\f\n\r\t\v~`!@#$%^&*()-+={[}]|\\:;'<,>./? ";
     for (let i = 0; i < input.length; i++) {
-      testMatch("\\W", input[i], 0, 1);
+      expectMatchIndexes(execute({}, input[i], /\W/), 0, 1);
     }
   });
   test(caseLabel("15.10.2.13_A1_T1 and 15.10.2.13_A1_T2"), () => {
-    testMatch("[]a", "\0a\0a");
-    testMatch("a[]", "\0a\0a");
+    expectMatchIndexes(execute({}, "\0a\0a", /[]a/));
+    expectMatchIndexes(execute({}, "\0a\0a", /a[]/));
   });
   test(caseLabel("15.10.2.13_A1_T6"), () => {
-    testMatch("ab[ercst]de", "abcde", 0, 5);
+    expectMatchIndexes(execute({}, "abcde", /ab[ercst]de/), 0, 5);
   });
   test(caseLabel("15.10.2.13_A1_T7"), () => {
-    testMatch("ab[erst]de", "abcde");
+    expectMatchIndexes(execute({}, "abcde", /ab[erst]de/));
   });
   test(caseLabel("15.10.2.13_A1_T8"), () => {
-    testMatch("[d-h]+", "defghijkl", 0, 5);
+    expectMatchIndexes(execute({}, "defghijkl", /[d-h]+/), 0, 5);
   });
   test(caseLabel("15.10.2.13_A1_T9"), () => {
-    testMatch("[1234567].{2}", "6defghijkl", 0, 3);
+    const found = execute({}, "6defghijkl", /[1234567].{2}/);
+    expectMatchIndexes(found, 0, 3);
   });
   test(caseLabel("15.10.2.13_A1_T10"), () => {
-    testMatch("[a-c\\d]+", "abc324234\n", 0, 9);
+    expectMatchIndexes(execute({}, "abc324234\n", /[a-c\d]+/), 0, 9);
   });
   test(caseLabel("15.10.2.13_A1_T11"), () => {
-    testMatch("ab[.]?c", "abc", 0, 3);
+    expectMatchIndexes(execute({}, "abc", /ab[.]?c/), 0, 3);
   });
   test(caseLabel("15.10.2.13_A1_T12"), () => {
-    testMatch("a[b]?c", "abc", 0, 3);
+    expectMatchIndexes(execute({}, "abc", /a[b]?c/), 0, 3);
   });
   test.skip(caseLabel("15.10.2.13_A1_T14"), () => {
-    testMatch("[*&$]{,3}", "*&$");
+    expectMatchIndexes(execute({}, "*&$", /[*&$]{,3}/));
   });
   test(caseLabel("15.10.2.13_A1_T15"), () => {
-    testMatch("[\\d][\\n][^\\d]", "1\nb3\nd", 0, 3, 6);
+    expectMatchIndexes(execute({}, "1\nb3\nd", /[\d][\n][^\d]/), 0, 3, 6);
   });
   test(caseLabel("15.10.2.13_A1_T17"), () => {
-    testMatch("[\\d][\\n][^\\d]", "1\nb3\nd", 0, 3, 6);
+    expectMatchIndexes(execute({}, "1\nb3\nd", /[\d][\n][^\d]/), 0, 3, 6);
   });
 });
 describe("ECMA Tests - Look Ahead/Look Back assertion test", () => {
   test(caseLabel("15.10.2.13_A1_T3"), () => {
-    const re = "q[ax-zb](?=\\s+)";
-    testMatch(re, "qy ", 0, 2);
+    const re = /q[ax-zb](?=\s+)/;
+    expectMatchIndexes(execute({}, "qy ", re), 0, 2);
   });
   test(caseLabel("15.10.2.13_A1_T4"), () => {
-    const re = "q[ax-zb](?=\\s+)";
-    testMatch(re, "qy ", 0, 2);
+    const re = /q[ax-zb](?=\s+)/;
+    expectMatchIndexes(execute({}, "qy ", re), 0, 2);
   });
   test(caseLabel("15.10.2.13_A1_T5"), () => {
-    const re = "q[ax-zb](?=\\s+)";
-    testMatch(re, "qa\t  qy ", 0, 2);
+    const re = /q[ax-zb](?=\s+)/;
+    expectMatchIndexes(execute({}, "qa\t  qy ", re), 0, 2);
   });
 });
 
 describe("ECMA Tests - More Char Ranges", () => {
   test(caseLabel("15.10.2.13_A2_T1"), () => {
     const re = "[^]a";
-    testMatch(re, "\naa ", 0, 2);
-    testMatch(re, "aaa", 0, 2);
-    testMatch(re, "a");
+    expectMatchIndexes(execute({}, "\naa ", re), 0, 2);
+    expectMatchIndexes(execute({}, "aaa", re), 0, 2);
+    expectMatchIndexes(execute({}, "a", re));
   });
   test(caseLabel("15.10.2.13_A2_T2"), () => {
     const re = "a[^]";
-    testMatch(re, "aa\n", 0, 2);
-    testMatch(re, "aaa", 0, 2);
-    testMatch(re, "a");
+    expectMatchIndexes(execute({}, "aa\n", re), 0, 2);
+    expectMatchIndexes(execute({}, "aaa", re), 0, 2);
+    expectMatchIndexes(execute({}, "a", re));
   });
   test(caseLabel("15.10.2.13_A2_T3"), () => {
     const re = "a[^b-z]\\s+";
-    testMatch(re, "aY aA    aB  ", 0, 3, 9, 13);
-    testMatch(re, "aY ab    aB  ", 0, 3);
-    testMatch(re, "ab ab    aB  ");
+    expectMatchIndexes(execute({}, "aY aA    aB  ", re), 0, 3, 9, 13);
+    expectMatchIndexes(execute({}, "aY ab    aB  ", re), 0, 3);
+    expectMatchIndexes(execute({}, "ab ab    aB  ", re));
   });
   test(caseLabel("15.10.2.13_A2_T4"), () => {
     const re = "[^\\b]+";
-    testMatch(re, "easy\bto\u0008ride", 0, 4);
+    expectMatchIndexes(execute({}, "easy\bto\u0008ride", re), 0, 4);
   });
   test(caseLabel("15.10.2.13_A2_T5"), () => {
     const re = "a[^1-9]c";
-    testMatch(re, "abcdef", 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", re), 0, 3);
   });
   test(caseLabel("15.10.2.13_A2_T6"), () => {
     const re = "a[^b]c";
-    testMatch(re, "abcdef");
+    expectMatchIndexes(execute({}, "abcdef", re));
   });
   test(caseLabel("15.10.2.13_A2_T7"), () => {
-    testMatch("[^a-z]{4}", "%&*@ghi", 0, 4);
+    expectMatchIndexes(execute({}, "%&*@ghi", /[^a-z]{4}/), 0, 4);
   });
   test(caseLabel("15.10.2.13_A2_T8"), () => {
-    testMatch("[^]", "abcdef", 0, 1, 2, 3, 4, 5, 6);
+    expectMatchIndexes(execute({}, "abcdef", /[^]/), 0, 1, 2, 3, 4, 5, 6);
   });
   test(caseLabel("15.10.2.13_A3_T1"), () => {
-    testMatch(".[\\b].", "c\bd", 0, 3);
+    expectMatchIndexes(execute({}, "c\bd", /.[\b]./), 0, 3);
   });
   test(caseLabel("15.10.2.13_A3_T2"), () => {
-    testMatch("c[\\b]{3}d", "c\b\b\bdef", 0, 5);
+    expectMatchIndexes(execute({}, "c\b\b\bdef", /c[\b]{3}d/), 0, 5);
   });
   test(caseLabel("15.10.2.13_A3_T3"), () => {
-    testMatch("[^\\[\\b\\]]+", "abc\bdef", 0, 3);
+    expectMatchIndexes(execute({}, "abc\bdef", /[^\[\b\]]+/), 0, 3);
   });
   test(caseLabel("15.10.2.13_A3_T4"), () => {
-    testMatch("[^\\[\\b\\]]+", "abcdef", 0, 6);
+    expectMatchIndexes(execute({}, "abcdef", /[^\[\b\]]+/), 0, 6);
   });
 });
 
@@ -846,87 +787,87 @@ describe("ECMA Tests - Section 15.10.2.15", () => {
 
 describe("ECMA Tests - Section 15.10.2.3 and 15.10.2.5 - Differences here would be by matching longest rather than first alternative", () => {
   test(caseLabel("15.10.2.3_A1_T1"), () => {
-    testMatch("a|ab", "abc", 0, 1);
+    expectMatchIndexes(execute({}, "abc", /a|ab/), 0, 1);
   });
   test(caseLabel("15.10.2.3_A1_T2"), () => {
-    testMatch("((a)|(ab))((c)|(bc))", "abbcac", 0, 4, 6);
+    expectMatchIndexes(execute({}, "abbcac", "((a)|(ab))((c)|(bc))"), 0, 4, 6);
   });
   test.skip(caseLabel("15.10.2.3_A1_T6, T7, T8 - Case insensitivity not yet supported"), () => {
-    testMatch("ab|cd|ef", "AEKFCD", 0, 4, 6);
+    expectMatchIndexes(execute({}, "AEKFCD", "ab|cd|ef"), 0, 4, 6);
   });
   test.skip(caseLabel("15.10.2.3_A1_T9- Case insensitivity and Non capturing groups not supported"), () => {
-    testMatch("(?:ab|cd)+|ef", "AEKeFCDab");
+    expectMatchIndexes(execute({}, "AEKeFCDab", "(?:ab|cd)+|ef"));
   });
   test(caseLabel("15.10.2.3_A1_T11"), () => {
-    testMatch("11111|111", "1111111111111111", 0, 5, 10, 15);
+    expectMatchIndexes(execute({}, "1111111111111111", "11111|111"), 0, 5, 10, 15);
   });
   test(caseLabel("15.10.2.3_A1_T12"), () => {
-    testMatch("xyz|...", "abc", 0, 3);
+    expectMatchIndexes(execute({}, "abc", "xyz|..."), 0, 3);
   });
   // Need to find a way to return submatches too
   test(caseLabel("15.10.2.3_A1_T13"), () => {
-    testMatch("(.)..", "abc", 0, 3);
+    expectMatchIndexes(execute({}, "abc", "(.).."), 0, 3);
   });
   test(caseLabel("15.10.2.3_A1_T14"), () => {
-    testMatch(".+: gr(a|e)y", "color: grey", 0, 11);
+    expectMatchIndexes(execute({}, "color: grey", ".+: gr(a|e)y"), 0, 11);
   });
   test(caseLabel("15.10.2.3_A1_T15"), () => {
-    testMatch("(Robert)|(Bobby)|(Bob)|(Rob)", "BobRobertRobBobby", 0, 3, 9, 12, 17);
+    expectMatchIndexes(execute({}, "BobRobertRobBobby", "(Robert)|(Bobby)|(Bob)|(Rob)"), 0, 3, 9, 12, 17);
   });
   test(caseLabel("15.10.2.5_A1_T1"), () => {
-    testMatch("a[a-z]{2,4}", "abcdefghi", 0, 5);
+    expectMatchIndexes(execute({}, "abcdefghi", "a[a-z]{2,4}"), 0, 5);
   });
   test(caseLabel("15.10.2.5_A1_T2 - Needs to be fixed to handle greedy"), () => {
-    testMatch("a[a-z]{2,4}?", "abcdefghi", 0, 3);
+    expectMatchIndexes(execute({}, "abcdefghi", "a[a-z]{2,4}?"), 0, 3);
   });
   test(caseLabel("15.10.2.5_A1_T3"), () => {
-    testMatch("(aa|aabaac|ba|b|c)*", "aabaac", 0, 4);
+    expectMatchIndexes(execute({}, "aabaac", "(aa|aabaac|ba|b|c)*"), 0, 4);
   });
   test(caseLabel("15.10.2.5_A1_T4"), () => {
-    testMatch("(z)((a+)?(b+)?(c))*", "zaacbbbcac", 0, 10);
+    expectMatchIndexes(execute({}, "zaacbbbcac", "(z)((a+)?(b+)?(c))*"), 0, 10);
   });
   test.skip(caseLabel("15.10.2.5_A1_T5"), () => {
     // Not working yet
-    testMatch("(a*)b\\1+", "aabaac", 0, 5);
+    expectMatchIndexes(execute({}, "aabaac", "(a*)b\\1+"), 0, 5);
   });
 });
 
 describe("ECMA Tests - Section 15.10.2.6", () => {
   test(caseLabel("15.10.2.6_A1_T1,T2"), () => {
     // /s$/.test("pairs\nmakes\tdouble");
-    testMatch("s+$|\n", "sss\nss\nsssss\nsssss", 0, 3, 4, 6, 7, 12, 13, 18);
+    expectMatchIndexes(execute({}, "sss\nss\nsssss\nsssss", "s+$|\n"), 0, 3, 4, 6, 7, 12, 13, 18);
   });
   test(caseLabel("15.10.2.6_A1_T3,T4,T5"), () => {
-    testMatchO({ multiline: false }, "s+$|.", "s\nssssss", 0, 1, 2, 8);
-    testMatchO({ multiline: false }, "es$|.", "s\n\u0065s", 0, 1, 2, 4);
+    expectMatchIndexes(execute({}, "s\nssssss", /s+$|./ms), 0, 1, 2, 8);
+    expectMatchIndexes(execute({}, "s\n\u0065s", /es$|./ms), 0, 1, 2, 4);
   });
   test(caseLabel("15.10.2.6_A2_T1,T2"), () => {
-    testMatchO({ multiline: false }, "^hello|.", "\nhello", 0, 1, 2, 3, 4, 5, 6);
-    testMatch("^hello|.", "\nhello", 0, 1, 6);
+    expectMatchIndexes(execute({}, "\nhello", /^hello|./s), 0, 1, 2, 3, 4, 5, 6);
+    expectMatchIndexes(execute({}, "\nhello", /^hello|./ms), 0, 1, 6);
   });
   test(caseLabel("15.10.2.6_A2_T3,T4"), () => {
-    testMatchO({ multiline: false }, "^p[a-z]|.", "\npaisa", 0, 1, 2, 3, 4, 5, 6);
-    testMatchO({ multiline: true }, "^p[a-z]|.", "\npaisa", 0, 1, 3, 4, 5, 6);
+    expectMatchIndexes(execute({}, "\npaisa", /^p[a-z]|./s), 0, 1, 2, 3, 4, 5, 6);
+    expectMatchIndexes(execute({}, "\npaisa", /^p[a-z]|./ms), 0, 1, 3, 4, 5, 6);
   });
   test(caseLabel("15.10.2.6_A2_T5"), () => {
-    testMatchO({ multiline: false }, "^[^p].|.", "\npaisa\nhola", 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-    testMatchO({ multiline: true }, "^[^p].|.", "\npaisa\nhola", 0, 2, 3, 4, 5, 6, 7, 9, 10, 11);
+    expectMatchIndexes(execute({}, "\npaisa\nhola", /^[^p].|./ms), 0, 2, 3, 4, 5, 6, 7, 9, 10, 11);
+    expectMatchIndexes(execute({}, "\npaisa\nhola", /^[^p].|./s), 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
   });
   test(caseLabel("15.10.2.6_A2_T6"), () => {
-    testMatchO({ multiline: true }, "^abc", "abcabcdefgh", 0, 3);
+    expectMatchIndexes(execute({}, "abcabcdefgh", /^abc/m), 0, 3);
   });
   test.skip(caseLabel("15.10.2.6_A2_T7"), () => {
     // Not correct
-    testMatchO({ multiline: true }, "^..^e", "ab\ncde", 0, 2);
+    expectMatchIndexes(execute({}, "ab\ncde", /^..^e/m), 0, 2);
   });
   test(caseLabel("15.10.2.6_A2_T8"), () => {
-    testMatchO({ multiline: true }, "^xxx", "yyyyy");
+    expectMatchIndexes(execute({}, "yyyyy", /^xxx/m));
   });
   test(caseLabel("15.10.2.6_A2_T9"), () => {
-    testMatchO({ multiline: true }, "^\\^+", "^^^x", 0, 3);
+    expectMatchIndexes(execute({}, "^^^x", /^\^+/m), 0, 3);
   });
   test(caseLabel("15.10.2.6_A2_T10"), () => {
-    testMatchO({ multiline: true }, "^\\d+|\\n", "12345\n67890", 0, 5, 6, 11);
+    expectMatchIndexes(execute({}, "12345\n67890", /^\d+|\n/m), 0, 5, 6, 11);
   });
 });
 
@@ -939,7 +880,7 @@ describe.skip("ECMA Tests - Word Boundary Tests - 15.10.2.6_A3,A4", () => {
     // components are implemented - just parsing needs to be figured out.
     // Alternatively we may get away with just treating \b as a "mix" of
     // ^ and $ so that a \b will be used for characters "before" and "after"?
-    testMatch("\bhello|.", "hellohello", 0, 5, 6, 7, 8, 9, 10);
+    expectMatchIndexes(execute({}, "hellohello", /\bhello|./), 0, 5, 6, 7, 8, 9, 10);
   });
 
   test(caseLabel("15.10.2.6_A4_T1 to -T8 Inverted word boundary - \\B"), () => {
@@ -949,129 +890,129 @@ describe.skip("ECMA Tests - Word Boundary Tests - 15.10.2.6_A3,A4", () => {
 
 describe("ECMA Tests - Multiple boundary markers (^$\\b\\B) - 15.10.2.6_A5", () => {
   test(caseLabel("15.10.2.6_A5_T1"), () => {
-    testMatch("^^^^^hello$$$$$", "hello", 0, 5);
+    expectMatchIndexes(execute({}, "hello", "^^^^^hello$$$$$"), 0, 5);
   });
   test.skip(caseLabel("15.10.2.6_A5_T2"), () => {
-    testMatch("\\B\\B\\Bbot\\b\\b\\b|.", "robot wall-e", 0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12);
+    expectMatchIndexes(execute({}, "robot wall-e", /\B\B\Bbot\b\b\b|./), 0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12);
   });
 });
 
 describe("ECMA Tests - Assertions in combination - 15.10.2.6", () => {
   test(caseLabel("15.10.2.6_A6_T1"), () => {
-    testMatch("^.*?$", "hello world", 0, 11);
+    expectMatchIndexes(execute({}, "hello world", "^.*?$"), 0, 11);
   });
   test.skip(caseLabel("15.10.2.6_A6_T2"), () => {
     // TODO - We match *atleast* 1 char by design - should this not be the case?
-    testMatch("^.*?", "hello world");
+    expectMatchIndexes(execute({}, "hello world", "^.*?"));
   });
   test(caseLabel("15.10.2.6_A6_T3"), () => {
-    testMatch("^.*?(:|$)", "hello: world", 0, 6);
+    expectMatchIndexes(execute({}, "hello: world", "^.*?(:|$)"), 0, 6);
   });
   test(caseLabel("15.10.2.6_A6_T4"), () => {
-    testMatch("^.*(:|$)", "hello: world", 0, 12);
+    expectMatchIndexes(execute({}, "hello: world", "^.*(:|$)"), 0, 12);
   });
 });
 
 describe("ECMA Tests - Decimal Digits - 15.10.2.7", () => {
   test(caseLabel("15.10.2.7_A1_T1,T2,T3,T4,T5"), () => {
-    testMatch("\\d{2,4}", "100010", 0, 4, 6);
-    testMatch("\\d{2,4}", "1");
-    testMatch("\\d{2,4}", "100", 0, 3);
+    expectMatchIndexes(execute({}, "100010", "\\d{2,4}"), 0, 4, 6);
+    expectMatchIndexes(execute({}, "1", "\\d{2,4}"));
+    expectMatchIndexes(execute({}, "100", "\\d{2,4}"), 0, 3);
   });
   test(caseLabel("15.10.2.7_A1_T6,T7"), () => {
-    testMatch("\\d{2,4}", "0\u0031\u0031b", 0, 3);
-    testMatch("\\d{2,4}", "0\u0031\u00312b", 0, 4);
+    expectMatchIndexes(execute({}, "0\u0031\u0031b", "\\d{2,4}"), 0, 3);
+    expectMatchIndexes(execute({}, "0\u0031\u00312b", "\\d{2,4}"), 0, 4);
   });
   test(caseLabel("15.10.2.7_A1_T8,T9,T10"), () => {
-    testMatch("b{2,4}c", "bbbcd", 0, 4);
-    testMatch("b{100,150}c", "bcd");
-    testMatch("b{0,150}c", "bbbbbbbcd", 0, 8);
+    expectMatchIndexes(execute({}, "bbbcd", "b{2,4}c"), 0, 4);
+    expectMatchIndexes(execute({}, "bcd", "b{100,150}c"));
+    expectMatchIndexes(execute({}, "bbbbbbbcd", "b{0,150}c"), 0, 8);
   });
 
   test(caseLabel("15.10.2.7_A2_T1,T2,T3"), () => {
-    testMatch("\\w{3}\\d?|.", "xabcde123", 0, 3, 7, 8, 9);
-    testMatch("b{2}c|.", "bbbc", 0, 1, 4);
+    expectMatchIndexes(execute({}, "xabcde123", /\w{3}\d?|./), 0, 3, 7, 8, 9);
+    expectMatchIndexes(execute({}, "bbbc", /b{2}c|./), 0, 1, 4);
   });
 
   test(caseLabel("15.10.2.7_A3_T1-T14"), () => {
-    testMatch("\\s+java\\s+|.", "x    java    ", 0, 1, 13);
-    testMatch("\\s+java\\s+|.", "\t    java    ", 0, 13);
-    testMatch("\\s+java\\s+", "\t    javax    ");
-    testMatch("\\s+java\\s+", "java\n");
-    testMatch("[a-z]+\\d+|.", "5 x2\n", 0, 1, 2, 4, 5);
-    testMatch("[a-z]+(\\d+)|.", "abc1234\n", 0, 7, 8);
-    testMatch("b+c|.", "bbbc", 0, 4);
-    testMatch("b+c", "d");
-    testMatch("b+c", "bc", 0, 2);
-    testMatch("b+b+b+", "bbbbbb", 0, 6);
-    testMatch("(b+)(b+)(b+)", "bbbbbb", 0, 6);
-    testMatch("b+b*", "bbbbbb", 0, 6);
-    testMatch("(b+)((b)+)", "bbbbbb", 0, 6);
-    testMatch("b+b*", "bbbbbb", 0, 6);
+    expectMatchIndexes(execute({}, "x    java    ", /\s+java\s+|./), 0, 1, 13);
+    expectMatchIndexes(execute({}, "\t    java    ", /\s+java\s+|./), 0, 13);
+    expectMatchIndexes(execute({}, "\t    javax    ", /\s+java\s+/));
+    expectMatchIndexes(execute({}, "java\n", /\s+java\s+/));
+    expectMatchIndexes(execute({}, "5 x2\n", /[a-z]+\d+|./s), 0, 1, 2, 4, 5);
+    expectMatchIndexes(execute({}, "abc1234\n", /[a-z]+(\d+)|./s), 0, 7, 8);
+    expectMatchIndexes(execute({}, "bbbc", /b+c|./), 0, 4);
+    expectMatchIndexes(execute({}, "d", /b+c/));
+    expectMatchIndexes(execute({}, "bc", /b+c/), 0, 2);
+    expectMatchIndexes(execute({}, "bbbbbb", /b+b+b+/), 0, 6);
+    expectMatchIndexes(execute({}, "bbbbbb", /(b+)(b+)(b+)/), 0, 6);
+    expectMatchIndexes(execute({}, "bbbbbb", /b+b*/), 0, 6);
+    expectMatchIndexes(execute({}, "bbbbbb", "(b+)((b)+)"), 0, 6);
+    expectMatchIndexes(execute({}, "bbbbbb", /b+b*/), 0, 6);
   });
 
   test(caseLabel("15.10.2.7_A4_T1-T9"), () => {
-    testMatch('[^"]*', '"beast"-nickname');
-    testMatch('[^"]*', 'alice said: "don\'t"', 0, 12);
-    testMatch('[^"]*', "abc'def'ghi", 0, 11);
-    testMatch('[^"]*', 'alice "', 0, 6);
-    testMatch('[^"]*', "alice \u0022", 0, 6);
-    testMatch(`.*(["'][^"']*["'])`, "alice \u0022sweep\u0022", 0, 13);
-    testMatch(`(["'][^"']*["'])`, "\u0022sweep\u0022", 0, 7);
-    testMatch(`(["'][^"']*["'])`, "'sweep\"", 0, 7);
-    testMatch(`(["'][^"']*["'])`, "'hello");
-    testMatch(`(["'][^"']*["'])`, "''", 0, 2);
-    testMatch(`(["'][^"']*["'])`, '""', 0, 2);
+    expectMatchIndexes(execute({}, '"beast"-nickname', '[^"]*'));
+    expectMatchIndexes(execute({}, 'alice said: "don\'t"', '[^"]*'), 0, 12);
+    expectMatchIndexes(execute({}, "abc'def'ghi", '[^"]*'), 0, 11);
+    expectMatchIndexes(execute({}, 'alice "', '[^"]*'), 0, 6);
+    expectMatchIndexes(execute({}, "alice \u0022", '[^"]*'), 0, 6);
+    expectMatchIndexes(execute({}, "alice \u0022sweep\u0022", /.*(["'][^"']*["'])/), 0, 13);
+    expectMatchIndexes(execute({}, "\u0022sweep\u0022", `(["'][^"']*["'])`), 0, 7);
+    expectMatchIndexes(execute({}, "'sweep\"", `(["'][^"']*["'])`), 0, 7);
+    expectMatchIndexes(execute({}, "'hello", `(["'][^"']*["'])`));
+    expectMatchIndexes(execute({}, "''", `(["'][^"']*["'])`), 0, 2);
+    expectMatchIndexes(execute({}, '""', `(["'][^"']*["'])`), 0, 2);
   });
   test.skip(caseLabel("15.10.2.7_A4_T10"), () => {
     // This should return "" but our greedy implementation returns ?
     // For some reason ab*c where a and c are "" b* is supposed to return ""
     // Even wierd .* has the opposite behaviour
-    testMatch("d*", "ddddd");
+    expectMatchIndexes(execute({}, "d*", "ddddd"));
   });
   test(caseLabel("15.10.2.7_A4_T11,T21"), () => {
-    testMatch("dd*", "ddddd", 0, 5);
-    testMatch("cx*d", "cdefg", 0, 2);
-    testMatch("(x*)(x+)", "xxxxxxx", 0, 7);
-    testMatch("(\\d*)(\\d+)", "1234567890", 0, 10);
-    testMatch("(\\d*)\\d(\\d+)", "1234567890", 0, 10);
-    testMatch("(x+)(x*)", "xxxxxxx", 0, 7);
-    testMatch("x*y+$", "xxxxxyyyyy", 0, 10);
-    testMatch("[\\d]*[\\s]*bc.", "bcdef", 0, 3);
-    testMatch("bc..[\\d]*[\\s]*", "bcdef", 0, 4);
-    testMatch(".*", "a1b2c3", 0, 6);
-    testMatch("[xyz]*1", "a0.b2.c3");
+    expectMatchIndexes(execute({}, "ddddd", /dd*/), 0, 5);
+    expectMatchIndexes(execute({}, "cdefg", /cx*d/), 0, 2);
+    expectMatchIndexes(execute({}, "xxxxxxx", "(x*)(x+)"), 0, 7);
+    expectMatchIndexes(execute({}, "1234567890", /(\d*)(\d+)/), 0, 10);
+    expectMatchIndexes(execute({}, "1234567890", /(\d*)\d(\d+)/), 0, 10);
+    expectMatchIndexes(execute({}, "xxxxxxx", /(x+)(x*)/), 0, 7);
+    expectMatchIndexes(execute({}, "xxxxxyyyyy", /x*y+$/), 0, 10);
+    expectMatchIndexes(execute({}, "bcdef", /[\d]*[\s]*bc./), 0, 3);
+    expectMatchIndexes(execute({}, "bcdef", /bc..[\d]*[\s]*/), 0, 4);
+    expectMatchIndexes(execute({}, "a1b2c3", /.*/), 0, 6);
+    expectMatchIndexes(execute({}, "a0.b2.c3", /[xyz]*1/));
   });
 
   test(caseLabel("15.10.2.7_A5_T1-T12"), () => {
-    testMatch("java(script)?", "javascript is extension of ecma script", 0, 10);
-    testMatch("java(script)?|.", "java javascript", 0, 4, 5, 15);
-    testMatch("java(script)?", "JavaJavascript");
-    testMatch("cd?e|.", "abcdef", 0, 1, 2, 5, 6);
-    testMatch("cdx?e|.", "abcdef", 0, 1, 2, 5, 6);
-    testMatch("o?pqrst", "pqrstuvw", 0, 5);
-    testMatch("x?y?z?", "abcde");
-    testMatch("x?ay?bz?c", "abcde", 0, 3);
-    testMatch("b?b?b?", "bbbbc", 0, 3, 4);
-    testMatch("\\d*ab?c?d?x?y?z", "123az789", 0, 5);
-    testMatch("\\??\\??\\??\\??\\??", "?????", 0, 5);
-    testMatch(".?.?.?.?.?.?.?", "test", 0, 4);
+    expectMatchIndexes(execute({}, "javascript is extension of ecma script", /java(script)?/), 0, 10);
+    expectMatchIndexes(execute({}, "java javascript", /java(script)?|./), 0, 4, 5, 15);
+    expectMatchIndexes(execute({}, "JavaJavascript", /java(script)?/));
+    expectMatchIndexes(execute({}, "abcdef", /cd?e|./), 0, 1, 2, 5, 6);
+    expectMatchIndexes(execute({}, "abcdef", /cdx?e|./), 0, 1, 2, 5, 6);
+    expectMatchIndexes(execute({}, "pqrstuvw", /o?pqrst/), 0, 5);
+    expectMatchIndexes(execute({}, "abcde", /x?y?z?/));
+    expectMatchIndexes(execute({}, "abcde", /x?ay?bz?c/), 0, 3);
+    expectMatchIndexes(execute({}, "bbbbc", /b?b?b?/), 0, 3, 4);
+    expectMatchIndexes(execute({}, "123az789", /\d*ab?c?d?x?y?z/), 0, 5);
+    expectMatchIndexes(execute({}, "?????", /\??\??\??\??\??/), 0, 5);
+    expectMatchIndexes(execute({}, "test", /.?.?.?.?.?.?.?/), 0, 4);
   });
 
   test(caseLabel("15.10.2.7_A6_T1-T4"), () => {
-    testMatch("b{2,}c", "bbbbbbc", 0, 7);
-    testMatch("b{10,}c", "bbbbbbc");
-    testMatch("\\d{1,}c", "123456c", 0, 7);
-    testMatch("(123){1,}", "123123123123", 0, 12);
-    testMatch("(123){1,}x", "123123123x123", 0, 10);
-    testMatch("(123){1,}x", "123123123x123", 0, 10);
+    expectMatchIndexes(execute({}, "bbbbbbc", "b{2,}c"), 0, 7);
+    expectMatchIndexes(execute({}, "bbbbbbc", "b{10,}c"));
+    expectMatchIndexes(execute({}, "123456c", "\\d{1,}c"), 0, 7);
+    expectMatchIndexes(execute({}, "123123123123", "(123){1,}"), 0, 12);
+    expectMatchIndexes(execute({}, "123123123x123", "(123){1,}x"), 0, 10);
+    expectMatchIndexes(execute({}, "123123123x123", "(123){1,}x"), 0, 10);
   });
   test.skip(caseLabel("15.10.2.7_A6_T5"), () => {
     // Captured groups references not yet implemented
-    testMatch("(123){1,}x\\1", "123123123x123", 0, 13);
+    expectMatchIndexes(execute({}, "(123){1,}x\\1", "123123123x123"), 0, 13);
   });
   test(caseLabel("15.10.2.7_A6_T6"), () => {
-    testMatch("x{1,2}x{1,}", "xxxxxxxx", 0, 8);
+    expectMatchIndexes(execute({}, "xxxxxxxx", /x{1,2}x{1,}/), 0, 8);
   });
 });
 
@@ -1079,86 +1020,446 @@ const DOT_STAR = new Rule(".*", 0, 0);
 
 describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
   test(caseLabel("15.10.2.8_A1_T1-T5"), () => {
-    testMatch("(?=(a+))", "aaa");
-    testMatch("(?=(a+))a*b", "aaabac", 0, 4);
-    testMatch("[Jj]ava([Ss]cript)?(?=:)", "Javascript");
-    testMatch("[Jj]ava([Ss]cript)?(?=:)", "Javascript: the way af jedi", 0, 10);
-    testMatch("[Jj]ava([Ss]cript)?(?=:)", "java: the cookbook", 0, 4);
+    expectMatchIndexes(execute({}, "aaa", /(?=(a+))/));
+    expectMatchIndexes(execute({}, "aaabac", /(?=(a+))a*b/), 0, 4);
+    expectMatchIndexes(execute({}, "Javascript", /[Jj]ava([Ss]cript)?(?=:)/));
+    expectMatchIndexes(execute({}, "Javascript: the way af jedi", /[Jj]ava([Ss]cript)?(?=:)/), 0, 10);
+    expectMatchIndexes(execute({}, "java: the cookbook", /[Jj]ava([Ss]cript)?(?=:)/), 0, 4);
   });
   test.skip(caseLabel("15.10.2.8_A2_T1"), () => {
-    testMatch("(.*?)a(?!(a+)b\\2c)\\2(.*)", "baaabaaac", 0, 9);
+    expectMatchIndexes(execute({}, "(.*?)a(?!(a+)b\\2c)\\2(.*)", "baaabaaac"), 0, 9);
   });
   test(caseLabel("15.10.2.8_A2_T2-T11"), () => {
-    testMatch(["Java(?!Script)([A-Z]\\w*)", "."], " JavaBeans ", 0, 1, 10, 11);
-    testMatch(["Java(?!Script)([A-Z]\\w*)"], "Java");
-    testMatch(["Java(?!Script)([A-Z]\\w*)"], "JavaScripter");
-    testMatch(["Java(?!Script)([A-Z]\\w*)"], "JavaScro ops", 0, 8);
-    testMatch(["(\\.(?!com|org)|\\/)"], ".info", 0, 1);
-    testMatch(["(\\.(?!com|org)|\\/)"], "/info", 0, 1);
-    testMatch(["(\\.(?!com|org)|\\/)"], ".com");
-    testMatch(["(\\.(?!com|org)|\\/)"], ".org");
-    testMatch("(?!a|b)|c", "");
-    testMatch("(?!a|b)|c", "bc");
-    testMatch("(?!a|b)|c", "d");
+    expectMatchIndexes(execute({}, " JavaBeans ", /Java(?!Script)([A-Z]\w*)/, "."), 0, 1, 10, 11);
+    expectMatchIndexes(execute({}, "Java", /Java(?!Script)([A-Z]\w*)/));
+    expectMatchIndexes(execute({}, "JavaScripter", /Java(?!Script)([A-Z]\w*)/));
+    expectMatchIndexes(execute({}, "JavaScro ops", /Java(?!Script)([A-Z]\w*)/), 0, 8);
+    expectMatchIndexes(execute({}, ".info", /(\.(?!com|org)|\/)/), 0, 1);
+    expectMatchIndexes(execute({}, "/info", /(\.(?!com|org)|\/)/), 0, 1);
+    expectMatchIndexes(execute({}, ".com", /(\.(?!com|org)|\/)/));
+    expectMatchIndexes(execute({}, ".org", /(\.(?!com|org)|\/)/));
+    expectMatchIndexes(execute({}, "", /(?!a|b)|c/));
+    expectMatchIndexes(execute({}, "bc", /(?!a|b)|c/));
+    expectMatchIndexes(execute({}, "d", /(?!a|b)|c/));
   });
 
   test(caseLabel("15.10.2.8_A3_T1-T6"), () => {
-    testMatch("([Jj]ava([Ss]cript)?)\\sis\\s(fun\\w*)", "javaScript is funny, really", 0, 19);
-    testMatch("([Jj]ava([Ss]cript)?)\\sis\\s(fun\\w*)", "java is fun, really", 0, 11);
-    testMatch("([Jj]ava([Ss]cript)?)\\sis\\s(fun\\w*)", "javascript is hard");
+    expectMatchIndexes(execute({}, "javaScript is funny, really", /([Jj]ava([Ss]cript)?)\sis\s(fun\w*)/), 0, 19);
+    expectMatchIndexes(execute({}, "java is fun, really", /([Jj]ava([Ss]cript)?)\sis\s(fun\w*)/), 0, 11);
+    expectMatchIndexes(execute({}, "javascript is hard", /([Jj]ava([Ss]cript)?)\sis\s(fun\w*)/));
     // Need to examine submatch trackings
-    testMatch("(abc)", "abc", 0, 3);
-    testMatch("a(bc)d(ef)g", "abcdefg", 0, 7);
-    testMatch("(.{3})(.{4})", "abcdefgh", 0, 7);
+    expectMatchIndexes(execute({}, "abc", /(abc)/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdefg", /a(bc)d(ef)g/), 0, 7);
+    expectMatchIndexes(execute({}, "abcdefgh", /(.{3})(.{4})/), 0, 7);
   });
   test.skip(caseLabel("15.10.2.8_A3_T7-T10"), () => {
-    testMatch("(aa)bcd\\1", "aabcdaabcd", 0, 7);
-    testMatch("(aa).+\\1", "aabcdaabcd", 0, 7);
-    testMatch("(.{2}).+\\1", "aabcdaabcd", 0, 7);
-    testMatch("(\\d{3})(\\d{3})\\1\\2", "123456123456", 0, 12);
+    expectMatchIndexes(execute({}, "aabcdaabcd", /(aa)bcd\1/), 0, 7);
+    expectMatchIndexes(execute({}, "aabcdaabcd", /(aa).+\1/), 0, 7);
+    expectMatchIndexes(execute({}, "aabcdaabcd", /(.{2}).+\1/), 0, 7);
+    expectMatchIndexes(execute({}, "123456123456", /(\d{3})(\d{3})\1\2/), 0, 12);
   });
   test(caseLabel("15.10.2.8_A3_T11-T12"), () => {
-    testMatch("a(..(..)..)", "abcdefgh", 0, 7);
-    testMatch("(a(b(c)))(d(e(f)))", "abcdefg", 0, 6);
+    expectMatchIndexes(execute({}, "abcdefgh", /a(..(..)..)/), 0, 7);
+    expectMatchIndexes(execute({}, "abcdefg", /(a(b(c)))(d(e(f)))/), 0, 6);
   });
   test.skip(caseLabel("15.10.2.8_A3_T13-T16"), () => {
-    testMatch("(a(b(c)))(d(e(f)))\\2\\5", "abcdefbcefg", 0, 10);
-    testMatch("a(.?)b\\1c\\1d\\1", "abcd", 0, 4);
+    expectMatchIndexes(execute({}, "abcdefbcefg", /(a(b(c)))(d(e(f)))\2\5/), 0, 10);
+    expectMatchIndexes(execute({}, "abcd", /a(.?)b\1c\1d\1/), 0, 4);
     // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.8_A3_T15.js
     // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.8_A3_T16.js
   });
+  test(caseLabel("15.10.2.8_A3_T15"), () => {
+    const numParens = 200;
+    const pattern = `${range(0, numParens)
+      .map((x) => "(")
+      .join("")}hello${range(0, numParens)
+      .map((x) => ")")
+      .join("")}`;
+    const matches = expectMatchIndexes(execute({}, "hello", pattern), 0, 5);
+    expect(matches.length).toBe(1);
+    expect(matches).toEqual([
+      {
+        matchIndex: 0,
+        start: 0,
+        end: 5,
+        value: "hello",
+        groups: {},
+        positions: {
+          "1": [0, 5],
+          "2": [0, 5],
+          "3": [0, 5],
+          "4": [0, 5],
+          "5": [0, 5],
+          "6": [0, 5],
+          "7": [0, 5],
+          "8": [0, 5],
+          "9": [0, 5],
+          "10": [0, 5],
+          "11": [0, 5],
+          "12": [0, 5],
+          "13": [0, 5],
+          "14": [0, 5],
+          "15": [0, 5],
+          "16": [0, 5],
+          "17": [0, 5],
+          "18": [0, 5],
+          "19": [0, 5],
+          "20": [0, 5],
+          "21": [0, 5],
+          "22": [0, 5],
+          "23": [0, 5],
+          "24": [0, 5],
+          "25": [0, 5],
+          "26": [0, 5],
+          "27": [0, 5],
+          "28": [0, 5],
+          "29": [0, 5],
+          "30": [0, 5],
+          "31": [0, 5],
+          "32": [0, 5],
+          "33": [0, 5],
+          "34": [0, 5],
+          "35": [0, 5],
+          "36": [0, 5],
+          "37": [0, 5],
+          "38": [0, 5],
+          "39": [0, 5],
+          "40": [0, 5],
+          "41": [0, 5],
+          "42": [0, 5],
+          "43": [0, 5],
+          "44": [0, 5],
+          "45": [0, 5],
+          "46": [0, 5],
+          "47": [0, 5],
+          "48": [0, 5],
+          "49": [0, 5],
+          "50": [0, 5],
+          "51": [0, 5],
+          "52": [0, 5],
+          "53": [0, 5],
+          "54": [0, 5],
+          "55": [0, 5],
+          "56": [0, 5],
+          "57": [0, 5],
+          "58": [0, 5],
+          "59": [0, 5],
+          "60": [0, 5],
+          "61": [0, 5],
+          "62": [0, 5],
+          "63": [0, 5],
+          "64": [0, 5],
+          "65": [0, 5],
+          "66": [0, 5],
+          "67": [0, 5],
+          "68": [0, 5],
+          "69": [0, 5],
+          "70": [0, 5],
+          "71": [0, 5],
+          "72": [0, 5],
+          "73": [0, 5],
+          "74": [0, 5],
+          "75": [0, 5],
+          "76": [0, 5],
+          "77": [0, 5],
+          "78": [0, 5],
+          "79": [0, 5],
+          "80": [0, 5],
+          "81": [0, 5],
+          "82": [0, 5],
+          "83": [0, 5],
+          "84": [0, 5],
+          "85": [0, 5],
+          "86": [0, 5],
+          "87": [0, 5],
+          "88": [0, 5],
+          "89": [0, 5],
+          "90": [0, 5],
+          "91": [0, 5],
+          "92": [0, 5],
+          "93": [0, 5],
+          "94": [0, 5],
+          "95": [0, 5],
+          "96": [0, 5],
+          "97": [0, 5],
+          "98": [0, 5],
+          "99": [0, 5],
+          "100": [0, 5],
+          "101": [0, 5],
+          "102": [0, 5],
+          "103": [0, 5],
+          "104": [0, 5],
+          "105": [0, 5],
+          "106": [0, 5],
+          "107": [0, 5],
+          "108": [0, 5],
+          "109": [0, 5],
+          "110": [0, 5],
+          "111": [0, 5],
+          "112": [0, 5],
+          "113": [0, 5],
+          "114": [0, 5],
+          "115": [0, 5],
+          "116": [0, 5],
+          "117": [0, 5],
+          "118": [0, 5],
+          "119": [0, 5],
+          "120": [0, 5],
+          "121": [0, 5],
+          "122": [0, 5],
+          "123": [0, 5],
+          "124": [0, 5],
+          "125": [0, 5],
+          "126": [0, 5],
+          "127": [0, 5],
+          "128": [0, 5],
+          "129": [0, 5],
+          "130": [0, 5],
+          "131": [0, 5],
+          "132": [0, 5],
+          "133": [0, 5],
+          "134": [0, 5],
+          "135": [0, 5],
+          "136": [0, 5],
+          "137": [0, 5],
+          "138": [0, 5],
+          "139": [0, 5],
+          "140": [0, 5],
+          "141": [0, 5],
+          "142": [0, 5],
+          "143": [0, 5],
+          "144": [0, 5],
+          "145": [0, 5],
+          "146": [0, 5],
+          "147": [0, 5],
+          "148": [0, 5],
+          "149": [0, 5],
+          "150": [0, 5],
+          "151": [0, 5],
+          "152": [0, 5],
+          "153": [0, 5],
+          "154": [0, 5],
+          "155": [0, 5],
+          "156": [0, 5],
+          "157": [0, 5],
+          "158": [0, 5],
+          "159": [0, 5],
+          "160": [0, 5],
+          "161": [0, 5],
+          "162": [0, 5],
+          "163": [0, 5],
+          "164": [0, 5],
+          "165": [0, 5],
+          "166": [0, 5],
+          "167": [0, 5],
+          "168": [0, 5],
+          "169": [0, 5],
+          "170": [0, 5],
+          "171": [0, 5],
+          "172": [0, 5],
+          "173": [0, 5],
+          "174": [0, 5],
+          "175": [0, 5],
+          "176": [0, 5],
+          "177": [0, 5],
+          "178": [0, 5],
+          "179": [0, 5],
+          "180": [0, 5],
+          "181": [0, 5],
+          "182": [0, 5],
+          "183": [0, 5],
+          "184": [0, 5],
+          "185": [0, 5],
+          "186": [0, 5],
+          "187": [0, 5],
+          "188": [0, 5],
+          "189": [0, 5],
+          "190": [0, 5],
+          "191": [0, 5],
+          "192": [0, 5],
+          "193": [0, 5],
+          "194": [0, 5],
+          "195": [0, 5],
+          "196": [0, 5],
+          "197": [0, 5],
+          "198": [0, 5],
+          "199": [0, 5],
+          "200": [0, 5],
+        },
+      },
+    ]);
+  });
+  test(caseLabel("15.10.2.8_A3_T16"), () => {
+    const numParens = 200;
+    const pattern = `${range(0, numParens)
+      .map((x) => "(?:")
+      .join("")}hello${range(0, numParens)
+      .map((x) => ")")
+      .join("")}`;
+    const matches = expectMatchIndexes(execute({}, "hello", pattern), 0, 5);
+    expect(matches.length).toBe(1);
+    expect(matches[0].groups).toEqual({});
+    expect(matches[0].positions).toEqual({});
+  });
   test(caseLabel("15.10.2.8_A3_T17"), () => {
-    //
     let __body = "";
     __body += '<body onXXX="alert(event.type);">\n';
     __body += "<p>Kibology for all</p>\n";
     __body += "<p>All for Kibology</p>\n";
     __body += "</body>";
 
-    const __html = "<html>\n" + __body + "\n</html>";
-    // ignore case not yet implemented
-    testMatchO({ ignoreCase: true }, "<BoDy.*>((.*\\n?)*?)<\\/bOdY>|.", __html,
-      0, 1, 2, 3, 4, 5, 6, 7, 96, 97, 98, 99, 100, 101, 102, 103, 104);
+    const __html = `<html>\n${__body}\n</html>`;
+    const found = execute({}, __html, /<BoDy.*>((.*\n?)*?)<\/bOdY>|.|\n/i);
+    expectMatchIndexes(found, 0, 1, 2, 3, 4, 5, 6, 7, 96, 97, 98, 99, 100, 101, 102, 103, 104);
   });
-  test.todo(caseLabel("15.10.2.8_A3_T18"));
+  test(caseLabel("15.10.2.8_A3_T18"), () => {
+    const input = "Click |here|https:www.xxxx.org/subscribe.htm|";
+    const re = /Click (\|)([\w\x81-\xff ]*)(\|)([\/a-z][\w:\/\.]*\.[a-z]{3,4})(\|)/i;
+    // ignore case not yet implemented
+    const match = expectMatchIndexes(execute({}, input, re), 0, input.length)[0];
+    expect(match.groups).toEqual({});
+    expect(match.positions).toEqual({ "1": [6, 7], "2": [7, 11], "3": [11, 12], "4": [12, 44], "5": [44, 45] });
+  });
   test(caseLabel("15.10.2.8_A3_T19"), () => {
-    testMatch("([\\S]+([ \t]+[\\S]+)*)[ \t]*=[ \t]*[\\S]+", "Course_Creator = Test", 0, 21);
+    expectMatchIndexes(execute({}, "Course_Creator = Test", /([\S]+([ \t]+[\S]+)*)[ \t]*=[ \t]*[\S]+/), 0, 21);
   });
   test(caseLabel("15.10.2.8_A3_T20-T33"), () => {
     // TODO - In all these tests also verify the submatch groups
-    testMatch("^(A)?(A.*)$", "AAA", 0, 3);
-    testMatch("^(A)?(A.*)$", "AA", 0, 2);
-    testMatch("^(A)?(A.*)$", "A", 0, 1);
-    testMatch("^(A)?(A.*)$", "AAAaaAAaaaf;lrlrzs", 0, 18);
-    testMatch("^(A)?(A.*)$", "AAaaAAaaaf;lrlrzs", 0, 17);
-    testMatch("^(A)?(A.*)$", "AaaAAaaaf;lrlrzs", 0, 16);
-    testMatch("(a)?a", "a", 0, 1);
-    testMatch("a|(b)", "a", 0, 1);
-    testMatch("(a)?(a)", "a", 0, 1);
-    testMatch("^([a-z]+)*[a-z]$", "a", 0, 1);
-    testMatch("^([a-z]+)*[a-z]$", "ab", 0, 2);
-    testMatch("^([a-z]+)*[a-z]$", "abc", 0, 3);
-    testMatch("^(([a-z]+)*[a-z]\\.)+[a-z]{2,}$", "www.netscape.com", 0, 16);
-    testMatch("^(([a-z]+)*([a-z])\\.)+[a-z]{2,}$", "www.netscape.com", 0, 16);
+    expectMatchIndexes(execute({}, "AAA", /^(A)?(A.*)$/), 0, 3);
+    expectMatchIndexes(execute({}, "AA", /^(A)?(A.*)$/), 0, 2);
+    expectMatchIndexes(execute({}, "A", /^(A)?(A.*)$/), 0, 1);
+    expectMatchIndexes(execute({}, "AAAaaAAaaaf;lrlrzs", /^(A)?(A.*)$/), 0, 18);
+    expectMatchIndexes(execute({}, "AAaaAAaaaf;lrlrzs", "^(A)?(A.*)$"), 0, 17);
+    expectMatchIndexes(execute({}, "AaaAAaaaf;lrlrzs", "^(A)?(A.*)$"), 0, 16);
+    expectMatchIndexes(execute({}, "a", "(a)?a"), 0, 1);
+    expectMatchIndexes(execute({}, "a", "a|(b)"), 0, 1);
+    expectMatchIndexes(execute({}, "a", "(a)?(a)"), 0, 1);
+    expectMatchIndexes(execute({}, "a", "^([a-z]+)*[a-z]$"), 0, 1);
+    expectMatchIndexes(execute({}, "ab", "^([a-z]+)*[a-z]$"), 0, 2);
+    expectMatchIndexes(execute({}, "abc", "^([a-z]+)*[a-z]$"), 0, 3);
+    expectMatchIndexes(execute({}, "www.netscape.com", /^(([a-z]+)*[a-z]\.)+[a-z]{2,}$/), 0, 16);
+    expectMatchIndexes(execute({}, "www.netscape.com", /^(([a-z]+)*([a-z])\.)+[a-z]{2,}$/), 0, 16);
   });
+  test(caseLabel("15.10.2.8_A4_T1-T5"), () => {
+    expectMatchIndexes(execute({}, "abcde", /ab.de/), 0, 5);
+    expectMatchIndexes(execute({ multiline: false }, "line 1\nline 2", /.+/), 0, 6);
+    expectMatchIndexes(execute({}, "this is a test", ".*a.*"), 0, 14);
+    expectMatchIndexes(execute({}, "this is a *&^%$# test", ".+"), 0, 21);
+    expectMatchIndexes(execute({}, "....", ".+"), 0, 4);
+    expectMatchIndexes(execute({}, "abcdefghijklmnopqrstuvwxyz", ".+"), 0, 26);
+    expectMatchIndexes(execute({}, "`1234567890-=~!@#$%^&*()_+", ".+"), 0, "`1234567890-=~!@#$%^&*()_+".length);
+    expectMatchIndexes(execute({}, "|\\[{]};:\"',<>.?/", /.+/), 0, "|\\[{]};:\"',<>.?/".length);
+  });
+
+  test(caseLabel("15.10.2.8_A5_T1-T2"), () => {
+    expectMatchIndexes(execute({}, "ABC def ghi", /[a-z]+/i), 0, 3);
+    expectMatchIndexes(execute({}, "ABC def ghi", /[a-z]+/));
+  });
+  test.skip(caseLabel("15.10.2.9_A1_T1,T2"), () => {
+    // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.9_A1_T1.js
+    // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.9_A1_T2.js
+    // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.9_A1_T3.js
+    // TBD - https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/S15.10.2.9_A1_T5.js
+  });
+});
+
+describe("ECMA Tests - Lookaheads - 15.10.2_A1_T1", () => {
+  test(caseLabel("15.10.2_A1_T1"), () => {
+    //
+    const TextSE = "[^<]+";
+    const UntilHyphen = "[^-]*-";
+    const Until2Hyphens = UntilHyphen + "([^-]" + UntilHyphen + ")*-";
+    const CommentCE = Until2Hyphens + ">?";
+    const UntilRSBs = "[^\\]]*\\]([^\\]]+\\])*\\]+";
+    const CDATA_CE = UntilRSBs + "([^\\]>]" + UntilRSBs + ")*>";
+    const S = "[ \\n\\t\\r]+";
+    const NameStrt = "[A-Za-z_:]|[^\\x00-\\x7F]";
+    const NameChar = "[A-Za-z0-9_:.-]|[^\\x00-\\x7F]";
+    const Name = "(" + NameStrt + ")(" + NameChar + ")*";
+    const QuoteSE = '"[^"]' + "*" + '"' + "|'[^']*'";
+    const DT_IdentSE = S + Name + "(" + S + "(" + Name + "|" + QuoteSE + "))*";
+    const MarkupDeclCE = "([^\\]\"'><]+|" + QuoteSE + ")*>";
+    const S1 = "[\\n\\r\\t ]";
+    const UntilQMs = "[^?]*\\?+";
+    const PI_Tail = "\\?>|" + S1 + UntilQMs + "([^>?]" + UntilQMs + ")*>";
+    const DT_ItemSE =
+      "<(!(--" + Until2Hyphens + ">|[^-]" + MarkupDeclCE + ")|\\?" + Name + "(" + PI_Tail + "))|%" + Name + ";|" + S;
+    const DocTypeCE = DT_IdentSE + "(" + S + ")?(\\[(" + DT_ItemSE + ")*\\](" + S + ")?)?>?";
+    const DeclCE = "--(" + CommentCE + ")?|\\[CDATA\\[(" + CDATA_CE + ")?|DOCTYPE(" + DocTypeCE + ")?";
+    const PI_CE = Name + "(" + PI_Tail + ")?";
+    const EndTagCE = Name + "(" + S + ")?>?";
+    const AttValSE = '"[^<"]' + "*" + '"' + "|'[^<']*'";
+    const ElemTagCE = Name + "(" + S + Name + "(" + S + ")?=(" + S + ")?(" + AttValSE + "))*(" + S + ")?/?>?";
+    const MarkupSPE = "<(!(" + DeclCE + ")?|\\?(" + PI_CE + ")?|/(" + EndTagCE + ")?|(" + ElemTagCE + ")?)";
+    const XML_SPE = TextSE + "|" + MarkupSPE;
+    const __patterns = [
+      TextSE,
+      UntilHyphen,
+      Until2Hyphens,
+      CommentCE,
+      UntilRSBs,
+      CDATA_CE,
+      S,
+      NameStrt,
+      NameChar,
+      Name,
+      QuoteSE,
+      DT_IdentSE,
+      MarkupDeclCE,
+      S1,
+      UntilQMs,
+      PI_Tail,
+      DT_ItemSE,
+      DocTypeCE,
+      DeclCE,
+      PI_CE,
+      EndTagCE,
+      AttValSE,
+      ElemTagCE,
+      MarkupSPE,
+      XML_SPE,
+    ];
+    const __html =
+      "" +
+      '<html xmlns="http://www.w3.org/1999/xhtml"\n' +
+      '      xmlns:xlink="http://www.w3.org/XML/XLink/0.9">\n' +
+      "  <head><title>Three Namespaces</title></head>\n" +
+      "  <body>\n" +
+      '    <h1 align="center">An Ellipse and a Rectangle</h1>\n' +
+      '    <svg xmlns="http://www.w3.org/Graphics/SVG/SVG-19991203.dtd"\n' +
+      '         width="12cm" height="10cm">\n' +
+      '      <ellipse rx="110" ry="130" />\n' +
+      '      <rect x="4cm" y="1cm" width="3cm" height="6cm" />\n' +
+      "    </svg>\n" +
+      '    <p xlink:type="simple" xlink:href="ellipses.html">\n' +
+      "      More about ellipses\n" +
+      "    </p>\n" +
+      '    <p xlink:type="simple" xlink:href="rectangles.html">\n' +
+      "      More about rectangles\n" +
+      "    </p>\n" +
+      "    <hr/>\n" +
+      "    <p>Last Modified February 13, 2000</p>\n" +
+      "  </body>\n" +
+      "</html>";
+    __patterns.forEach((pat, index) => {
+      const repat = ".*?(" + pat + ")";
+      // console.log("Testing pattern at index: ", index, repat);
+      try {
+        expectMatchIndexes(execute({}, repat, __html));
+      } catch {}
+    });
+  });
+});
+
+describe.skip("ECMA Tests - 15.10.3.1", () => {
+  // Basic RegExp Constructor tests - not needed
+});
+describe.skip("ECMA Tests - 15.10.4.1", () => {
+  // Basic RegExp Constructor tests - not needed
+});
+describe.skip("ECMA Tests - 15.10.5.1", () => {
+  // Basic RegExp Constructor tests - not needed
+});
+describe.skip("ECMA Tests - 15.10.7.1", () => {
+  // Basic RegExp Constructor tests - not needed
 });

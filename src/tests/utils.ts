@@ -1,11 +1,14 @@
 const util = require("util");
+const JSON5 = require("json5");
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
-import { Regex, Rule } from "../core";
+import { Tape } from "../tape";
+import { REPatternType, Regex, Rule } from "../core";
 import { RegexParser } from "../parser";
-import { Prog } from "../vm";
+import { Thread, Prog, InstrDebugValue, Match as VMMatch, VM } from "../vm";
+import { Compiler } from "../compiler";
 import { Lexer } from "../lexer";
-import { Compiler, VM, Thread } from "../pikevm";
+import { toMatch, Match } from "../lexer";
 
 export function parse(input: string): Regex {
   return new RegexParser(input).parse();
@@ -57,17 +60,136 @@ export function newLexer(contents: string): Lexer {
   return lexer;
 }
 
-export function compile(exprResolver: null | ((name: string) => Regex), ...patterns: (Rule | string)[]): Prog {
+export function compile(exprResolver: null | ((name: string) => Regex), ...patterns: REPatternType[]): Prog {
   const out = new Compiler(exprResolver, (expr: Regex, prog: Prog, start: number, length: number) => {
     const instr = prog.instrs[start];
     if (instr.comment.length == 0) instr.comment = expr.toString;
   });
-  const rules = patterns.map((pattern, index) => {
-    const rule = typeof pattern === "string" ? new Rule(pattern, index) : pattern;
-    rule.expr = parse(rule.pattern);
-    return rule;
+
+  const rules = Rule.flatten(patterns);
+  rules.forEach((r) => {
+    r.expr = parse(r.pattern);
   });
   return out.compile(rules);
+}
+
+export function execute(configs: any, input: string, ...repattern: REPatternType[]): Match[] {
+  const found = [] as Match[];
+  const prog: Prog = compile(null, ...repattern);
+  const vm = new VM(prog, 0, -1, true, configs);
+  const tape = new Tape(input);
+  let next = vm.match(tape);
+  while (next != null && next.end > next.start) {
+    found.push(toMatch(next, tape));
+    next = vm.match(tape);
+  }
+  if (configs.debug) {
+    console.log(
+      "Prog: \n",
+      `${prog.debugValue(InstrDebugValue).join("\n")}`,
+      "\n\nRE: ",
+      repattern,
+      "\n\nInput: ",
+      input,
+      "\n\nFound: ",
+      util.inspect(found, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+    );
+    /*
+    console.log(
+      "\n\nExpected: ",
+      util.inspect(expected, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+    );
+    */
+  }
+  return found;
+}
+
+function runTestCase(testCase: any, index: number, caseFile: string, debug = false): Match[] {
+  const pattern = testCase.pattern || "";
+  if (pattern.length == "") return [];
+  const repatterns = [] as string[];
+  const patterns: Rule[] = [];
+  if (typeof pattern === "string") {
+    repatterns.push(pattern);
+    patterns.push(new Rule(pattern, 0));
+  } else {
+    // list of string or Rule
+    (pattern as any[]).forEach((pat, index) => {
+      if (typeof pat === "string") {
+        repatterns.push(pat);
+        patterns.push(new Rule(pat, index));
+      } else {
+        repatterns.push(pat.pattern);
+        const rule = new Rule(
+          pat.pattern,
+          "tokenType" in pat ? pat.tokenType : null,
+          "priority" in pat ? pat.priority : 10,
+          "isGreedy" in pat ? pat.isGreedy : true,
+        );
+        patterns.push(rule);
+      }
+    });
+  }
+  const prog = compile(null, ...patterns);
+  const vm = new VM(prog, 0, -1, true, testCase.vmConfigs || {});
+  const input = testCase.input;
+  const tape = new Tape(input);
+  let next = vm.match(tape);
+  const found: Match[] = [];
+  while (next != null && next.end > next.start) {
+    found.push(toMatch(next, tape));
+    next = vm.match(tape);
+  }
+  if (debug) {
+    console.log(
+      "Prog: \n",
+      `${prog.debugValue(InstrDebugValue).join("\n")}`,
+      "\n\nRE: ",
+      util.inspect(repatterns.join("\n"), {
+        maxStringLength: null,
+      }),
+      "\n\nInput: ",
+      util.inspect(input, {
+        maxStringLength: null,
+      }),
+      "\n\nFound: ",
+      util.inspect(found, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+    );
+    console.log(
+      "\n\nExpected: ",
+      util.inspect(testCase.expected, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+    );
+  }
+  return found;
+}
+
+export function runMatchTest(caseFile: string, debug = false): Match[][] {
+  if (!caseFile.startsWith("/")) {
+    caseFile = __dirname + "/" + caseFile;
+  }
+  const contents = fs.readFileSync(caseFile, "utf8");
+  const cases = JSON5.parse(contents);
+  return cases.map((tc: any, index: number) => runTestCase(tc, index, caseFile, debug));
 }
 
 export class ThreadNode {

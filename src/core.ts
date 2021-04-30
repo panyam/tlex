@@ -18,6 +18,16 @@ export enum RegexType {
   LOOK_BACK,
 }
 
+function stringRep(ch: number): string {
+  return String.fromCharCode(ch)
+    .replace("\n", "\\n")
+    .replace("\0", "\\0")
+    .replace("\r", "\\r")
+    .replace("\t", "\\t")
+    .replace("\f", "\\f")
+    .replace("\b", "\\b");
+}
+
 /**
  * A regex expression node.
  */
@@ -364,9 +374,7 @@ export class Char extends Regex {
   }
 
   get debugValue(): any {
-    return this.start == this.end
-      ? String.fromCharCode(this.start)
-      : `${String.fromCharCode(this.start)}-${String.fromCharCode(this.end)}`;
+    return this.start == this.end ? stringRep(this.start) : `${stringRep(this.start)}-${stringRep(this.end)}`;
   }
 
   protected evalREString(): string {
@@ -425,7 +433,7 @@ export class CharRange extends Regex {
 
   protected evalREString(): string {
     const out = this.chars.map((ch) => ch.debugValue).join("");
-    return out.length > 1 ? "[" + out + "]" : out;
+    return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
   }
 
   get debugValue(): any {
@@ -455,6 +463,8 @@ export class Ref extends Regex {
   }
 }
 
+export type REPatternType = RegExp | Rule | string;
+
 /**
  * A rule defines a match to be performed and recognized by the lexer.
  */
@@ -483,14 +493,58 @@ export class Rule {
    *                    even though a regex can have a longer match.
    */
   constructor(
-    public readonly pattern: string,
+    pattern: string | RegExp,
     public readonly tokenType: any | null,
     public readonly priority = 10,
     public readonly isGreedy = true,
-  ) {}
+  ) {
+    if (typeof pattern === "string") {
+      this.pattern = pattern;
+    } else {
+      this.pattern = pattern.source;
+      this.dotAll = pattern.dotAll;
+      this.ignoreCase = pattern.ignoreCase;
+      this.multiline = pattern.multiline;
+    }
+  }
+
+  readonly pattern: string;
 
   /**
    * The generated expression for this rule.
    */
   expr: Regex;
+
+  /**
+   * Whether to ignore case int his particular rule (only).  The compiler will emit
+   * different instructions based on this flag.
+   */
+  ignoreCase = false;
+
+  /**
+   * Whether to allow "." to match new lines.
+   */
+  dotAll = true;
+
+  /**
+   * Whether ^ and $ are to be activated also on new line boundaries.
+   */
+  multiline = true;
+
+  static flatten(re: REPatternType | REPatternType[], index = 0, rules?: Rule[]): Rule[] {
+    rules = rules || [];
+    if (typeof re === "string") {
+      rules.push(new Rule(re, index));
+    } else if (re.constructor == RegExp) {
+      rules.push(new Rule(re, index));
+    } else if (re.constructor == Rule) {
+      rules.push(re as Rule);
+    } else {
+      const res = re as (RegExp | Rule | string)[];
+      for (let i = 0; i < res.length; i++) {
+        Rule.flatten(res[i], i, rules);
+      }
+    }
+    return rules;
+  }
 }

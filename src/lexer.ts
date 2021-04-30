@@ -1,8 +1,34 @@
+import * as TSU from "@panyam/tsutils";
 import { Regex, Union, Rule } from "./core";
 import { RegexParser } from "./parser";
-import { Prog, Match } from "./vm";
-import { Compiler, VM } from "./pikevm";
+import { Prog, Match as VMMatch, VM } from "./vm";
+import { Compiler } from "./compiler";
 import { Tape } from "./tape";
+
+export class Match {
+  value = null as TSU.Nullable<string>;
+  groups: TSU.NumMap<number[]> = {};
+  positions: TSU.NumMap<[number, number]> = {};
+  constructor(public readonly matchIndex: number, public readonly start: number, public readonly end: number) {}
+}
+
+export function toMatch(m: VMMatch, tape: Tape | null): Match {
+  const out = new Match(m.matchIndex, m.start, m.end);
+  for (let i = 0; i < m.positions.length; i += 2) {
+    if (m.positions[i] >= 0) {
+      out.positions[Math.floor(i / 2)] = [m.positions[i], m.positions[i + 1]];
+    }
+  }
+  for (const [groupIndex, tapeIndex] of m.groups) {
+    const gi = Math.abs(groupIndex);
+    if (!(gi in out.groups)) {
+      out.groups[gi] = [];
+    }
+    out.groups[gi].push(tapeIndex);
+  }
+  if (tape != null) out.value = tape.substring(m.start, m.end);
+  return out;
+}
 
 export class Lexer {
   // Stores named rules
@@ -65,13 +91,26 @@ export class Lexer {
   }
 
   compile(): Prog {
-    const prog = this.compiler.compile(this.allRules);
+    const sortedRules = this.sortRules().map(([r, i]) => r);
+    const prog = this.compiler.compile(sortedRules);
     this.vm = new VM(prog);
     return prog;
   }
 
+  sortRules(): [Rule, number][] {
+    // Sort rules so high priority ones appear first
+    const sortedRules: [Rule, number][] = this.allRules.map((rule, index) => [rule, index]);
+    sortedRules.sort((x, y) => {
+      const [r1, i1] = x;
+      const [r2, i2] = y;
+      if (r1.priority != r2.priority) return r2.priority - r1.priority;
+      return i1 - i2;
+    });
+    return sortedRules;
+  }
+
   next(tape: Tape): Match | null {
     const m = this.vm.match(tape);
-    return m;
+    return m == null ? null : toMatch(m, tape);
   }
 }

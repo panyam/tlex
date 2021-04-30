@@ -2,8 +2,8 @@ const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Rule, Regex } from "../core";
 import { parse } from "./utils";
-import { Prog } from "../vm";
-import { OpCode, InstrDebugValue, Compiler } from "../pikevm";
+import { Prog, OpCode, InstrDebugValue } from "../vm";
+import { Compiler } from "../compiler";
 
 function reprString(prog: Prog): any {
   let out = "";
@@ -55,12 +55,12 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("abcde", 0)),
       Prog.with((p) => {
-        p.add(6, 97, 97);
-        p.add(6, 98, 98);
-        p.add(6, 99, 99);
-        p.add(6, 100, 100);
-        p.add(6, 101, 101);
-        p.add(0, 10, 0);
+        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, 100, 100);
+        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Match, 10, 0);
       }),
     );
   });
@@ -69,17 +69,17 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", 0)),
       Prog.with((p) => {
-        p.add(6, 10, 10);
-        p.add(6, 13, 13);
-        p.add(6, 9, 9);
-        p.add(6, 12, 12);
-        p.add(6, 8, 8);
-        p.add(6, 92, 92);
-        p.add(6, 34, 34);
-        p.add(6, 39, 39);
-        p.add(6, 50, 50);
-        p.add(6, 121, 121);
-        p.add(0, 10, 0);
+        p.add(OpCode.Char, 10, 10);
+        p.add(OpCode.Char, 13, 13);
+        p.add(OpCode.Char, 9, 9);
+        p.add(OpCode.Char, 12, 12);
+        p.add(OpCode.Char, 8, 8);
+        p.add(OpCode.Char, 92, 92);
+        p.add(OpCode.Char, 34, 34);
+        p.add(OpCode.Char, 39, 39);
+        p.add(OpCode.Char, 50, 50);
+        p.add(OpCode.Char, 121, 121);
+        p.add(OpCode.Match, 10, 0);
       }),
     );
   });
@@ -88,17 +88,17 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("a|b|c|d|e", 0)),
       Prog.with((p) => {
-        p.add(10, 1, 3, 5, 7, 9);
-        p.add(6, 97, 97);
-        p.add(11, 10);
-        p.add(6, 98, 98);
-        p.add(11, 10);
-        p.add(6, 99, 99);
-        p.add(11, 10);
-        p.add(6, 100, 100);
-        p.add(11, 10);
-        p.add(6, 101, 101);
-        p.add(0, 10, 0);
+        p.add(OpCode.Split, 1, 3, 5, 7, 9);
+        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Jump, 10);
+        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Jump, 10);
+        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Jump, 10);
+        p.add(OpCode.Char, 100, 100);
+        p.add(OpCode.Jump, 10);
+        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Match, 10, 0);
       }),
     );
   });
@@ -107,10 +107,10 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("a*", 0)),
       Prog.with((p) => {
-        p.add(10, 1, 3);
-        p.add(6, 97, 97);
-        p.add(11, 0);
-        p.add(0, 10, 0);
+        p.add(OpCode.Split, 1, 3);
+        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Jump, 0);
+        p.add(OpCode.Match, 10, 0);
       }),
     );
   });
@@ -119,9 +119,9 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("a+", 0)),
       Prog.with((p) => {
-        p.add(6, 97, 97);
-        p.add(10, 0, 2);
-        p.add(0, 10, 0);
+        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Split, 0, 2);
+        p.add(OpCode.Match, 10, 0);
       }),
     );
   });
@@ -193,9 +193,9 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("^.$", 0)),
       Prog.with((p) => {
-        p.add(OpCode.StartOfInput);
+        p.add(OpCode.MLStartingChar);
         p.add(OpCode.Any);
-        p.add(OpCode.EndOfInput);
+        p.add(OpCode.MLEndingChar);
         p.add(OpCode.Match, 10, 0);
       }),
     );
