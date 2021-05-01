@@ -2,8 +2,10 @@ import * as TSU from "@panyam/tsutils";
 const util = require("util");
 import fs from "fs";
 import { Rule } from "../core";
-import { parse, execute, runMatchTest } from "./utils";
+import { Tape } from "../tape";
+import { parse, compile, execute, runMatchTest } from "./utils";
 import { Match } from "../lexer";
+import { Prog, VM } from "../vm";
 
 function stringRep(ch: number): string {
   return String.fromCharCode(ch)
@@ -1418,6 +1420,7 @@ describe("ECMA Tests - Lookaheads - 15.10.2_A1_T1", () => {
       ElemTagCE,
       MarkupSPE,
       XML_SPE,
+      ".",
     ];
     const __html =
       "" +
@@ -1441,12 +1444,15 @@ describe("ECMA Tests - Lookaheads - 15.10.2_A1_T1", () => {
       "    <p>Last Modified February 13, 2000</p>\n" +
       "  </body>\n" +
       "</html>";
+    /*
+    const matches = execute({ debug: true }, __html, ...__patterns);
+    expectMatchIndexes(matches);
+    */
     __patterns.forEach((pat, index) => {
       const repat = ".*?(" + pat + ")";
+      const matches = execute({}, repat, __html);
       // console.log("Testing pattern at index: ", index, repat);
-      try {
-        expectMatchIndexes(execute({}, repat, __html));
-      } catch {}
+      expectMatchIndexes(matches);
     });
   });
 });
@@ -1462,4 +1468,74 @@ describe.skip("ECMA Tests - 15.10.5.1", () => {
 });
 describe.skip("ECMA Tests - 15.10.7.1", () => {
   // Basic RegExp Constructor tests - not needed
+});
+
+describe("ECMA Tests - Unicode Char Tests", () => {
+  test("character-class-escape-non-whitespace-u180e", () => {
+    expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\S+/), 0, 1);
+    expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\s+/));
+  });
+  test("character-class-escape-non-whitespace", () => {
+    const whitespaceChars = [
+      0x0009,
+      0x000a,
+      0x000b,
+      0x000c,
+      0x000d,
+      0x0020,
+      0x00a0,
+      0x1680,
+      0x2000,
+      0x2001,
+      0x2002,
+      0x2003,
+      0x2004,
+      0x2005,
+      0x2006,
+      0x2007,
+      0x2008,
+      0x2009,
+      0x200a,
+      0x2028,
+      0x2029,
+      0x202f,
+      0x205f,
+      0x3000,
+    ];
+    const prog: Prog = compile(null, /\S+/);
+    const vm = new VM(prog, 0, -1, true, {});
+    for (let j = 0x0000; j < 0x10000; j++) {
+      if (j === 0x180e) {
+        // Skip 0x180E, in previous test
+        continue;
+      }
+      if (j === 0xfeff) {
+        // Ignore BOM
+        continue;
+      }
+      const str = String.fromCharCode(j);
+      try {
+        const match = vm.match(new Tape(str));
+        if (whitespaceChars.indexOf(j) >= 0) {
+          expect(match).toEqual(null);
+        } else {
+          expect(match?.start).toEqual(0);
+          expect(match?.end).toEqual(1);
+        }
+      } catch (error) {
+        console.log("Test Failed: ", j);
+        throw error;
+      }
+    }
+  });
+  test("regexp-class-chars", () => {
+    expectMatchIndexes(execute({}, "/", /[/]/), 0, 1);
+    expectMatchIndexes(execute({}, "x", /[/]/));
+    expectMatchIndexes(execute({}, "/", /[//]/), 0, 1);
+    expectMatchIndexes(execute({}, "x", /[//]/));
+  });
+  test("regexp-class-chars", () => {
+    expectMatchIndexes(execute({}, "\u0008", /[\b]/), 0, 1);
+    expectMatchIndexes(execute({}, "A", /[\b-A]/), 0, 1);
+  });
 });

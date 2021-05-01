@@ -28,9 +28,11 @@ abstract class CharClassHelper {
 // Spaces - \s => [ \b\c\u00a0\t\r\n\u2028\u2029<BOM><USP>]
 // BOM = \uFEFF
 // USP = Other unicode space separator
-const spaceChars = " \bc\u00a0\t\r\n\u2028\u2029\uFEFF";
+const spaceChars = " \f\n\r\t\v\u00a0\u1680\u2028\u2029\u202f\u205f\u3000\ufeff";
 export class Spaces extends CharClassHelper {
   matches(charCode: number): boolean {
+    // if (charCode == 0x180e) return true;
+    if (charCode >= 0x2000 && charCode <= 0x200a) return true;
     for (let i = 0; i < spaceChars.length; i++) {
       if (spaceChars.charCodeAt(i) == charCode) return true;
     }

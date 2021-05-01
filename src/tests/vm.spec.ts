@@ -90,8 +90,8 @@ describe("VM Tests", () => {
   });
 
   test("Test a|aa|aaa with priority", () => {
-    const re = (new Rule("a", 0, 100), "aa", "aaa");
-    expectMatchStrings(execute({}, "aaaa", re), ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
+    const re = [new Rule("a", 0, 100), "aa", "aaa"];
+    expectMatchStrings(execute({}, "aaaa", ...re), ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
   });
 
   test("Test a|aa|aaa without priority", () => {
@@ -158,8 +158,8 @@ describe("VM Tests", () => {
   });
 
   test("Test a*? | aa with priority", () => {
-    const re = ["a*?", new Rule("aa", 1, 20)];
-    expectMatchStrings(execute({}, "aaaaa", ...re), ["aa", 1], ["aa", 1], ["a", 0]);
+    const re = [new Rule("aa", 1, 20), "a*?"];
+    expectMatchStrings(execute({}, "aaaaa", ...re), ["aa", 0], ["aa", 0], ["a", 1]);
   });
 
   test("Test (a|b){0, 10}(a|b){5,10}", () => {

@@ -83,7 +83,9 @@ export function execute(configs: any, input: string, ...repattern: REPatternType
     found.push(toMatch(next, tape));
     next = vm.match(tape);
   }
-  if (configs.debug) {
+  const debugProg = configs.debugProg || configs.debug == "all";
+  const debugFound = configs.debug;
+  if (debugProg) {
     console.log(
       "Prog: \n",
       `${prog.debugValue(InstrDebugValue).join("\n")}`,
@@ -91,6 +93,10 @@ export function execute(configs: any, input: string, ...repattern: REPatternType
       repattern,
       "\n\nInput: ",
       input,
+    );
+  }
+  if (debugFound) {
+    console.log(
       "\n\nFound: ",
       util.inspect(found, {
         showHidden: false,
