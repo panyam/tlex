@@ -299,6 +299,34 @@ export class RegexParser {
     return [new Char(ch, ch), 1];
   }
 
+  parsePropertyEscape(index = 0, end = 0): [Char, number] {
+    const pattern = this.pattern;
+    if (pattern[index] + 1 != "{") {
+      throw new SyntaxError("Invalid property escape");
+    }
+    index += 2;
+    let clEnd = index;
+    let eqPos = -1;
+    while (clEnd <= end && pattern[clEnd] != "}") {
+      if (pattern[clEnd] == "=") eqPos = clEnd;
+      clEnd++;
+    }
+    if (clEnd > end) {
+      throw new SyntaxError("Invalid property escape");
+    }
+    // see if this is a lone property escape
+    const propStr = pattern.substring(index, clEnd);
+    let propName = "General_Category";
+    let propValue = propStr;
+    if (eqPos >= 0) {
+      const parts = propStr.split("=");
+      if (parts.length != 2) throw new SyntaxError("Invalid property escape");
+      propName = parts[0].trim();
+      propValue = parts[1].trim();
+    }
+    return [Char.PropertyEscape(propName, propValue), 2 + clEnd + 1 - index];
+  }
+
   parseEscapeChar(index = 0, end = 0): [Char, number] {
     const pattern = this.pattern;
     TSU.assert(pattern[index] == "\\", "Expected '\\'");
@@ -308,6 +336,10 @@ export class RegexParser {
       throw new SyntaxError("Encounted unexpected end of input after \\");
     }
     const ch = pattern[index];
+    if ((this.unicode && ch == "p") || ch == "P") {
+      // property escapes
+      return this.parsePropertyEscape(index, end);
+    }
     switch (ch) {
       // char classes
       case "w":

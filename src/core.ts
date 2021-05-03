@@ -1,5 +1,6 @@
 import * as TSU from "@panyam/tsutils";
 import { CharClassType, CharClassHelpers } from "./charclasses";
+import { PropertyEscapes } from "./propertyescapes";
 
 export enum RegexType {
   ANY,
@@ -341,7 +342,10 @@ export class Char extends Regex {
   // start == 0 and end == MAX_INT => ANY
   // start == end => Single char
   // start < end => Char range
-  // Start == -1 => end = char class
+  // Start == -1  => end = char class
+  // Start == < -1:
+  //    PropertyName Id = Abs(Start)
+  //    PropertyValue Id = end and if end < 0 then Negated
   constructor(public start = 0, public end = 0) {
     super();
     if (end < start) {
@@ -357,6 +361,14 @@ export class Char extends Regex {
     return new Char(-1, charClass);
   }
 
+  static PropertyClass(propName: string, propValue: string): Char {
+    propName = propName.trim();
+    propValue = propValue.trim();
+    if (propName.length == 0 || propValue.length == 0) throw new SyntaxError("Invalid property escape");
+    const propNameId = PropertyEscapes.getPropertyName(propName);
+    const propValueId = PropertyEscapes.getPropertyValue(propName);
+  }
+
   static of(ch: string | number): Char {
     if (typeof ch === "string") {
       ch = ch.charCodeAt(0);
@@ -365,7 +377,11 @@ export class Char extends Regex {
   }
 
   get isCharClass(): boolean {
-    return this.start < 0;
+    return this.start == -1;
+  }
+
+  get isPropertyEscape(): boolean {
+    return this.start < -1;
   }
 
   compareTo(another: Char): number {
