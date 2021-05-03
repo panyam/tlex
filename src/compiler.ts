@@ -1,6 +1,20 @@
 import * as TSU from "@panyam/tsutils";
 
-import { Rule, RegexType, Quant, Regex, Cat, Neg, Char, CharRange, Ref, LookAhead, LookBack, Union } from "./core";
+import {
+  Rule,
+  RegexType,
+  Quant,
+  Regex,
+  Cat,
+  Neg,
+  Char,
+  CharRange,
+  NumRef,
+  Ref,
+  LookAhead,
+  LookBack,
+  Union,
+} from "./core";
 import { OpCode, Prog, Instr } from "./vm";
 
 type RegexResolver = (name: string) => Regex;
@@ -79,6 +93,8 @@ export class Compiler {
       this.compileQuant(expr as Quant, prog);
     } else if (expr.tag == RegexType.REF) {
       this.compileRef(expr as Ref, prog);
+    } else if (expr.tag == RegexType.NUM_REF) {
+      this.compileNumRef(expr as NumRef, prog);
     } else if (expr.tag == RegexType.NEG) {
       this.compileNeg(expr as Neg, prog);
     } else if (expr.tag == RegexType.LOOK_AHEAD) {
@@ -92,7 +108,7 @@ export class Compiler {
       if (this.emitGroups) prog.add(OpCode.GroupEnd, 1 + expr.groupIndex);
       if (this.emitPosition) prog.add(OpCode.Save, (1 + expr.groupIndex) * 2 + 1);
     }
-    if (this.listener) {
+    if (this.listener && prog.length > currOffset) {
       this.listener(expr, prog, currOffset, prog.length - currOffset);
     }
     return prog.length - start;
@@ -102,6 +118,11 @@ export class Compiler {
     for (const child of cat.children) {
       this.compileExpr(child, prog);
     }
+  }
+
+  compileNumRef(ne: NumRef, prog: Prog): void {
+    // TODO - This may need a resolution at "runtime" so the instruction
+    // should reflect as such?
   }
 
   compileRef(ne: Ref, prog: Prog): void {

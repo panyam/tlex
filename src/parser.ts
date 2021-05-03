@@ -11,6 +11,7 @@ import {
   Char,
   CharRange,
   Ref,
+  NumRef,
   LookAhead,
   LookBack,
   Union,
@@ -29,7 +30,7 @@ class GroupCounter {
 
 export class RegexParser {
   counter: GroupCounter;
-  constructor(public readonly pattern: string) {
+  constructor(public readonly pattern: string, readonly unicode = false) {
     this.counter = new GroupCounter();
   }
 
@@ -51,7 +52,20 @@ export class RegexParser {
       if (currCh == ".") {
         stack.push(new Any());
         curr++;
+      } else if (currCh == "\\" && pattern[curr + 1] >= "1" && pattern[curr + 1] <= "9") {
+        // Numeric references
+        curr++;
+        let num = "";
+        while (curr <= end && pattern[curr] >= "0" && pattern[curr] <= "9") {
+          num = num + pattern[curr++];
+        }
+        const refNum = parseInt(num);
+        if (refNum > this.counter.current + 1) {
+          throw new SyntaxError("Invalid reference: " + refNum);
+        }
+        stack.push(new NumRef(refNum));
       } else if (currCh == "\\" && pattern[curr + 1] == "k" && pattern[curr + 2] == "<") {
+        // Named references
         curr += 3;
         let gtPos = curr;
         while (gtPos <= end && pattern[gtPos] != ">") gtPos++;
@@ -89,6 +103,8 @@ export class RegexParser {
         curr = end + 1;
       } else if (currCh == "(") {
         curr = this.parseGroup(stack, curr, end);
+      } else if (currCh == ")" || currCh == "]" || currCh == "}") {
+        throw new SyntaxError(`Unmatched ${currCh}`);
       } else if (pattern[curr] == "*" || pattern[curr] == "?" || pattern[curr] == "+" || pattern[curr] == "{") {
         curr = this.parseQuant(stack, curr, end);
       } else {
@@ -118,6 +134,9 @@ export class RegexParser {
     ) {
       throw new SyntaxError("Nothing to repeat");
     }
+    if (this.unicode && (last.tag == RegexType.LOOK_AHEAD || last.tag == RegexType.LOOK_BACK)) {
+      throw new SyntaxError("Cannot have quantifier on assertion in unicode mode");
+    }
     const quant = (stack[stack.length - 1] = new Quant(last));
     if (pattern[curr] == "*") {
       quant.minCount = 0;
@@ -131,7 +150,9 @@ export class RegexParser {
     } else if (pattern[curr] == "{") {
       // find the next "}"
       const clPos = pattern.indexOf("}", curr + 1);
-      TSU.assert(clPos > curr && clPos <= end, "Unexpected end of input while looking for '}'");
+      if (clPos <= curr || clPos > end) {
+        throw new SyntaxError("Unexpected end of input while looking for '}'");
+      }
       const sub = pattern.substring(curr + 1, clPos);
       const parts = sub.split(",").map((x) => parseInt(x.trim()));
       if (parts.length == 1) {
@@ -301,6 +322,11 @@ export class RegexParser {
         return [Char.CharClass(CharClassType.SPACES), 2];
       case "S":
         return [Char.CharClass(CharClassType.NOT_SPACES), 2];
+      case "0":
+        if (pattern[index + 1] >= "0" && pattern[index + 1] <= "9" && this.unicode) {
+          throw new SyntaxError("Invalid decimal escape");
+        }
+        return [Char.of("\0"), 2];
       case "r":
         return [Char.of("\r"), 2];
       case "n":
@@ -322,12 +348,17 @@ export class RegexParser {
       case "c":
         // ControlEscape:
         // https://262.ecma-international.org/5.1/#sec-15.10.2.10
+        if (this.unicode || index >= end) {
+          throw new SyntaxError(`Invalid char sequence at ${index}, ${end}`);
+        }
         const next = pattern.charCodeAt(index + 1) % 32;
         return [Char.of(next), 3];
       case "x":
         // 2 digit hex digits
         index++;
-        TSU.assert(index <= end - 1, `Invalid hex sequence at ${index}, ${end}`);
+        if (index >= end) {
+          throw new SyntaxError(`Invalid hex sequence at ${index}, ${end}`);
+        }
         const hexSeq = pattern.substring(index, index + 2);
         const hexVal = parseInt(hexSeq, 16);
         TSU.assert(!isNaN(hexVal), `Invalid hex sequence: '${hexSeq}'`);
@@ -335,12 +366,17 @@ export class RegexParser {
       case "u": // this could \uABCD or \u{ABCDEF}
         index++;
         // 4 digit hex digits for unicode
-        TSU.assert(index <= end - 3, `Invalid unicode sequence at ${index}`);
+        if (index > end - 3) {
+          throw new SyntaxError(`Invalid unicode sequence at ${index}`);
+        }
         const ucodeSeq = pattern.substring(index, index + 4);
         const ucodeVal = parseInt(ucodeSeq, 16);
-        TSU.assert(!isNaN(ucodeVal), `Invalid unicode sequence: '${ucodeSeq}'`);
+        if (isNaN(ucodeVal)) {
+          throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
+        }
         return [new Char(ucodeVal, ucodeVal), 6];
       default:
+        if (this.unicode) throw new SyntaxError("Invalid escape character: " + ch);
         return [Char.of(ch), 2];
     }
   }

@@ -372,7 +372,7 @@ export class VM {
   }
 
   protected hasMore(tape: Tape): boolean {
-    return this.forward ? tape.hasMore : tape.index > 0;
+    return this.forward ? tape.hasMore : tape.index >= 0;
   }
 
   protected nextCh(tape: Tape): string {
@@ -402,9 +402,11 @@ export class VM {
   }
 
   recurseMatch(tape: Tape, startOffset: number, endOffset: number, forward = true, negate = false): [boolean, number] {
-    const vm = new VM(this.prog, startOffset, endOffset, forward);
     const savedPos = tape.index;
-    tape.advance();
+    if (!tape.canAdvance(forward ? 1 : -1)) return [false, -1];
+    // if (!forward)
+    tape.advance(forward ? 1 : -1);
+    const vm = new VM(this.prog, startOffset, endOffset, forward);
     const match = vm.match(tape);
     const newPos = tape.index;
     tape.index = savedPos; // always restore it first and let caller use it
@@ -500,28 +502,36 @@ export class VM {
         break;
       case OpCode.NegChar:
       case OpCode.CINegChar:
-        advanceTape = !this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CINegChar);
+        if (this.hasMore(tape)) {
+          advanceTape = !this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CINegChar);
+        }
         break;
       case OpCode.Char:
       case OpCode.CIChar:
-        advanceTape = this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CIChar);
+        if (this.hasMore(tape)) {
+          advanceTape = this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CIChar);
+        }
         break;
       case OpCode.NegCharRange:
       case OpCode.CINegCharRange:
-        advanceTape = true;
-        for (let a = 0; a < args.length; a += 2) {
-          if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CINegCharRange)) {
-            advanceTape = false;
-            break;
+        if (this.hasMore(tape)) {
+          advanceTape = true;
+          for (let a = 0; a < args.length; a += 2) {
+            if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CINegCharRange)) {
+              advanceTape = false;
+              break;
+            }
           }
         }
         break;
       case OpCode.CharRange:
       case OpCode.CICharRange:
-        for (let a = 0; a < args.length; a += 2) {
-          if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CICharRange)) {
-            advanceTape = true;
-            break;
+        if (this.hasMore(tape)) {
+          for (let a = 0; a < args.length; a += 2) {
+            if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CICharRange)) {
+              advanceTape = true;
+              break;
+            }
           }
         }
         break;
@@ -532,7 +542,7 @@ export class VM {
         }
         break;
     }
-    if (advanceTape && this.hasMore(tape)) {
+    if (advanceTape /* && this.hasMore(tape) */) {
       this.addThread(this.jumpBy(thread, 1), this.nextThreads, tape, delta);
     }
     return currMatch;

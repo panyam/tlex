@@ -1,15 +1,30 @@
+export interface TapeInterface {
+  index: number;
+  advance(delta: number): boolean;
+  canAdvance(delta: number): boolean;
+  readonly hasMore: boolean;
+  readonly currCh: string;
+  readonly currChCode: number;
+  readonly currChCodeLower: number;
+  readonly currChCodeUpper: number;
+
+  charAt(index: number): string;
+  charCodeAt(index: number): number;
+  charCodeAtLower(index: number): number;
+  charCodeAtUpper(index: number): number;
+}
+
 /**
  * A Tape of characters we would read with some extra helpers like rewinding
  * forwarding and prefix checking that is fed into the different tokenizers
  * used by the scannerless parsers.
  */
-export class Tape {
-  lineLengths: number[] = [];
+export class Tape implements TapeInterface {
   index = 0;
   protected _rawInput: string;
   readonly input: string[];
 
-  constructor(input: string) {
+  constructor(input: string, public forward = true) {
     this._rawInput = input;
     this.input = [...input];
   }
@@ -24,74 +39,33 @@ export class Tape {
     // return this.input.slice(startIndex, endIndex).join("");
   }
 
-  advance(delta = 1): this {
-    this.index += delta;
-    return this;
+  advance(delta = 1): boolean {
+    const next = this.forward ? this.index + delta : this.index - delta;
+    this.index = next;
+    // if (next < 0) return false;
+    // if (next >= this.input.length) return false;
+    return true;
   }
 
-  /**
-   * Advances the tape to the end of the first occurence of the given pattern.
-   */
-  advanceAfter(pattern: string, ensureNoPrefixSlash = true): number {
-    const newPos = this.advanceTill(pattern, ensureNoPrefixSlash);
-    if (newPos >= 0) {
-      this.index += pattern.length;
-    }
-    return this.index;
-  }
-
-  /**
-   * Advances the tape till the start of a given pattern.
-   */
-  advanceTill(pattern: string, ensureNoPrefixSlash = true): number {
-    let lastIndex = this.index;
-    while (true) {
-      const endIndex = this._rawInput.indexOf(pattern, lastIndex);
-      if (endIndex < 0) {
-        throw new Error(`Unexpected end of input before (${pattern})`);
-      } else if (ensureNoPrefixSlash) {
-        let numSlashes = 0;
-        for (let i = endIndex - 1; i >= 0; i--) {
-          if (this.input[i] == "\\") numSlashes++;
-          else break;
-        }
-        if (numSlashes % 2 == 0) {
-          // even number of slashes mean we are fine
-          // found a match
-          this.index = endIndex;
-          return endIndex;
-        }
-        lastIndex = endIndex + 1;
-      } else {
-        // found a match
-        this.index = endIndex;
-        return endIndex;
-      }
-    }
-  }
-
-  /**
-   * Tells if the given prefix is matche at the current position of the tokenizer.
-   */
-  matches(prefix: string, advance = true): boolean {
-    const lastIndex = this.index;
-    let i = 0;
-    let success = true;
-    for (; i < prefix.length; i++) {
-      if (prefix[i] != this.nextCh()) {
-        success = false;
-        break;
-      }
-    }
-    // Reset pointers if we are only peeking or match failed
-    if (!advance || !success) {
-      this.index = lastIndex;
-    }
-    return success;
+  canAdvance(delta = 1): boolean {
+    const next = this.forward ? this.index + delta : this.index - delta;
+    if (next < 0) return false;
+    if (next >= this.input.length) return false;
+    return true;
   }
 
   get hasMore(): boolean {
-    return this.index < this.input.length;
+    return this.forward ? this.index < this.input.length : this.index > 0;
+  }
+
+  get prevCh(): string {
+    return this.input[this.index - (this.forward ? 1 : -1)];
+  }
+
+  get nextCh(): string {
+    const next = this.index + (this.forward ? 1 : -1);
+    if (next < 0 || next >= this.input.length) return "";
+    return this.input[next];
   }
 
   get currCh(): string {
@@ -115,30 +89,90 @@ export class Tape {
     return this.input[this.index].toUpperCase().charCodeAt(0);
   }
 
-  nextCh(): string {
-    if (!this.hasMore) return "";
-    const ch = this.input[this.index++];
-    /*
-    this.currCol++;
-    if (ch == "\n" || ch == "\r") {
-      this.lineLengths[this.currLine] = this.currCol + 1;
-      this.currCol = 0;
-      this.currLine++;
-    }
-    */
-    return ch;
+  charAt(index: number): string {
+    if (index >= 0 && index < this.input.length) return "";
+    return this.input[index];
   }
 
-  rewind(): boolean {
-    //
-    this.index--;
-    /*
-    if (this.currCol > 0) this.currCol--;
-    else {
-      this.currLine--;
-      this.currCol = this.lineLengths[this.currLine] - 1;
+  charCodeAt(index: number): number {
+    if (index >= 0 && index < this.input.length) return -1;
+    return this.input[this.index].charCodeAt(index);
+  }
+
+  charCodeAtLower(index: number): number {
+    if (index >= 0 && index < this.input.length) -1;
+    return this.input[this.index].toLowerCase().charCodeAt(index);
+  }
+
+  charCodeAtUpper(index: number): number {
+    if (index >= 0 && index < this.input.length) return -1;
+    return this.input[this.index].toUpperCase().charCodeAt(index);
+  }
+}
+
+export class TapeHelper {
+  /**
+   * Advances the tape to the end of the first occurence of
+   * the given pattern.
+   */
+  static advanceAfter(tape: TapeInterface, pattern: string, ensureNoPrefixSlash = true): number {
+    let pos = TapeHelper.advanceTo(tape, pattern, ensureNoPrefixSlash);
+    if (pos >= 0) {
+      pos += pattern.length;
+      tape.index = pos;
     }
-    */
-    return true;
+    return pos;
+  }
+
+  /**
+   * Advances the tape till the start of a given pattern.
+   * This is not the most optimal implementation and just does a brute
+   * force search at each index.  Instead using the Regex interface
+   * directly will be faster.
+   */
+  static advanceTo(tape: TapeInterface, pattern: string, ensureNoPrefixSlash = true): number {
+    const lastIndex = tape.index;
+    while (tape.hasMore) {
+      const currStart = tape.index;
+      if (TapeHelper.matches(tape, pattern)) {
+        const endIndex = tape.index;
+        tape.index = currStart;
+        let numSlashes = 0;
+        if (ensureNoPrefixSlash) {
+          for (let i = endIndex - 1; i >= 0; i--) {
+            if (tape.charAt(i) == "\\") numSlashes++;
+            else break;
+          }
+        }
+        if (numSlashes % 2 == 0) {
+          return tape.index;
+        }
+      }
+      tape.advance(1);
+    }
+    tape.index = lastIndex;
+    throw new Error(`Unexpected end of input before (${pattern})`);
+    return -1;
+  }
+
+  /**
+   * Tells if the given prefix is matche at the current position of the tokenizer.
+   */
+  static matches(tape: TapeInterface, prefix: string, advance = true): boolean {
+    const lastIndex = tape.index;
+    let i = 0;
+    let success = true;
+    for (; i < prefix.length; i++) {
+      if (prefix[i] != tape.currCh) {
+        success = false;
+        break;
+      }
+      tape.advance(1);
+    }
+    // Reset pointers if we are only peeking or match failed
+    if (!advance || !success) {
+      tape.index = lastIndex;
+    }
+    return success;
   }
 }

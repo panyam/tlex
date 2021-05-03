@@ -577,7 +577,7 @@ describe("ECMA Tests - Simple Unicode Equivalence Tests", () => {
     }
   });
   test(caseLabel("15.10.2.11_A1_T1 : Test null chars"), () => {
-    expectMatchIndexes(execute({}, "\u0000", /\0/));
+    expectMatchIndexes(execute({}, "\u0000", /\0/), 0, 1);
   });
 });
 
@@ -661,6 +661,7 @@ describe("ECMA Tests - Character Classes", () => {
     expectMatchIndexes(execute({}, "1\nb3\nd", /[\d][\n][^\d]/), 0, 3, 6);
   });
 });
+
 describe("ECMA Tests - Look Ahead/Look Back assertion test", () => {
   test(caseLabel("15.10.2.13_A1_T3"), () => {
     const re = /q[ax-zb](?=\s+)/;
@@ -1018,7 +1019,101 @@ describe("ECMA Tests - Decimal Digits - 15.10.2.7", () => {
   });
 });
 
-const DOT_STAR = new Rule(".*", 0, 0);
+describe("ECMA Tests - Lookaheads - 15.10.2_A1_T1", () => {
+  test(caseLabel("15.10.2_A1_T1"), () => {
+    //
+    const TextSE = "[^<]+";
+    const UntilHyphen = "[^-]*-";
+    const Until2Hyphens = UntilHyphen + "([^-]" + UntilHyphen + ")*-";
+    const CommentCE = Until2Hyphens + ">?";
+    const UntilRSBs = "[^\\]]*\\]([^\\]]+\\])*\\]+";
+    const CDATA_CE = UntilRSBs + "([^\\]>]" + UntilRSBs + ")*>";
+    const S = "[ \\n\\t\\r]+";
+    const NameStrt = "[A-Za-z_:]|[^\\x00-\\x7F]";
+    const NameChar = "[A-Za-z0-9_:.-]|[^\\x00-\\x7F]";
+    const Name = "(" + NameStrt + ")(" + NameChar + ")*";
+    const QuoteSE = '"[^"]' + "*" + '"' + "|'[^']*'";
+    const DT_IdentSE = S + Name + "(" + S + "(" + Name + "|" + QuoteSE + "))*";
+    const MarkupDeclCE = "([^\\]\"'><]+|" + QuoteSE + ")*>";
+    const S1 = "[\\n\\r\\t ]";
+    const UntilQMs = "[^?]*\\?+";
+    const PI_Tail = "\\?>|" + S1 + UntilQMs + "([^>?]" + UntilQMs + ")*>";
+    const DT_ItemSE =
+      "<(!(--" + Until2Hyphens + ">|[^-]" + MarkupDeclCE + ")|\\?" + Name + "(" + PI_Tail + "))|%" + Name + ";|" + S;
+    const DocTypeCE = DT_IdentSE + "(" + S + ")?(\\[(" + DT_ItemSE + ")*\\](" + S + ")?)?>?";
+    const DeclCE = "--(" + CommentCE + ")?|\\[CDATA\\[(" + CDATA_CE + ")?|DOCTYPE(" + DocTypeCE + ")?";
+    const PI_CE = Name + "(" + PI_Tail + ")?";
+    const EndTagCE = Name + "(" + S + ")?>?";
+    const AttValSE = '"[^<"]' + "*" + '"' + "|'[^<']*'";
+    const ElemTagCE = Name + "(" + S + Name + "(" + S + ")?=(" + S + ")?(" + AttValSE + "))*(" + S + ")?/?>?";
+    const MarkupSPE = "<(!(" + DeclCE + ")?|\\?(" + PI_CE + ")?|/(" + EndTagCE + ")?|(" + ElemTagCE + ")?)";
+    const XML_SPE = TextSE + "|" + MarkupSPE;
+    const __patterns = [
+      TextSE,
+      UntilHyphen,
+      Until2Hyphens,
+      CommentCE,
+      UntilRSBs,
+      CDATA_CE,
+      S,
+      NameStrt,
+      NameChar,
+      Name,
+      QuoteSE,
+      DT_IdentSE,
+      MarkupDeclCE,
+      S1,
+      UntilQMs,
+      PI_Tail,
+      DT_ItemSE,
+      DocTypeCE,
+      DeclCE,
+      PI_CE,
+      EndTagCE,
+      AttValSE,
+      ElemTagCE,
+      MarkupSPE,
+      XML_SPE,
+      ".",
+    ];
+    const __html =
+      "" +
+      '<html xmlns="http://www.w3.org/1999/xhtml"\n' +
+      '      xmlns:xlink="http://www.w3.org/XML/XLink/0.9">\n' +
+      "  <head><title>Three Namespaces</title></head>\n" +
+      "  <body>\n" +
+      '    <h1 align="center">An Ellipse and a Rectangle</h1>\n' +
+      '    <svg xmlns="http://www.w3.org/Graphics/SVG/SVG-19991203.dtd"\n' +
+      '         width="12cm" height="10cm">\n' +
+      '      <ellipse rx="110" ry="130" />\n' +
+      '      <rect x="4cm" y="1cm" width="3cm" height="6cm" />\n' +
+      "    </svg>\n" +
+      '    <p xlink:type="simple" xlink:href="ellipses.html">\n' +
+      "      More about ellipses\n" +
+      "    </p>\n" +
+      '    <p xlink:type="simple" xlink:href="rectangles.html">\n' +
+      "      More about rectangles\n" +
+      "    </p>\n" +
+      "    <hr/>\n" +
+      "    <p>Last Modified February 13, 2000</p>\n" +
+      "  </body>\n" +
+      "</html>";
+    /*
+    const matches = execute({ debug: true }, __html, ...__patterns);
+    expectMatchIndexes(matches);
+    */
+    __patterns.forEach((pat, index) => {
+      const repat = ".*?(" + pat + ")";
+      const matches = execute({}, repat, __html);
+      // console.log("Testing pattern at index: ", index, repat);
+      expectMatchIndexes(matches);
+    });
+  });
+});
+
+describe.skip("ECMA Tests - 15.10.3.1", () => {
+  // Basic RegExp Constructor tests - not needed
+});
 
 describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
   test(caseLabel("15.10.2.8_A1_T1-T5"), () => {
@@ -1365,101 +1460,6 @@ describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
   });
 });
 
-describe("ECMA Tests - Lookaheads - 15.10.2_A1_T1", () => {
-  test(caseLabel("15.10.2_A1_T1"), () => {
-    //
-    const TextSE = "[^<]+";
-    const UntilHyphen = "[^-]*-";
-    const Until2Hyphens = UntilHyphen + "([^-]" + UntilHyphen + ")*-";
-    const CommentCE = Until2Hyphens + ">?";
-    const UntilRSBs = "[^\\]]*\\]([^\\]]+\\])*\\]+";
-    const CDATA_CE = UntilRSBs + "([^\\]>]" + UntilRSBs + ")*>";
-    const S = "[ \\n\\t\\r]+";
-    const NameStrt = "[A-Za-z_:]|[^\\x00-\\x7F]";
-    const NameChar = "[A-Za-z0-9_:.-]|[^\\x00-\\x7F]";
-    const Name = "(" + NameStrt + ")(" + NameChar + ")*";
-    const QuoteSE = '"[^"]' + "*" + '"' + "|'[^']*'";
-    const DT_IdentSE = S + Name + "(" + S + "(" + Name + "|" + QuoteSE + "))*";
-    const MarkupDeclCE = "([^\\]\"'><]+|" + QuoteSE + ")*>";
-    const S1 = "[\\n\\r\\t ]";
-    const UntilQMs = "[^?]*\\?+";
-    const PI_Tail = "\\?>|" + S1 + UntilQMs + "([^>?]" + UntilQMs + ")*>";
-    const DT_ItemSE =
-      "<(!(--" + Until2Hyphens + ">|[^-]" + MarkupDeclCE + ")|\\?" + Name + "(" + PI_Tail + "))|%" + Name + ";|" + S;
-    const DocTypeCE = DT_IdentSE + "(" + S + ")?(\\[(" + DT_ItemSE + ")*\\](" + S + ")?)?>?";
-    const DeclCE = "--(" + CommentCE + ")?|\\[CDATA\\[(" + CDATA_CE + ")?|DOCTYPE(" + DocTypeCE + ")?";
-    const PI_CE = Name + "(" + PI_Tail + ")?";
-    const EndTagCE = Name + "(" + S + ")?>?";
-    const AttValSE = '"[^<"]' + "*" + '"' + "|'[^<']*'";
-    const ElemTagCE = Name + "(" + S + Name + "(" + S + ")?=(" + S + ")?(" + AttValSE + "))*(" + S + ")?/?>?";
-    const MarkupSPE = "<(!(" + DeclCE + ")?|\\?(" + PI_CE + ")?|/(" + EndTagCE + ")?|(" + ElemTagCE + ")?)";
-    const XML_SPE = TextSE + "|" + MarkupSPE;
-    const __patterns = [
-      TextSE,
-      UntilHyphen,
-      Until2Hyphens,
-      CommentCE,
-      UntilRSBs,
-      CDATA_CE,
-      S,
-      NameStrt,
-      NameChar,
-      Name,
-      QuoteSE,
-      DT_IdentSE,
-      MarkupDeclCE,
-      S1,
-      UntilQMs,
-      PI_Tail,
-      DT_ItemSE,
-      DocTypeCE,
-      DeclCE,
-      PI_CE,
-      EndTagCE,
-      AttValSE,
-      ElemTagCE,
-      MarkupSPE,
-      XML_SPE,
-      ".",
-    ];
-    const __html =
-      "" +
-      '<html xmlns="http://www.w3.org/1999/xhtml"\n' +
-      '      xmlns:xlink="http://www.w3.org/XML/XLink/0.9">\n' +
-      "  <head><title>Three Namespaces</title></head>\n" +
-      "  <body>\n" +
-      '    <h1 align="center">An Ellipse and a Rectangle</h1>\n' +
-      '    <svg xmlns="http://www.w3.org/Graphics/SVG/SVG-19991203.dtd"\n' +
-      '         width="12cm" height="10cm">\n' +
-      '      <ellipse rx="110" ry="130" />\n' +
-      '      <rect x="4cm" y="1cm" width="3cm" height="6cm" />\n' +
-      "    </svg>\n" +
-      '    <p xlink:type="simple" xlink:href="ellipses.html">\n' +
-      "      More about ellipses\n" +
-      "    </p>\n" +
-      '    <p xlink:type="simple" xlink:href="rectangles.html">\n' +
-      "      More about rectangles\n" +
-      "    </p>\n" +
-      "    <hr/>\n" +
-      "    <p>Last Modified February 13, 2000</p>\n" +
-      "  </body>\n" +
-      "</html>";
-    /*
-    const matches = execute({ debug: true }, __html, ...__patterns);
-    expectMatchIndexes(matches);
-    */
-    __patterns.forEach((pat, index) => {
-      const repat = ".*?(" + pat + ")";
-      const matches = execute({}, repat, __html);
-      // console.log("Testing pattern at index: ", index, repat);
-      expectMatchIndexes(matches);
-    });
-  });
-});
-
-describe.skip("ECMA Tests - 15.10.3.1", () => {
-  // Basic RegExp Constructor tests - not needed
-});
 describe.skip("ECMA Tests - 15.10.4.1", () => {
   // Basic RegExp Constructor tests - not needed
 });
@@ -1470,12 +1470,17 @@ describe.skip("ECMA Tests - 15.10.7.1", () => {
   // Basic RegExp Constructor tests - not needed
 });
 
+function testFileLink(x: string): string {
+  if (!x.endsWith(".js")) x += ".js";
+  return "https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/" + x;
+}
+
 describe("ECMA Tests - Unicode Char Tests", () => {
-  test("character-class-escape-non-whitespace-u180e", () => {
+  test(testFileLink("character-class-escape-non-whitespace-u180e"), () => {
     expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\S+/), 0, 1);
     expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\s+/));
   });
-  test("character-class-escape-non-whitespace", () => {
+  test.skip(testFileLink("character-class-escape-non-whitespace"), () => {
     const whitespaceChars = [
       0x0009,
       0x000a,
@@ -1528,14 +1533,519 @@ describe("ECMA Tests - Unicode Char Tests", () => {
       }
     }
   });
-  test("regexp-class-chars", () => {
+  test(testFileLink("regexp-class-chars"), () => {
     expectMatchIndexes(execute({}, "/", /[/]/), 0, 1);
     expectMatchIndexes(execute({}, "x", /[/]/));
     expectMatchIndexes(execute({}, "/", /[//]/), 0, 1);
     expectMatchIndexes(execute({}, "x", /[//]/));
   });
-  test("regexp-class-chars", () => {
+  test(testFileLink("regexp-class-chars"), () => {
     expectMatchIndexes(execute({}, "\u0008", /[\b]/), 0, 1);
     expectMatchIndexes(execute({}, "A", /[\b-A]/), 0, 1);
+  });
+
+  test("https://github.com/tc39/test262/blob/master/test/built-ins/RegExp/unicode_identity_escape.js", () => {
+    expectMatchIndexes(execute({}, "^", /\^/u), 0, 1);
+    expectMatchIndexes(execute({}, "$", /\$/u), 0, 1);
+    expectMatchIndexes(execute({}, "\\", /\\/u), 0, 1);
+    expectMatchIndexes(execute({}, ".", /\./u), 0, 1);
+    expectMatchIndexes(execute({}, "*", /\*/u), 0, 1);
+    expectMatchIndexes(execute({}, "+", /\+/u), 0, 1);
+    expectMatchIndexes(execute({}, "?", /\?/u), 0, 1);
+    expectMatchIndexes(execute({}, "(", /\(/u), 0, 1);
+    expectMatchIndexes(execute({}, ")", /\)/u), 0, 1);
+    expectMatchIndexes(execute({}, "[", /\[/u), 0, 1);
+    expectMatchIndexes(execute({}, "]", /\]/u), 0, 1);
+    expectMatchIndexes(execute({}, "{", /\{/u), 0, 1);
+    expectMatchIndexes(execute({}, "}", /\}/u), 0, 1);
+    expectMatchIndexes(execute({}, "|", /\|/u), 0, 1);
+    expectMatchIndexes(execute({}, "/", /\//u), 0, 1);
+
+    // IdentityEscape in ClassEscape
+    expectMatchIndexes(execute({}, "^", /[\^]/u), 0, 1);
+    expectMatchIndexes(execute({}, "$", /[\$]/u), 0, 1);
+    expectMatchIndexes(execute({}, "\\", /[\\]/u), 0, 1);
+    expectMatchIndexes(execute({}, ".", /[\.]/u), 0, 1);
+    expectMatchIndexes(execute({}, "*", /[\*]/u), 0, 1);
+    expectMatchIndexes(execute({}, "+", /[\+]/u), 0, 1);
+    expectMatchIndexes(execute({}, "?", /[\?]/u), 0, 1);
+    expectMatchIndexes(execute({}, "(", /[\(]/u), 0, 1);
+    expectMatchIndexes(execute({}, ")", /[\)]/u), 0, 1);
+    expectMatchIndexes(execute({}, "[", /[\[]/u), 0, 1);
+    expectMatchIndexes(execute({}, "]", /[\]]/u), 0, 1);
+    expectMatchIndexes(execute({}, "{", /[\{]/u), 0, 1);
+    expectMatchIndexes(execute({}, "}", /[\}]/u), 0, 1);
+    expectMatchIndexes(execute({}, "|", /[\|]/u), 0, 1);
+    expectMatchIndexes(execute({}, "/", /[\/]/u), 0, 1);
+  });
+  test(testFileLink("unicode_restricted_brackets"), () => {
+    expect(() => parse("(")).toThrow(SyntaxError);
+    expect(() => parse(")")).toThrow(SyntaxError);
+    expect(() => parse("[")).toThrow(SyntaxError);
+    expect(() => parse("]")).toThrow(SyntaxError);
+    expect(() => parse("{")).toThrow(SyntaxError);
+    expect(() => parse("}")).toThrow(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_character_class_escape"), () => {
+    // Leading CharacterClassEscape.
+    expect(() => parse("[\\d-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\D-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\s-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\S-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\w-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\W-a]")).toThrowError(SyntaxError);
+
+    // Trailing CharacterClassEscape.
+    expect(() => parse("[a-\\d]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\D]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\s]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\S]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\w]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\W]")).toThrowError(SyntaxError);
+
+    // Leading and trailing CharacterClassEscape.
+    expect(() => parse("[\\d-\\d]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\D-\\D]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\s-\\s]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\S-\\S]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\w-\\w]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\W-\\W]")).toThrowError(SyntaxError);
+  });
+  test.skip(testFileLink("unicode_restricted_identity_escape"), () => {
+    //
+    function isSyntaxCharacter(c: string): boolean {
+      switch (c) {
+        case "^":
+        case "$":
+        case "\\":
+        case ".":
+        case "*":
+        case "+":
+        case "?":
+        case "(":
+        case ")":
+        case "[":
+        case "]":
+        case "{":
+        case "}":
+        case "|":
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    function isAlphaDigit(c: string): boolean {
+      return ("0" <= c && c <= "9") || ("A" <= c && c <= "Z") || ("a" <= c && c <= "z");
+    }
+
+    // IdentityEscape in AtomEscape.
+    //
+    // AtomEscape[U] :: CharacterEscape[?U]
+    // CharacterEscape[U] :: IdentityEscape[?U]
+    for (let cu = 0x00; cu <= 0x7f; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isAlphaDigit(s) && !isSyntaxCharacter(s) && s !== "/") {
+        const re = "\\" + s;
+        console.log("Testing cu: ", cu, "|" + re + "|");
+        expect(() => parse(re)).toThrow(SyntaxError);
+      }
+    }
+
+    // IdentityEscape in ClassEscape.
+    //
+    // ClassEscape[U] :: CharacterEscape[?U]
+    // CharacterEscape[U] :: IdentityEscape[?U]
+    for (let cu = 0x00; cu <= 0x7f; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isAlphaDigit(s) && !isSyntaxCharacter(s) && s !== "/" && s !== "-") {
+        const re = "[\\" + s + "]";
+        console.log("Testing cu: ", cu, "|" + re + "|");
+        expect(() => parse(re)).toThrow(SyntaxError);
+      }
+    }
+  });
+  test(testFileLink("unicode_restricted_octal_escape.js"), () => {
+    // DecimalEscape without leading 0 in AtomEscape.
+    //
+    // AtomEscape[U] :: DecimalEscape
+    // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
+    expect(() => parse("\\1", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\2", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\3", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\4", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\5", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\6", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\7", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\8", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\9", true)).toThrowError(SyntaxError);
+
+    // DecimalEscape without leading 0 in ClassEscape.
+    //
+    // ClassEscape[U] :: DecimalEscape
+    // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
+    expect(() => parse("[\\1]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\2]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\3]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\4]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\5]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\6]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\7]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\8]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\9]", true)).toThrowError(SyntaxError);
+
+    // DecimalEscape with leading 0 in AtomEscape.
+    //
+    // Atom[U] :: DecimalEscape
+    // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
+    expect(() => parse("\\00", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\01", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\02", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\03", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\04", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\05", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\06", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\07", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\08", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\09", true)).toThrowError(SyntaxError);
+
+    // DecimalEscape with leading 0 in ClassEscape.
+    //
+    // ClassEscape[U] :: DecimalEscape
+    // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
+    expect(() => parse("[\\00]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\01]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\02]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\03]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\04]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\05]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\06]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\07]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\08]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\09]", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_quantifiable_assertion"), () => {
+    // Positive lookahead with quantifier.
+    expect(() => parse("(?=.)*", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)+", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,2}", true)).toThrowError(SyntaxError);
+
+    // Positive lookahead with reluctant quantifier.
+    expect(() => parse("(?=.)*?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)+?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)??", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,2}?", true)).toThrowError(SyntaxError);
+
+    // Negative lookahead with quantifier.
+    expect(() => parse("(?!.)*", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)+", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,2}", true)).toThrowError(SyntaxError);
+
+    // Negative lookahead with reluctant quantifier.
+    expect(() => parse("(?!.)*?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)+?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)??", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,2}?", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_quantifier_without_atom"), () => {
+    // Quantifier without atom.
+    expect(() => parse("*", true)).toThrowError(SyntaxError);
+    expect(() => parse("+", true)).toThrowError(SyntaxError);
+    expect(() => parse("?", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1}", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,}", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,2}", true)).toThrowError(SyntaxError);
+
+    // Reluctant quantifier without atom.
+    expect(() => parse("*?", true)).toThrowError(SyntaxError);
+    expect(() => parse("+?", true)).toThrowError(SyntaxError);
+    expect(() => parse("??", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,2}?", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_quantifiable_assertion"), () => {
+    // Positive lookahead with quantifier.
+    expect(() => parse("(?=.)*", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)+", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,2}", true)).toThrowError(SyntaxError);
+
+    // Positive lookahead with reluctant quantifier.
+    expect(() => parse("(?=.)*?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)+?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)??", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?=.){1,2}?", true)).toThrowError(SyntaxError);
+
+    // Negative lookahead with quantifier.
+    expect(() => parse("(?!.)*", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)+", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,}", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,2}", true)).toThrowError(SyntaxError);
+
+    // Negative lookahead with reluctant quantifier.
+    expect(() => parse("(?!.)*?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)+?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)??", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,}?", true)).toThrowError(SyntaxError);
+    expect(() => parse("(?!.){1,2}?", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_incomplete_quantifier"), () => {
+    // Incomplete quantifier with atom.
+    expect(() => parse("a{", true)).toThrowError(SyntaxError);
+    expect(() => parse("a{1", true)).toThrowError(SyntaxError);
+    expect(() => parse("a{1,", true)).toThrowError(SyntaxError);
+    expect(() => parse("a{1,2", true)).toThrowError(SyntaxError);
+    expect(() => parse("{", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,", true)).toThrowError(SyntaxError);
+    expect(() => parse("{1,2", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_identity_escape_x.js"), () => {
+    expect(() => parse("\\x", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\x1", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\x]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\x1]", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_identity_escape_u.js"), () => {
+    // Incomplete RegExpUnicodeEscapeSequence in AtomEscape not parsed as IdentityEscape.
+    //
+    // AtomEscape[U] :: CharacterEscape[?U]
+    // CharacterEscape[U] :: RegExpUnicodeEscapeSequence[?U]
+    expect(() => parse("\\u", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u1", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u12", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u123", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u{", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u{}", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u{1", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u{12", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\u{123", true)).toThrowError(SyntaxError);
+
+    // Incomplete RegExpUnicodeEscapeSequence in ClassEscape not parsed as IdentityEscape.
+    //
+    // ClassEscape[U] :: CharacterEscape[?U]
+    // CharacterEscape[U] :: RegExpUnicodeEscapeSequence[?U]
+    expect(() => parse("[\\u]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u1]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u12]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u123]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u{]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u{}]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u{1]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u{12]", true)).toThrowError(SyntaxError);
+    expect(() => parse("[\\u{123]", true)).toThrowError(SyntaxError);
+  });
+  test(testFileLink("unicode_restricted_identity_escape_c.js"), () => {
+    function isAlpha(c: string): boolean {
+      return ("A" <= c && c <= "Z") || ("a" <= c && c <= "z");
+    }
+
+    expect(() => parse("\\c", true)).toThrowError(SyntaxError);
+    for (let cu = 0x00; cu <= 0x7f; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isAlpha(s)) {
+        // "c ControlLetter" sequence in AtomEscape.
+        //
+        // AtomEscape[U] :: CharacterEscape[?U]
+        // CharacterEscape[U] :: c ControlLetter
+        expect(() => parse("\\c" + s, true)).toThrowError(SyntaxError);
+        // "c ControlLetter" sequence in ClassEscape.
+        //
+        // ClassEscape[U] :: CharacterEscape[?U]
+        // CharacterEscape[U] :: c ControlLetter
+        expect(() => parse("[\\c" + s + "]", true)).toThrowError(SyntaxError);
+      }
+    }
+  });
+  test(testFileLink("unicode_restricted_identity_escape_alpha.js"), () => {
+    function isValidAlphaEscapeInAtom(s: string): boolean {
+      switch (s) {
+        // Assertion [U] :: \b
+        case "b":
+        // Assertion [U] :: \B
+        case "B":
+        // ControlEscape :: one of f n r t v
+        case "f":
+        case "n":
+        case "r":
+        case "t":
+        case "v":
+        // CharacterClassEscape :: one of d D s S w W
+        case "d":
+        case "D":
+        case "s":
+        case "S":
+        case "w":
+        case "W":
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    function isValidAlphaEscapeInClass(s: string): boolean {
+      switch (s) {
+        // ClassEscape[U] :: b
+        case "b":
+        // ControlEscape :: one of f n r t v
+        case "f":
+        case "n":
+        case "r":
+        case "t":
+        case "v":
+        // CharacterClassEscape :: one of d D s S w W
+        case "d":
+        case "D":
+        case "s":
+        case "S":
+        case "w":
+        case "W":
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    // IdentityEscape in AtomEscape
+    for (let cu = 0x41 /* A */; cu <= 0x5a /* Z */; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isValidAlphaEscapeInAtom(s)) {
+        expect(() => parse("\\" + s, true)).toThrowError(SyntaxError);
+      }
+    }
+    for (let cu = 0x61 /* a */; cu <= 0x7a /* z */; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isValidAlphaEscapeInAtom(s)) {
+        expect(() => parse("\\" + s, true)).toThrowError(SyntaxError);
+      }
+    }
+
+    // IdentityEscape in ClassEscape
+    for (let cu = 0x41 /* A */; cu <= 0x5a /* Z */; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isValidAlphaEscapeInClass(s)) {
+        expect(() => parse("[\\" + s + "]", true)).toThrowError(SyntaxError);
+      }
+    }
+    for (let cu = 0x61 /* a */; cu <= 0x7a /* z */; ++cu) {
+      const s = String.fromCharCode(cu);
+      if (!isValidAlphaEscapeInClass(s)) {
+        expect(() => parse("[\\" + s + "]", true)).toThrowError(SyntaxError);
+      }
+    }
+  });
+});
+
+describe.skip(`ECMA Tests - Lookbehind Tests`, () => {
+  test(testFileLink("lookBehind/alternations"), () => {
+    expectMatchIndexes(execute({}, "xabcd", /.*(?<=(..|...|....))(.*)/), 0, 5);
+    expectMatchIndexes(execute({}, "xabcd", /.*(?<=(xx|...|....))(.*)/), 0, 5);
+    expectMatchIndexes(execute({}, "xxabcd", /.*(?<=(xx|...))(.*)/), 0, 6);
+    expectMatchIndexes(execute({}, "xxabcd", /.*(?<=(xx|xxx))(.*)/), 0, 6);
+  });
+  test(testFileLink("lookBehind/back-references-to-captures"), () => {
+    expectMatchIndexes(execute({}, "abcCd", /(?<=\1(\w))d/i));
+    expectMatchIndexes(execute({}, "abxxd", /(?<=\1([abx]))d/));
+    expectMatchIndexes(execute({}, "ababc", /(?<=\1(\w+))c/));
+    expectMatchIndexes(execute({}, "ababbc", /(?<=\1(\w+))c/));
+    expectMatchIndexes(execute({}, "ababdc", /(?<=\1(\w+))c/));
+    expectMatchIndexes(execute({}, "ababc", /(?<=(\w+)\1)c/));
+  });
+});
+
+describe(`ECMA Tests - dotAll tests`, () => {
+  test(testFileLink("dotall/with-dotall-unicode.js"), () => {
+    for (const re of [/^.$/su, /^.$/msu]) {
+      expectMatchIndexes(execute({}, "a", re), 0, 1);
+      expectMatchIndexes(execute({}, "3", re), 0, 1);
+      expectMatchIndexes(execute({}, "π", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2027", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u0085", re), 0, 1);
+      expectMatchIndexes(execute({}, "\v", re), 0, 1);
+      expectMatchIndexes(execute({}, "\f", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u180E", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u{10300}", re), 0, 1);
+      expectMatchIndexes(execute({}, "\n", re), 0, 1);
+      expectMatchIndexes(execute({}, "\r", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2028", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2029", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uD800", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uDFFF", re), 0, 1);
+    }
+  });
+  test(testFileLink("dotall/with-dotall.js"), () => {
+    for (const re of [/^.$/s, /^.$/ms]) {
+      expectMatchIndexes(execute({}, "a", re), 0, 1);
+      expectMatchIndexes(execute({}, "3", re), 0, 1);
+      expectMatchIndexes(execute({}, "π", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2027", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u0085", re), 0, 1);
+      expectMatchIndexes(execute({}, "\v", re), 0, 1);
+      expectMatchIndexes(execute({}, "\f", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u180E", re), 0, 1);
+      expectMatchIndexes(execute({}, "\n", re), 0, 1);
+      expectMatchIndexes(execute({}, "\r", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2028", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2029", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uD800", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uDFFF", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u{10300}", re), 0, 1);
+    }
+  });
+  test(testFileLink("dotall/without-dotall-unicode.js"), () => {
+    for (const re of [/^.$/u, /^.$/mu]) {
+      expectMatchIndexes(execute({}, "a", re), 0, 1);
+      expectMatchIndexes(execute({}, "3", re), 0, 1);
+      expectMatchIndexes(execute({}, "π", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2027", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u0085", re), 0, 1);
+      expectMatchIndexes(execute({}, "\v", re), 0, 1);
+      expectMatchIndexes(execute({}, "\f", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u180E", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u{10300}", re), 0, 1);
+      expectMatchIndexes(execute({}, "\n", re));
+      expectMatchIndexes(execute({}, "\r", re));
+      expectMatchIndexes(execute({}, "\u2028", re));
+      expectMatchIndexes(execute({}, "\u2029", re));
+      expectMatchIndexes(execute({}, "\uD800", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uDFFF", re), 0, 1);
+    }
+  });
+  test(testFileLink("dotall/without-dotall.js"), () => {
+    for (const re of [/^.$/, /^.$/m]) {
+      expectMatchIndexes(execute({}, "a", re), 0, 1);
+      expectMatchIndexes(execute({}, "3", re), 0, 1);
+      expectMatchIndexes(execute({}, "π", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u2027", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u0085", re), 0, 1);
+      expectMatchIndexes(execute({}, "\v", re), 0, 1);
+      expectMatchIndexes(execute({}, "\f", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u180E", re), 0, 1);
+      expectMatchIndexes(execute({}, "\u{10300}", re), 0, 1);
+      expectMatchIndexes(execute({}, "\n", re));
+      expectMatchIndexes(execute({}, "\r", re));
+      expectMatchIndexes(execute({}, "\u2028", re));
+      expectMatchIndexes(execute({}, "\u2029", re));
+      expectMatchIndexes(execute({}, "\uD800", re), 0, 1);
+      expectMatchIndexes(execute({}, "\uDFFF", re), 0, 1);
+    }
   });
 });

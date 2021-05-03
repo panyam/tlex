@@ -13,6 +13,7 @@ export enum RegexType {
   CAT,
   NEG,
   REF,
+  NUM_REF,
   QUANT,
   LOOK_AHEAD,
   LOOK_BACK,
@@ -292,7 +293,6 @@ export class Union extends Regex {
 
   reverse(): Union {
     const out = this.options.map((c) => c.reverse());
-    out.reverse();
     return new Union(...out);
   }
 
@@ -460,6 +460,28 @@ export class Ref extends Regex {
 
   get debugValue(): any {
     return "<" + this.name + ">";
+  }
+}
+
+/**
+ * Numeric reference to a capture group.
+ */
+export class NumRef extends Regex {
+  readonly tag: RegexType = RegexType.NUM_REF;
+  constructor(public readonly num: number, public readonly reversed = false) {
+    super();
+  }
+
+  reverse(): NumRef {
+    return new NumRef(this.num, !this.reversed);
+  }
+
+  protected evalREString(): string {
+    return "\\" + this.num;
+  }
+
+  get debugValue(): any {
+    return "\\" + this.num;
   }
 }
 

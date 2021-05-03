@@ -10,8 +10,8 @@ import { Compiler } from "../compiler";
 import { Lexer } from "../lexer";
 import { toMatch, Match } from "../lexer";
 
-export function parse(input: string): Regex {
-  return new RegexParser(input).parse();
+export function parse(input: string, unicode = false): Regex {
+  return new RegexParser(input, unicode).parse();
 }
 
 // Read lexer tokens from contents.

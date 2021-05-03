@@ -1,6 +1,6 @@
 import * as TSU from "@panyam/tsutils";
 import { ParseError, UnexpectedTokenError } from "./errors";
-import { Tape } from "./tape";
+import { Tape, TapeHelper } from "./tape";
 
 type TokenType = number | string;
 
@@ -169,7 +169,7 @@ export class SimpleTokenizer {
     // const line = this.tape.currLine;
     // const col = this.tape.currCol;
     for (const [kwd, toktype] of this.literals) {
-      if (this.tape.matches(kwd)) {
+      if (TapeHelper.matches(this.tape, kwd)) {
         return new Token(toktype, {
           offset: pos,
           length: this.tape.index - pos,

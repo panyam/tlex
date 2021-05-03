@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { parse, compile, VMTracer, layoutThreadNodes } from "../src/tests/utils";
 import { Tape } from "../src/tape";
-import { InstrDebugValue, VM } from "../src/pikevm";
+import { InstrDebugValue, VM } from "../src/vm";
 
 function usage(): void {
   console.log("Usage: <regex> <teststring>");
