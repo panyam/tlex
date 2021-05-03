@@ -1,19 +1,19 @@
 import * as TSU from "@panyam/tsutils";
 import { Regex, Union, Rule } from "./core";
 import { RegexParser } from "./parser";
-import { Prog, Match as VMMatch, VM } from "./vm";
+import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
 
-export class Match {
+export class Lexeme {
   value = null as TSU.Nullable<string>;
   groups: TSU.NumMap<number[]> = {};
   positions: TSU.NumMap<[number, number]> = {};
   constructor(public readonly matchIndex: number, public readonly start: number, public readonly end: number) {}
 }
 
-export function toMatch(m: VMMatch, tape: Tape | null): Match {
-  const out = new Match(m.matchIndex, m.start, m.end);
+export function toLexeme(m: Match, tape: Tape | null): Lexeme {
+  const out = new Lexeme(m.matchIndex, m.start, m.end);
   for (let i = 0; i < m.positions.length; i += 2) {
     if (m.positions[i] >= 0) {
       out.positions[Math.floor(i / 2)] = [m.positions[i], m.positions[i + 1]];
@@ -109,8 +109,8 @@ export class Lexer {
     return sortedRules;
   }
 
-  next(tape: Tape): Match | null {
+  next(tape: Tape): Lexeme | null {
     const m = this.vm.match(tape);
-    return m == null ? null : toMatch(m, tape);
+    return m == null ? null : toLexeme(m, tape);
   }
 }

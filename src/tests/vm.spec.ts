@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { Rule } from "../core";
-import { Match } from "../lexer";
+import { Lexeme } from "../lexer";
 import { execute } from "./utils";
 
 /*
@@ -61,7 +61,7 @@ function testInput(
 }
 */
 
-function expectMatchStrings(found: Match[], ...expected: [string, number][]): Match[] {
+function expectMatchStrings(found: Lexeme[], ...expected: [string, number][]): Lexeme[] {
   const f2 = found.map((f) => [f.value, f.matchIndex]);
   expect(f2).toEqual(expected);
   return found;

@@ -4,7 +4,7 @@ import fs from "fs";
 import { Rule } from "../core";
 import { Tape } from "../tape";
 import { parse, compile, execute, runMatchTest } from "./utils";
-import { Match } from "../lexer";
+import { Lexeme } from "../lexer";
 import { Prog, VM } from "../vm";
 
 function stringRep(ch: number): string {
@@ -33,7 +33,7 @@ function range(start: number, end: number, delta = 1): number[] {
   return out;
 }
 
-function expectMatchIndexes(found: Match[], ...expected: number[]): Match[] {
+function expectMatchIndexes(found: Lexeme[], ...expected: number[]): Lexeme[] {
   if (found.length == 0) expect(expected.length).toBe(0);
   else expect(found.length).toBe(expected.length - 1);
   for (let i = 0; i < found.length; i++) {

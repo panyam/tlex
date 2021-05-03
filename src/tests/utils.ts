@@ -5,10 +5,10 @@ import * as TSU from "@panyam/tsutils";
 import { Tape } from "../tape";
 import { REPatternType, Regex, Rule } from "../core";
 import { RegexParser } from "../parser";
-import { Thread, Prog, InstrDebugValue, Match as VMMatch, VM } from "../vm";
+import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
 import { Lexer } from "../lexer";
-import { toMatch, Match } from "../lexer";
+import { toLexeme, Lexeme } from "../lexer";
 
 export function parse(input: string, unicode = false): Regex {
   return new RegexParser(input, unicode).parse();
@@ -73,14 +73,14 @@ export function compile(exprResolver: null | ((name: string) => Regex), ...patte
   return out.compile(rules);
 }
 
-export function execute(configs: any, input: string, ...repattern: REPatternType[]): Match[] {
-  const found = [] as Match[];
+export function execute(configs: any, input: string, ...repattern: REPatternType[]): Lexeme[] {
+  const found = [] as Lexeme[];
   const prog: Prog = compile(null, ...repattern);
   const vm = new VM(prog, 0, -1, true, configs);
   const tape = new Tape(input);
   let next = vm.match(tape);
   while (next != null && next.end > next.start) {
-    found.push(toMatch(next, tape));
+    found.push(toLexeme(next, tape));
     next = vm.match(tape);
   }
   const debugProg = configs.debugProg || configs.debug == "all";
@@ -120,7 +120,7 @@ export function execute(configs: any, input: string, ...repattern: REPatternType
   return found;
 }
 
-function runTestCase(testCase: any, index: number, caseFile: string, debug = false): Match[] {
+function runTestCase(testCase: any, index: number, caseFile: string, debug = false): Lexeme[] {
   const pattern = testCase.pattern || "";
   if (pattern.length == "") return [];
   const repatterns = [] as string[];
@@ -151,9 +151,9 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   const input = testCase.input;
   const tape = new Tape(input);
   let next = vm.match(tape);
-  const found: Match[] = [];
+  const found: Lexeme[] = [];
   while (next != null && next.end > next.start) {
-    found.push(toMatch(next, tape));
+    found.push(toLexeme(next, tape));
     next = vm.match(tape);
   }
   if (debug) {
