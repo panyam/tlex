@@ -1,23 +1,24 @@
 import * as TSU from "@panyam/tsutils";
 import { CharClassType, CharClassHelpers } from "./charclasses";
-import { PropertyEscapes } from "./propertyescapes";
+import * as PropertyEscapes from "./propertyescapes";
 
 export enum RegexType {
-  ANY,
   START_OF_INPUT,
   END_OF_INPUT,
   START_OF_WORD,
   END_OF_WORD,
-  CHAR,
-  CHAR_RANGE,
   UNION,
   CAT,
-  NEG,
+  // NEG,
   REF,
   NUM_REF,
   QUANT,
   LOOK_AHEAD,
   LOOK_BACK,
+  // Individual matchables
+  // ANY,
+  CHAR,
+  // CHAR_GROUP,
 }
 
 function stringRep(ch: number): string {
@@ -70,6 +71,7 @@ export abstract class Regex {
   protected abstract evalREString(): string;
 }
 
+/*
 export class Any extends Regex {
   readonly tag: RegexType = RegexType.ANY;
   get debugValue(): string {
@@ -82,6 +84,7 @@ export class Any extends Regex {
     return this;
   }
 }
+*/
 
 export class StartOfInput extends Regex {
   readonly tag: RegexType = RegexType.START_OF_INPUT;
@@ -313,6 +316,7 @@ export class Union extends Regex {
   }
 }
 
+/*
 export class Neg extends Regex {
   readonly tag: RegexType = RegexType.NEG;
   constructor(public expr: Regex) {
@@ -328,108 +332,175 @@ export class Neg extends Regex {
   }
 
   get debugValue(): any {
-    if (this.expr.tag == RegexType.CHAR_RANGE) {
-      const out = (this.expr as CharRange).debugValue as string;
+    if (this.expr.tag == RegexType.CHAR_GROUP) {
+      const out = (this.expr as CharGroup).debugValue as string;
       return "[^" + out.substring(1, out.length - 1) + "]";
     } else {
       return ["NOT", this.expr.debugValue];
     }
   }
 }
+*/
 
+/**
+ * Opcode for each char.
+ * These MUST be >= 0 as -ve indicate the negated of a particular char type.
+ */
+export enum CharType {
+  AnyChar = 1,
+  SingleChar,
+  CharRange,
+  PropertyEscape,
+  CharClass,
+  CharGroup,
+  Custom, // User defined matchers to be plugged here
+}
+
+/**
+ * Broad class of "char matchers".
+ */
 export class Char extends Regex {
   readonly tag: RegexType = RegexType.CHAR;
-  // start == 0 and end == MAX_INT => ANY
-  // start == end => Single char
-  // start < end => Char range
-  // Start == -1  => end = char class
-  // Start == < -1:
-  //    PropertyName Id = Abs(Start)
-  //    PropertyValue Id = end and if end < 0 then Negated
-  constructor(public start = 0, public end = 0) {
+  readonly args: number[];
+
+  // Type of opcode for this char match
+  protected constructor(public readonly op: CharType, public readonly neg = false, ...data: number[]) {
     super();
-    if (end < start) {
-      throw new SyntaxError("End cannot be less than Start");
-    }
+    this.args = data;
   }
 
   reverse(): Char {
     return this;
   }
 
-  static CharClass(charClass: CharClassType): Char {
-    return new Char(-1, charClass);
+  static Any(neg = false): Char {
+    return new Char(CharType.AnyChar, neg);
   }
 
-  static PropertyClass(propName: string, propValue: string): Char {
-    propName = propName.trim();
-    propValue = propValue.trim();
-    if (propName.length == 0 || propValue.length == 0) throw new SyntaxError("Invalid property escape");
-    const propNameId = PropertyEscapes.getPropertyName(propName);
-    const propValueId = PropertyEscapes.getPropertyValue(propName);
+  static Custom(neg = false, ...args: number[]): Char {
+    return new Char(CharType.Custom, neg, ...args);
   }
 
-  static of(ch: string | number): Char {
+  static Range(start: number, end: number, neg = false): Char {
+    return new Char(CharType.CharRange, neg, start, end);
+  }
+
+  static Class(charClass: CharClassType, neg = false): Char {
+    return new Char(CharType.CharClass, neg, charClass);
+  }
+
+  static Single(ch: string | number, neg = false): Char {
     if (typeof ch === "string") {
       ch = ch.charCodeAt(0);
     }
-    return new Char(ch, ch);
+    return new Char(CharType.SingleChar, neg, ch);
   }
 
-  get isCharClass(): boolean {
-    return this.start == -1;
+  static PropertyEscape(propNameOrId: string | number, propValueOrId: string | number, neg = false): Char {
+    if (typeof propNameOrId === "string") propNameOrId = PropertyEscapes.propertyNameFor(propNameOrId);
+    if (typeof propValueOrId === "string") propValueOrId = PropertyEscapes.propertyValueFor(propValueOrId);
+    return new Char(CharType.PropertyEscape, neg, propNameOrId, propValueOrId);
   }
 
-  get isPropertyEscape(): boolean {
-    return this.start < -1;
+  static Group(neg = false, ...chars: Char[]): Char {
+    const out = new Char(CharType.CharGroup, neg);
+    for (const ch of chars) {
+      if (ch.op == CharType.CharGroup) {
+        // Or should these just be flattened?
+        throw new SyntaxError("Char groups cannot be recursive");
+      }
+      out.args.push(ch.neg ? -ch.op : ch.op);
+      out.args.push(...ch.args);
+    }
+    return out;
   }
 
   compareTo(another: Char): number {
-    if (this.start == another.start) return this.end - another.end;
-    return this.start - another.start;
-  }
-
-  get debugValue(): any {
-    return this.start == this.end ? stringRep(this.start) : `${stringRep(this.start)}-${stringRep(this.end)}`;
+    if (this.op != another.op) return this.op - another.op;
+    for (let i = 0; i < this.args.length && i < another.args.length; i++) {
+      if (this.args[i] != another.args[i]) return this.args[i] - another.args[i];
+    }
+    return this.args.length - another.args.length;
   }
 
   protected evalREString(): string {
-    if (this.isCharClass) {
-      return CharClassHelpers[this.end].reString();
-    } else {
-      return this.start == this.end
-        ? String.fromCharCode(this.start)
-        : `${String.fromCharCode(this.start)}-${String.fromCharCode(this.end)}`;
+    if (this.op == CharType.AnyChar) {
+      return ".";
+    } else if (this.op == CharType.SingleChar) {
+      return stringRep(this.args[0]);
+    } else if (this.op == CharType.CharClass) {
+      return CharClassHelpers[this.args[0]].reString(this.neg);
+    } else if (this.op == CharType.CharRange) {
+      return `${stringRep(this.args[0])}-${stringRep(this.args[1])}`;
+    } else if (this.op == CharType.PropertyEscape) {
+      return this.neg ? "\\P{" : "\\p{" + "}";
+      return `${PropertyEscapes.propertyNameString(this.args[0])}=${PropertyEscapes.propertyValueString(
+        this.args[1],
+      )}\}`;
+    } else if (this.op == CharType.CharGroup) {
+      const chars: Char[] = [];
+      const args = this.args;
+      for (let i = 0; i < args.length; ) {
+        const op = Math.abs(args[i]);
+        const neg = args[i] < 0;
+        if (op == CharType.SingleChar) {
+          chars.push(Char.Single(args[i + 1]));
+          i += 2;
+        } else if (op == CharType.CharClass) {
+          chars.push(Char.Class(args[i + 1]));
+          i += 2;
+        } else if (op == CharType.CharRange) {
+          chars.push(Char.Range(args[i + 1], args[i + 2]));
+          i += 3;
+        } else if (op == CharType.PropertyEscape) {
+          chars.push(Char.PropertyEscape(args[i + 1], args[i + 2], neg));
+          i += 3;
+        } else {
+          throw new Error("Unsupported op in CharGroup: " + op);
+        }
+      }
+      const out = chars.map((ch) => ch.debugValue).join("");
+      return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
     }
+    return "Custom " + this.args.join(" ");
+  }
+
+  get debugValue(): any {
+    return this.toString;
   }
 }
 
 /**
  * Character ranges
  */
-export class CharRange extends Regex {
-  readonly tag: RegexType = RegexType.CHAR_RANGE;
+/*
+export class CharGroup extends Regex {
+  readonly tag: RegexType = RegexType.CHAR_GROUP;
   neg = false;
   chars: Char[];
   constructor(...chars: Char[]) {
     super();
     this.chars = chars;
-    this.mergeRanges();
+    // this.mergeRanges();
   }
 
-  reverse(): CharRange {
+  reverse(): CharGroup {
     return this;
   }
 
-  /**
-   * Adds a new Char into this range.
-   * Doing so "merges" renges in this class so we dont have overlaps.
-   */
+ */
+/**
+ * Adds a new Char into this range.
+ * Doing so "merges" renges in this class so we dont have overlaps.
+ */
+/*
   add(ch: Char): this {
     this.chars.push(ch);
-    return this.mergeRanges();
+    // return this.mergeRanges();
   }
+ */
 
+/*
   protected mergeRanges(): this {
     // sort ranges
     this.chars.sort((c1, c2) => c1.compareTo(c2));
@@ -446,7 +517,9 @@ export class CharRange extends Regex {
     this.chars = ch2;
     return this;
   }
+  */
 
+/*
   protected evalREString(): string {
     const out = this.chars.map((ch) => ch.debugValue).join("");
     return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
@@ -456,6 +529,7 @@ export class CharRange extends Regex {
     return this.chars.map((ch) => ch.debugValue);
   }
 }
+*/
 
 /**
  * Named expression referring to another regex by name.

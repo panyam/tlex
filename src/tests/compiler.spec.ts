@@ -1,6 +1,6 @@
 const util = require("util");
 import * as TSU from "@panyam/tsutils";
-import { Rule, Regex } from "../core";
+import { CharType, Rule, Regex } from "../core";
 import { parse } from "./utils";
 import { Prog, OpCode, InstrDebugValue } from "../vm";
 import { Compiler } from "../compiler";
@@ -8,7 +8,16 @@ import { Compiler } from "../compiler";
 function reprString(prog: Prog): any {
   let out = "";
   if (prog) {
-    prog.instrs.forEach((instr) => (out += `p.add(OpCode.${OpCode[instr.opcode]}, ${instr.args.join(", ")});`));
+    prog.instrs.forEach((instr) => {
+      const opcode = instr.opcode;
+      if (opcode == OpCode.Char || opcode == OpCode.CIChar || opcode == OpCode.NegChar || opcode == OpCode.NegCIChar) {
+        out += `p.add(OpCode.${OpCode[opcode]}, CharType.${CharType[instr.args[0]]}, ${instr.args
+          .slice(1)
+          .join(", ")});`;
+      } else {
+        out += `p.add(OpCode.${OpCode[opcode]}, ${instr.args.join(", ")});`;
+      }
+    });
   }
   return `Prog.with((p) => { ${out} })`;
 }
@@ -55,11 +64,11 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("abcde", 0)),
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
-        p.add(OpCode.Char, 100, 100);
-        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 100);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -69,16 +78,16 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", 0)),
       Prog.with((p) => {
-        p.add(OpCode.Char, 10, 10);
-        p.add(OpCode.Char, 13, 13);
-        p.add(OpCode.Char, 9, 9);
-        p.add(OpCode.Char, 12, 12);
-        p.add(OpCode.Char, 8, 8);
-        p.add(OpCode.Char, 92, 92);
-        p.add(OpCode.Char, 34, 34);
-        p.add(OpCode.Char, 39, 39);
-        p.add(OpCode.Char, 50, 50);
-        p.add(OpCode.Char, 121, 121);
+        p.add(OpCode.Char, CharType.SingleChar, 10);
+        p.add(OpCode.Char, CharType.SingleChar, 13);
+        p.add(OpCode.Char, CharType.SingleChar, 9);
+        p.add(OpCode.Char, CharType.SingleChar, 12);
+        p.add(OpCode.Char, CharType.SingleChar, 8);
+        p.add(OpCode.Char, CharType.SingleChar, 92);
+        p.add(OpCode.Char, CharType.SingleChar, 34);
+        p.add(OpCode.Char, CharType.SingleChar, 39);
+        p.add(OpCode.Char, CharType.SingleChar, 50);
+        p.add(OpCode.Char, CharType.SingleChar, 121);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -89,15 +98,15 @@ describe("Regex Compile Tests", () => {
       compile(null, new Rule("a|b|c|d|e", 0)),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 3, 5, 7, 9);
-        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Jump, 10);
-        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Jump, 10);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Jump, 10);
-        p.add(OpCode.Char, 100, 100);
+        p.add(OpCode.Char, CharType.SingleChar, 100);
         p.add(OpCode.Jump, 10);
-        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -108,7 +117,7 @@ describe("Regex Compile Tests", () => {
       compile(null, new Rule("a*", 0)),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 3);
-        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Jump, 0);
         p.add(OpCode.Match, 10, 0);
       }),
@@ -119,7 +128,7 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("a+", 0)),
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Split, 0, 2);
         p.add(OpCode.Match, 10, 0);
       }),
@@ -131,7 +140,7 @@ describe("Regex Compile Tests", () => {
       compile(null, new Rule("a?", 0)),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 2);
-        p.add(OpCode.Char, 97, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -141,18 +150,18 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("(?:ab){3,5}", 0)),
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Split, 7, 9);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Split, 10, 12);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -162,21 +171,21 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("[a-c]", 0)),
       Prog.with((p) => {
-        p.add(OpCode.CharRange, 97, 99);
+        p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99);
         p.add(OpCode.Match, 10, 0);
       }),
     );
     testRegexCompile(
       compile(null, new Rule("[a-cb-j]", 0)),
       Prog.with((p) => {
-        p.add(OpCode.CharRange, 97, 106);
+        p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99, 3, 98, 106);
         p.add(OpCode.Match, 10, 0);
       }),
     );
     testRegexCompile(
       compile(null, new Rule("[a-cm-q]", 0)),
       Prog.with((p) => {
-        p.add(OpCode.CharRange, 97, 99, 109, 113);
+        p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99, 3, 109, 113);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -206,11 +215,11 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       prog,
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
-        p.add(OpCode.Char, 100, 100);
-        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 100);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -220,15 +229,15 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       compile(null, new Rule("abc(?=hello)", 0)),
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Begin, 1, 0, 0, 9);
-        p.add(OpCode.Char, 104, 104);
-        p.add(OpCode.Char, 101, 101);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 111, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
         p.add(OpCode.End, 3);
         p.add(OpCode.Match, 10, 0);
       }),
@@ -240,15 +249,15 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       prog,
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Begin, 1, 0, 1, 9);
-        p.add(OpCode.Char, 104, 104);
-        p.add(OpCode.Char, 101, 101);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 111, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
         p.add(OpCode.End, 3);
         p.add(OpCode.Match, 10, 0);
       }),
@@ -260,15 +269,15 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       prog,
       Prog.with((p) => {
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Begin, 1, 0, 1, 9);
-        p.add(OpCode.Char, 104, 104);
-        p.add(OpCode.Char, 101, 101);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 111, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
         p.add(OpCode.End, 3);
         p.add(OpCode.Match, 10, 0);
       }),
@@ -281,18 +290,18 @@ describe("Regex Compile Tests", () => {
       prog,
       Prog.with((p) => {
         p.add(OpCode.Begin, 0, 0, 1, 9);
-        p.add(OpCode.Char, 111, 111);
-        p.add(OpCode.Char, 108, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
         p.add(OpCode.Split, 2, 4);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Split, 7, 9);
-        p.add(OpCode.Char, 104, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
         p.add(OpCode.Jump, 6);
         p.add(OpCode.End, 0);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -304,18 +313,18 @@ describe("Regex Compile Tests", () => {
       prog,
       Prog.with((p) => {
         p.add(OpCode.Begin, 0, 0, 0, 9);
-        p.add(OpCode.Char, 111, 111);
-        p.add(OpCode.Char, 108, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
         p.add(OpCode.Split, 2, 4);
-        p.add(OpCode.Char, 108, 108);
-        p.add(OpCode.Char, 101, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Split, 7, 9);
-        p.add(OpCode.Char, 104, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
         p.add(OpCode.Jump, 6);
         p.add(OpCode.End, 0);
-        p.add(OpCode.Char, 97, 97);
-        p.add(OpCode.Char, 98, 98);
-        p.add(OpCode.Char, 99, 99);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 98);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Match, 10, 0);
       }),
     );

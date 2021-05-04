@@ -1,20 +1,6 @@
 import * as TSU from "@panyam/tsutils";
 
-import {
-  Rule,
-  RegexType,
-  Quant,
-  Regex,
-  Cat,
-  Neg,
-  Char,
-  CharRange,
-  NumRef,
-  Ref,
-  LookAhead,
-  LookBack,
-  Union,
-} from "./core";
+import { Rule, RegexType, Quant, Regex, Cat, Char, CharType, NumRef, Ref, LookAhead, LookBack, Union } from "./core";
 import { OpCode, Prog, Instr } from "./vm";
 
 type RegexResolver = (name: string) => Regex;
@@ -59,28 +45,11 @@ export class Compiler {
       if (this.emitGroups) prog.add(OpCode.GroupStart, 1 + expr.groupIndex);
     }
     if (expr.tag == RegexType.CHAR) {
-      const char = expr as Char;
-      // prog.add(char.neg ? OpCode.NegChar : OpCode.Char, char.start, char.end);
-      prog.add(this.ignoreCase ? OpCode.CIChar : OpCode.Char, char.start, char.end);
-    } else if (expr.tag == RegexType.CHAR_RANGE) {
-      const charRange = expr as CharRange;
-      const opcode = charRange.neg
-        ? this.ignoreCase
-          ? OpCode.CINegCharRange
-          : OpCode.NegCharRange
-        : this.ignoreCase
-        ? OpCode.CICharRange
-        : OpCode.CharRange;
-      const instr = prog.add(opcode);
-      for (const char of charRange.chars) {
-        instr.add(char.start, char.end);
-      }
+      this.compileChar(expr as Char, prog);
     } else if (expr.tag == RegexType.START_OF_INPUT) {
       prog.add(this.multiline ? OpCode.MLStartingChar : OpCode.StartingChar);
     } else if (expr.tag == RegexType.END_OF_INPUT) {
       prog.add(this.multiline ? OpCode.MLEndingChar : OpCode.EndingChar);
-    } else if (expr.tag == RegexType.ANY) {
-      prog.add(this.dotAll ? OpCode.Any : OpCode.AnyNonNL);
     } else if (expr.tag == RegexType.START_OF_WORD) {
       prog.add(OpCode.StartOfWord);
     } else if (expr.tag == RegexType.END_OF_WORD) {
@@ -95,8 +64,7 @@ export class Compiler {
       this.compileRef(expr as Ref, prog);
     } else if (expr.tag == RegexType.NUM_REF) {
       this.compileNumRef(expr as NumRef, prog);
-    } else if (expr.tag == RegexType.NEG) {
-      this.compileNeg(expr as Neg, prog);
+      // } else if (expr.tag == RegexType.NEG) { this.compileNeg(expr as Neg, prog);
     } else if (expr.tag == RegexType.LOOK_AHEAD) {
       this.compileLookAhead(expr as LookAhead, prog);
     } else if (expr.tag == RegexType.LOOK_BACK) {
@@ -112,6 +80,22 @@ export class Compiler {
       this.listener(expr, prog, currOffset, prog.length - currOffset);
     }
     return prog.length - start;
+  }
+
+  compileChar(char: Char, prog: Prog): void {
+    if (char.op == CharType.AnyChar) {
+      // TODO - Should neg be ignored?
+      prog.add(this.dotAll ? OpCode.Any : OpCode.AnyNonNL);
+    } else {
+      // We have Neg or not, CI or not
+      const instr = prog.add(
+        this.ignoreCase ? (char.neg ? OpCode.NegCIChar : OpCode.CIChar) : char.neg ? OpCode.NegChar : OpCode.Char,
+      );
+      instr.add(char.op);
+
+      // And now the arguments
+      for (const arg of char.args) instr.add(arg);
+    }
   }
 
   compileCat(cat: Cat, prog: Prog): void {
@@ -252,12 +236,14 @@ export class Compiler {
   /**
    * Compiles Negative matches.
    */
+  /*
   compileNeg(neg: Neg, prog: Prog): void {
     const begin = prog.add(OpCode.Begin, 1, 1, 1); // forward, advance and negate if needed
     this.compileExpr(neg.expr, prog);
     const end = prog.add(OpCode.End, begin.offset);
     begin.add(end.offset);
   }
+ */
 
   /**
    * Compiles lookahead assertions

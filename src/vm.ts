@@ -1,6 +1,7 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "./tape";
 import { CharClassHelpers } from "./charclasses";
+import { CharType } from "./core";
 
 function isNewLineChar(ch: string): boolean {
   return ch == "\r" || ch == "\n" || ch == "\u2028" || ch == "\u2029";
@@ -17,33 +18,32 @@ export class Match {
 }
 
 export enum OpCode {
-  Match,
-  Noop,
   // Any character
   Any,
   // Any character not including a new line
   AnyNonNL,
+  // Char and CI Chars
+  Char,
+  CIChar,
+  NegChar,
+  NegCIChar,
+
+  // Non char opcodes
+  Match,
+  Noop,
+  Save,
+  Split,
+  Jump,
+  Begin,
+  End,
+
+  // Look ahead and Look back matchers
   // ^ and $ that are not activated on newlines
   StartingChar,
   EndingChar,
   // ^ and $ that are activated on newlines as well
   MLStartingChar,
   MLEndingChar,
-  // Case Sensitive char matches
-  NegChar,
-  Char,
-  NegCharRange,
-  CharRange,
-  // Case Insensitive char matches
-  CINegChar,
-  CIChar,
-  CINegCharRange,
-  CICharRange,
-  Save,
-  Split,
-  Jump,
-  Begin,
-  End,
   StartOfWord,
   EndOfWord,
   GroupStart,
@@ -355,19 +355,57 @@ export class VM {
     }
   }
 
-  matchChar(ch: number, arg0: number, arg1: number): boolean {
-    if (arg0 < 0) {
-      const helper = CharClassHelpers[arg1];
-      return helper.match(ch);
+  matchChar(ch: number, args: number[]): boolean {
+    const op = args[0];
+    switch (op) {
+      case CharType.SingleChar:
+        return ch == args[1];
+      case CharType.CharClass:
+        return CharClassHelpers[args[1]].matches(ch, false);
+      case CharType.CharRange:
+        return ch >= args[1] && ch <= args[2];
+      case CharType.PropertyEscape:
+        throw new Error("Property Escapes - TBD");
+        return ch >= args[1] && ch <= args[2];
+      case CharType.CharGroup:
+        for (let i = 1; i < args.length; ) {
+          const gop = args[i];
+          const neg = args[i++] < 0;
+          switch (neg ? -gop : gop) {
+            case CharType.SingleChar:
+              if ((neg && ch != args[i]) || (!neg && ch == args[i])) return true;
+              i++;
+              break;
+            case CharType.CharClass:
+              if (CharClassHelpers[args[i]].matches(ch, neg)) return true;
+              i++;
+              break;
+            case CharType.CharRange:
+              const res = ch >= args[i] && ch <= args[i + 1];
+              if ((neg && !res) || (!neg && res)) return true;
+              i += 2;
+              break;
+            case CharType.PropertyEscape:
+              throw new Error("Property Escapes - TBD");
+              if (ch >= args[i] && ch <= args[i + 1]) return !neg;
+              i += 2;
+              break;
+            default:
+              throw new Error("Custom Chars - TBD, i: " + (i - 1) + ", args[i]: " + args[i - 1]);
+          }
+        }
+        return false;
+      default:
+        throw new Error("Custom Chars - TBD i: " + op);
     }
-    return ch >= arg0 && ch <= arg1;
+    return false;
   }
 
-  matchCurrPos(tape: Tape, arg0: number, arg1: number, ignoreCase = false): boolean {
+  matchCurrPos(tape: Tape, args: number[], ignoreCase = false): boolean {
     if (ignoreCase) {
-      return this.matchChar(tape.currChCodeLower, arg0, arg1) || this.matchChar(tape.currChCodeUpper, arg0, arg1);
+      return this.matchChar(tape.currChCodeLower, args) || this.matchChar(tape.currChCodeUpper, args);
     } else {
-      return this.matchChar(tape.currChCode, arg0, arg1);
+      return this.matchChar(tape.currChCode, args);
     }
   }
 
@@ -500,39 +538,16 @@ export class VM {
           currMatch.positions = thread.positions;
         }
         break;
-      case OpCode.NegChar:
-      case OpCode.CINegChar:
-        if (this.hasMore(tape)) {
-          advanceTape = !this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CINegChar);
-        }
-        break;
       case OpCode.Char:
       case OpCode.CIChar:
         if (this.hasMore(tape)) {
-          advanceTape = this.matchCurrPos(tape, args[0], args[1], opcode == OpCode.CIChar);
+          advanceTape = this.matchCurrPos(tape, args, opcode == OpCode.CIChar);
         }
         break;
-      case OpCode.NegCharRange:
-      case OpCode.CINegCharRange:
+      case OpCode.NegChar:
+      case OpCode.NegCIChar:
         if (this.hasMore(tape)) {
-          advanceTape = true;
-          for (let a = 0; a < args.length; a += 2) {
-            if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CINegCharRange)) {
-              advanceTape = false;
-              break;
-            }
-          }
-        }
-        break;
-      case OpCode.CharRange:
-      case OpCode.CICharRange:
-        if (this.hasMore(tape)) {
-          for (let a = 0; a < args.length; a += 2) {
-            if (this.matchCurrPos(tape, args[a], args[a + 1], opcode == OpCode.CICharRange)) {
-              advanceTape = true;
-              break;
-            }
-          }
+          advanceTape = !this.matchCurrPos(tape, args, opcode == OpCode.NegCIChar);
         }
         break;
       case OpCode.AnyNonNL:
@@ -553,32 +568,15 @@ export function InstrDebugValue(instr: Instr): string {
   switch (instr.opcode) {
     case OpCode.Match:
       return `Match ${instr.args[0]} ${instr.args[1]}`;
-    case OpCode.Char:
     case OpCode.NegChar:
-    case OpCode.CIChar:
-    case OpCode.CINegChar:
-      if (instr.args[0] < 0) {
-        // Char Class
-        return `${OpCode[instr.opcode].toString()} ${CharClassHelpers[instr.args[1]].reString()}`;
-      } else {
-        const start = (+"" + instr.args[0]).toString(16);
-        const end = (+"" + instr.args[1]).toString(16);
-        const s = start == end ? start : `${start}-${end}`;
-        return `${OpCode[instr.opcode].toString()} ${s}`;
-      }
-    case OpCode.NegCharRange:
-    case OpCode.CharRange:
-    case OpCode.CINegCharRange:
-    case OpCode.CICharRange:
-      let out = OpCode[instr.opcode].toString();
-      for (let i = 0; i < instr.args.length; i += 2) {
-        const start = (+"" + instr.args[i]).toString(16);
-        const end = (+"" + instr.args[i + 1]).toString(16);
-        const s = start == end ? start : `${start}-${end}`;
-        if (i > 0) out += " ";
-        out += s;
-      }
+    case OpCode.NegCIChar:
+    case OpCode.Char:
+    case OpCode.CIChar: {
+      let out = `${OpCode[instr.opcode].toString()} `;
+      out += `${CharType[instr.args[0]]}`;
+      for (let i = 1; i < instr.args.length; i++) out += " " + instr.args[i];
       return out;
+    }
     case OpCode.Any:
       return ".";
     case OpCode.AnyNonNL:

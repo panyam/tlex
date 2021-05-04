@@ -1,6 +1,6 @@
 const util = require("util");
 import * as TSU from "@panyam/tsutils";
-import { Regex, Char, CharRange } from "../core";
+import { Regex, Char, CharType } from "../core";
 import { parse } from "./utils";
 
 function testRegex(input: string, expected: any, debug = false, enforce = true): Regex {
@@ -30,8 +30,8 @@ function testRegex(input: string, expected: any, debug = false, enforce = true):
 describe("Regex Tests", () => {
   test("Test Chars", () => {
     testRegex("abcde", ["Cat", ["a", "b", "c", "d", "e"]]);
-    expect(new Char(10, 20).compareTo(new Char(10, 40))).toBeLessThan(0);
-    expect(new Char(20, 20).compareTo(new Char(10, 40))).toBeGreaterThan(0);
+    expect(Char.Range(10, 20).compareTo(Char.Range(10, 40))).toBeLessThan(0);
+    expect(Char.Range(20, 20).compareTo(Char.Range(10, 40))).toBeGreaterThan(0);
     testRegex("\\x32\\u2028", ["Cat", ["2", "\u2028"]]);
   });
 
@@ -69,20 +69,22 @@ describe("Regex Tests", () => {
     testRegex("a(bc){,10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{0,10}"]]]]);
     testRegex("((ab)*)*", ["Quant", [["Quant", [["Cat", ["a", "b"]], "*"]], "*"]]);
     expect(() => testRegex("a{1,2,3}", [])).toThrowError();
-    testRegex("a[a-z]{2,4}?", ["Cat", ["a", ["QuantLazy", [["a-z"], "{2,4}"]]]]);
+    testRegex("a[a-z]{2,4}?", ["Cat", ["a", ["QuantLazy", ["[a-z]", "{2,4}"]]]]);
   });
 
   test("Test Char Ranges", () => {
-    testRegex("[a-c]", ["a-c"]);
-    const ch = new CharRange();
-    ch.add(new Char(90, 200));
-    ch.add(new Char(10, 20));
-    ch.add(new Char(50, 150));
-    expect(ch.chars.length).toBe(2);
-    expect(ch.chars[0].start).toBe(10);
-    expect(ch.chars[0].end).toBe(20);
-    expect(ch.chars[1].start).toBe(50);
-    expect(ch.chars[1].end).toBe(200);
+    testRegex("[a-c]", "[a-c]");
+    const ch = Char.Group(false, Char.Range(90, 200), Char.Range(10, 20), Char.Range(50, 150));
+    expect(ch.args.length).toBe(9);
+    expect(ch.args[0]).toBe(CharType.CharRange);
+    expect(ch.args[1]).toBe(90);
+    expect(ch.args[2]).toBe(200);
+    expect(ch.args[3]).toBe(CharType.CharRange);
+    expect(ch.args[4]).toBe(10);
+    expect(ch.args[5]).toBe(20);
+    expect(ch.args[6]).toBe(CharType.CharRange);
+    expect(ch.args[7]).toBe(50);
+    expect(ch.args[8]).toBe(150);
   });
 
   test("Test Special Char Ranges", () => {

@@ -1,10 +1,7 @@
 export enum CharClassType {
   WORD_CHAR,
-  NOT_WORD_CHAR,
   DIGITS,
-  NOT_DIGITS,
   SPACES,
-  NOT_SPACES,
 }
 
 const ZERO = "0".charCodeAt(0);
@@ -16,13 +13,12 @@ const uZ = "Z".charCodeAt(0);
 const USCORE = "_".charCodeAt(0);
 
 abstract class CharClassHelper {
-  constructor(public readonly negate = false) {}
-  match(charCode: number): boolean {
-    const result = this.matches(charCode);
-    return this.negate ? !result : result;
+  matches(charCode: number, neg: boolean): boolean {
+    const res = this.match(charCode);
+    return neg ? !res : res;
   }
-  protected abstract matches(charCode: number): boolean;
-  abstract reString(): string;
+  protected abstract match(charCode: number): boolean;
+  abstract reString(neg: boolean): string;
 }
 
 // Spaces - \s => [ \b\c\u00a0\t\r\n\u2028\u2029<BOM><USP>]
@@ -30,7 +26,7 @@ abstract class CharClassHelper {
 // USP = Other unicode space separator
 const spaceChars = " \f\n\r\t\v\u00a0\u1680\u2028\u2029\u202f\u205f\u3000\ufeff";
 export class Spaces extends CharClassHelper {
-  matches(charCode: number): boolean {
+  match(charCode: number): boolean {
     // if (charCode == 0x180e) return true;
     if (charCode >= 0x2000 && charCode <= 0x200a) return true;
     for (let i = 0; i < spaceChars.length; i++) {
@@ -39,25 +35,25 @@ export class Spaces extends CharClassHelper {
     return false;
   }
 
-  reString(): string {
-    return this.negate ? "\\S" : "\\s";
+  reString(neg: boolean): string {
+    return neg ? "\\S" : "\\s";
   }
 }
 
 // Digits - \d => 0-9
 export class Digit extends CharClassHelper {
-  matches(charCode: number): boolean {
+  match(charCode: number): boolean {
     return charCode >= ZERO && charCode <= NINE;
   }
 
-  reString(): string {
-    return this.negate ? "\\D" : "\\d";
+  reString(neg: boolean): string {
+    return neg ? "\\D" : "\\d";
   }
 }
 
 //  Char Class - "\w"
 export class WordChar extends CharClassHelper {
-  matches(charCode: number): boolean {
+  match(charCode: number): boolean {
     return (
       charCode == USCORE ||
       (charCode >= ZERO && charCode <= NINE) ||
@@ -67,16 +63,9 @@ export class WordChar extends CharClassHelper {
     return true;
   }
 
-  reString(): string {
-    return this.negate ? "\\W" : "\\w";
+  reString(neg: boolean): string {
+    return neg ? "\\W" : "\\w";
   }
 }
 
-export const CharClassHelpers: ReadonlyArray<CharClassHelper> = [
-  new WordChar(),
-  new WordChar(true),
-  new Digit(),
-  new Digit(true),
-  new Spaces(),
-  new Spaces(true),
-];
+export const CharClassHelpers: ReadonlyArray<CharClassHelper> = [new WordChar(), new Digit(), new Spaces()];
