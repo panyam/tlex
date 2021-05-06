@@ -48,12 +48,12 @@ export function toToken(tokenType: TokenType, m: Match, tape: Tape | null): Toke
 }
 
 export class Tokenizer {
+  protected _vm: VM | null = null;
   // Stores named rules
   // Rules are a "regex", whether literal or not
   allRules: Rule[] = [];
   externs = new Set<string>();
   variables = new Map<string, Regex>();
-  vm: VM;
   compiler: Compiler = new Compiler((name) => {
     let out = this.variables.get(name) || null;
     if (out == null) out = this.findRuleByValue(name)?.expr || null;
@@ -104,13 +104,14 @@ export class Tokenizer {
       this.allRules.push(rule);
     }
     rule.expr = new RegexParser(rule.pattern).parse();
+    this._vm = null;
     return this;
   }
 
   compile(): Prog {
     const sortedRules = this.sortRules().map(([r, i]) => r);
     const prog = this.compiler.compile(sortedRules);
-    this.vm = new VM(prog);
+    this._vm = new VM(prog);
     return prog;
   }
 
@@ -124,6 +125,13 @@ export class Tokenizer {
       return i1 - i2;
     });
     return sortedRules;
+  }
+
+  get vm(): VM {
+    if (this._vm == null) {
+      this.compile();
+    }
+    return this._vm!;
   }
 
   next(tape: Tape): Token | null {
