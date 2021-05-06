@@ -2,9 +2,9 @@ const tm1 = Date.now();
 
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
-import { newLexer, VMTracer, layoutThreadNodes } from "../src/tests/utils";
+import { newTokenizer, VMTracer, layoutThreadNodes } from "../src/tests/utils";
 import { Tape } from "../src/tape";
-import { InstrDebugValue, VM } from "../src/pikevm";
+import { InstrDebugValue, VM } from "../src/vm";
 
 const t0 = Date.now();
 const args = process.argv.slice(2);
@@ -18,7 +18,7 @@ const inputContents = fs.readFileSync(inputPath, "utf8");
 const tape = new Tape(inputContents);
 const tracer: VMTracer = new VMTracer();
 const t1 = Date.now();
-const lexer = newLexer(lexerContents);
+const lexer = newTokenizer(lexerContents);
 if (debug) {
   const allVars: any = {};
   for (const [name, entry] of lexer.variables.entries()) {
