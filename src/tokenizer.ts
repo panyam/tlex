@@ -1,23 +1,23 @@
 import * as TSU from "@panyam/tsutils";
+import { Regex, Union, Rule } from "./core";
+import { RegexParser } from "./parser";
+import { Prog, Match, VM } from "./vm";
+import { Compiler } from "./compiler";
+import { Tape } from "./tape";
 import { ParseError, UnexpectedTokenError } from "./errors";
-import { Tape, TapeHelper } from "./tape";
 
-type TokenType = number | string;
+export type TokenType = number | string;
 
 export class Token {
-  readonly tag: TokenType;
-  value?: any;
-  // Location info
-  offset: number;
-  length: number;
-
-  constructor(type: TokenType, options: any = null) {
-    options = options || {};
-    this.tag = type;
-    this.value = options.value || 0;
-    this.offset = options.offset || 0;
-    this.length = options.length || 0;
-  }
+  value = null as TSU.Nullable<string>;
+  groups: TSU.NumMap<number[]> = {};
+  positions: TSU.NumMap<[number, number]> = {};
+  constructor(
+    public readonly tag: TokenType,
+    public readonly matchIndex: number,
+    public start: number,
+    public end: number,
+  ) {}
 
   isOneOf(...expected: any[]): boolean {
     for (const tok of expected) {
@@ -27,15 +27,112 @@ export class Token {
     }
     return false;
   }
+}
 
-  immediatelyFollows(another: Token): boolean {
-    return this.offset == another.offset + another.length;
+export function toToken(tokenType: TokenType, m: Match, tape: Tape | null): Token {
+  const out = new Token(tokenType, m.matchIndex, m.start, m.end);
+  for (let i = 0; i < m.positions.length; i += 2) {
+    if (m.positions[i] >= 0) {
+      out.positions[Math.floor(i / 2)] = [m.positions[i], m.positions[i + 1]];
+    }
+  }
+  for (const [groupIndex, tapeIndex] of m.groups) {
+    const gi = Math.abs(groupIndex);
+    if (!(gi in out.groups)) {
+      out.groups[gi] = [];
+    }
+    out.groups[gi].push(tapeIndex);
+  }
+  if (tape != null) out.value = tape.substring(m.start, m.end);
+  return out;
+}
+
+export class Tokenizer {
+  // Stores named rules
+  // Rules are a "regex", whether literal or not
+  allRules: Rule[] = [];
+  externs = new Set<string>();
+  variables = new Map<string, Regex>();
+  vm: VM;
+  compiler: Compiler = new Compiler((name) => {
+    let out = this.variables.get(name) || null;
+    if (out == null) out = this.findRuleByValue(name)?.expr || null;
+    if (out == null) throw new Error(`Invalid regex reference: ${name}`);
+    return out;
+  });
+
+  getVar(name: string): Regex | null {
+    return this.variables.get(name) || null;
+  }
+
+  addExtern(name: string): this {
+    this.externs.add(name);
+    return this;
+  }
+
+  addVar(name: string, regex: string | Regex): this {
+    if (typeof regex === "string") {
+      regex = new RegexParser(regex).parse();
+    }
+    let currValue = this.variables.get(name) || null;
+    if (currValue == null) {
+      currValue = regex;
+    } else {
+      currValue = new Union(currValue, regex);
+    }
+    this.variables.set(name, regex);
+    return this;
+  }
+
+  findRulesByRegex(pattern: string): Rule[] {
+    return this.allRules.filter((r) => r.pattern == pattern);
+  }
+
+  findRuleByValue(value: any): Rule | null {
+    return this.allRules.find((r) => r.tokenType == value) || null;
+  }
+
+  addRule(rule: Rule, skip = false): this {
+    const old = this.allRules.findIndex((r) => r.tokenType == rule.tokenType);
+    if (old >= 0) {
+      const oldRule = this.allRules[old];
+      if (oldRule.pattern != rule.pattern) {
+        rule = new Rule(oldRule.pattern + "|" + rule.pattern, oldRule.tokenType, oldRule.priority, oldRule.isGreedy);
+        this.allRules[old] = rule;
+      }
+    } else {
+      this.allRules.push(rule);
+    }
+    rule.expr = new RegexParser(rule.pattern).parse();
+    return this;
+  }
+
+  compile(): Prog {
+    const sortedRules = this.sortRules().map(([r, i]) => r);
+    const prog = this.compiler.compile(sortedRules);
+    this.vm = new VM(prog);
+    return prog;
+  }
+
+  sortRules(): [Rule, number][] {
+    // Sort rules so high priority ones appear first
+    const sortedRules: [Rule, number][] = this.allRules.map((rule, index) => [rule, index]);
+    sortedRules.sort((x, y) => {
+      const [r1, i1] = x;
+      const [r2, i2] = y;
+      if (r1.priority != r2.priority) return r2.priority - r1.priority;
+      return i1 - i2;
+    });
+    return sortedRules;
+  }
+
+  next(tape: Tape): Token | null {
+    const m = this.vm.match(tape);
+    return m == null ? null : toToken(this.allRules[m.matchIndex].tokenType, m, tape);
   }
 }
 
 export type NextTokenFunc = () => TSU.Nullable<Token>;
-export type TokenMatcher = (_: Tape, pos: number) => TSU.Nullable<Token>;
-
 /**
  * A wrapper on a tokenizer for providing features like k-lookahead, token
  * insertion, rewinding, expectation enforcement etc.
@@ -118,79 +215,5 @@ export class TokenBuffer {
       if (token.tag == tok) return token;
     }
     return null;
-  }
-}
-
-/**
- * A simple tokenize that matches the input to a set of matchers one by one.
- */
-export class SimpleTokenizer {
-  private peekedToken: TSU.Nullable<Token> = null;
-  tape: Tape;
-  // TODO  - convert literals into a trie
-  literals: [string, TokenType][] = [];
-  matchers: [TokenMatcher, boolean][] = [];
-
-  constructor(tape: string | Tape) {
-    if (typeof tape === "string") {
-      tape = new Tape(tape);
-    }
-    this.tape = tape;
-  }
-
-  addMatcher(matcher: TokenMatcher, skip = false): this {
-    this.matchers.push([matcher, skip]);
-    return this;
-  }
-
-  addLiteral(lit: string, tokType: TokenType): number {
-    const index = this.literals.findIndex((k) => k[0] == lit);
-    if (index < 0) {
-      this.literals.push([lit, tokType]);
-      return this.literals.length - 1;
-    } else {
-      if (this.literals[index][1] != tokType) {
-        throw new Error(`Literal '${lit}' already registered as ${tokType}`);
-      }
-      return index;
-    }
-  }
-
-  /**
-   * Performs the real work of extracting the next token from
-   * the tape based on the current state of the tokenizer.
-   * This can be overridden to do any other matchings to be prioritized first.
-   * Returns NULL if end of input reached.
-   */
-  nextToken(): TSU.Nullable<Token> {
-    // go through all literals first
-    if (!this.tape.hasMore) return null;
-    const pos = this.tape.index;
-    // const line = this.tape.currLine;
-    // const col = this.tape.currCol;
-    for (const [kwd, toktype] of this.literals) {
-      if (TapeHelper.matches(this.tape, kwd)) {
-        return new Token(toktype, {
-          offset: pos,
-          length: this.tape.index - pos,
-          value: kwd,
-        });
-      }
-    }
-    for (const [matcher, skip] of this.matchers) {
-      const token = matcher(this.tape, pos);
-      if (token != null) {
-        if (skip) {
-          return this.nextToken();
-        } else {
-          token.offset = pos;
-          token.length = this.tape.index - pos;
-          return token;
-        }
-      }
-    }
-    // Fall through - error char found
-    // throw new Error(`Line ${this.tape.currLine}, Col ${this.tape.currCol} - Invalid character: ${this.tape.currCh}`);
-    throw new ParseError(this.tape.index, `Invalid character: [${this.tape.currCh}]`);
   }
 }

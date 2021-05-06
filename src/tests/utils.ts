@@ -7,15 +7,14 @@ import { REPatternType, Regex, Rule } from "../core";
 import { RegexParser } from "../parser";
 import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
-import { Lexer } from "../lexer";
-import { toLexeme, Lexeme } from "../lexer";
+import { Tokenizer, toToken, Token } from "../tokenizer";
 
 export function parse(input: string, unicode = false): Regex {
   return new RegexParser(input, unicode).parse();
 }
 
-// Read lexer tokens from contents.
-// Our lexer spec is very simple.  Just a bunch
+// Read tokenizer tokens from contents.
+// Our tokenizer spec is very simple.  Just a bunch
 // of rules where each line is either empty or a comment or
 // a spec of the form:
 //
@@ -24,8 +23,8 @@ export function parse(input: string, unicode = false): Regex {
 // <name> is either an IDENT or an IDENT!
 //
 // Where the latter form denotes a variable.
-export function newLexer(contents: string): Lexer {
-  const lexer = new Lexer();
+export function newTokenizer(contents: string): Tokenizer {
+  const tokenizer = new Tokenizer();
   const lines = contents.split("\n");
   lines.forEach((line, index) => {
     line = line.trim();
@@ -43,13 +42,13 @@ export function newLexer(contents: string): Lexer {
       if (name.length > 0 && (isExtern || value.length > 0)) {
         error = false;
         if (isExtern) {
-          lexer.addExtern(name);
+          tokenizer.addExtern(name);
         }
         if (isVar) {
-          lexer.addVar(name, value);
+          tokenizer.addVar(name, value);
         } else {
           const rule = new Rule(value, name, 10, isGreedy);
-          lexer.addRule(rule);
+          tokenizer.addRule(rule);
         }
       }
     }
@@ -57,7 +56,7 @@ export function newLexer(contents: string): Lexer {
       throw new Error(`Invalid line (#${index}): "${line}"`);
     }
   });
-  return lexer;
+  return tokenizer;
 }
 
 export function compile(exprResolver: null | ((name: string) => Regex), ...patterns: REPatternType[]): Prog {
@@ -73,14 +72,14 @@ export function compile(exprResolver: null | ((name: string) => Regex), ...patte
   return out.compile(rules);
 }
 
-export function execute(configs: any, input: string, ...repattern: REPatternType[]): Lexeme[] {
-  const found = [] as Lexeme[];
+export function execute(configs: any, input: string, ...repattern: REPatternType[]): Token[] {
+  const found = [] as Token[];
   const prog: Prog = compile(null, ...repattern);
   const vm = new VM(prog, 0, -1, true, configs);
   const tape = new Tape(input);
   let next = vm.match(tape);
   while (next != null && next.end > next.start) {
-    found.push(toLexeme(next, tape));
+    found.push(toToken(0, next, tape));
     next = vm.match(tape);
   }
   const debugProg = configs.debugProg || configs.debug == "all";
@@ -120,7 +119,7 @@ export function execute(configs: any, input: string, ...repattern: REPatternType
   return found;
 }
 
-function runTestCase(testCase: any, index: number, caseFile: string, debug = false): Lexeme[] {
+function runTestCase(testCase: any, index: number, caseFile: string, debug = false): Token[] {
   const pattern = testCase.pattern || "";
   if (pattern.length == "") return [];
   const repatterns = [] as string[];
@@ -151,9 +150,9 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   const input = testCase.input;
   const tape = new Tape(input);
   let next = vm.match(tape);
-  const found: Lexeme[] = [];
+  const found: Token[] = [];
   while (next != null && next.end > next.start) {
-    found.push(toLexeme(next, tape));
+    found.push(toToken(patterns[next.matchIndex].tokenType, next, tape));
     next = vm.match(tape);
   }
   if (debug) {

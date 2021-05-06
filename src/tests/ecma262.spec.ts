@@ -4,7 +4,7 @@ import fs from "fs";
 import { Rule } from "../core";
 import { Tape } from "../tape";
 import { parse, compile, execute, runMatchTest } from "./utils";
-import { Lexeme } from "../lexer";
+import { Token } from "../tokenizer";
 import { Prog, VM } from "../vm";
 
 function stringRep(ch: number): string {
@@ -33,7 +33,7 @@ function range(start: number, end: number, delta = 1): number[] {
   return out;
 }
 
-function expectMatchIndexes(found: Lexeme[], ...expected: number[]): Lexeme[] {
+function expectMatchIndexes(found: Token[], ...expected: number[]): Token[] {
   if (found.length == 0) expect(expected.length).toBe(0);
   else expect(found.length).toBe(expected.length - 1);
   for (let i = 0; i < found.length; i++) {
@@ -1177,6 +1177,7 @@ describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
     expect(matches).toEqual([
       {
         matchIndex: 0,
+        tag: 0,
         start: 0,
         end: 5,
         value: "hello",

@@ -1,5 +1,5 @@
-import { SimpleTokenizer } from "../tokenizer";
 import { Tape, TapeHelper } from "../tape";
+import { SimpleTokenizer } from "../helpers";
 
 describe("Tape Tests", () => {
   test("Basic", () => {

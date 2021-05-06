@@ -3,7 +3,7 @@ import * as TSU from "@panyam/tsutils";
 import { Rule } from "../core";
 import { Prog, InstrDebugValue, VM } from "../vm";
 import { Tape } from "../tape";
-import { Lexer } from "../lexer";
+import { Tokenizer } from "../tokenizer";
 import { VMTracer, layoutThreadNodes } from "./utils";
 
 function testInput(
@@ -61,14 +61,14 @@ function testInput(
   expect(found).toEqual(expectedTokens);
 }
 
-function jsonLexer(): Lexer {
-  const lexer = new Lexer();
+function jsonTokenizer(): Tokenizer {
+  const tokenizer = new Tokenizer();
   const AnyOf = (...x: string[]) => x.join("|");
   // JSON5NumericLiteral:
-  lexer.addRule(new Rule(AnyOf("Infinity", "NaN", "<NumericLiteral>"), "JSON5NumericLiteral"));
+  tokenizer.addRule(new Rule(AnyOf("Infinity", "NaN", "<NumericLiteral>"), "JSON5NumericLiteral"));
 
-  lexer.addVar("NumericLiteral", "<DecimalLiteral>|<HexIntegerLiteral>");
-  lexer.addVar(
+  tokenizer.addVar("NumericLiteral", "<DecimalLiteral>|<HexIntegerLiteral>");
+  tokenizer.addVar(
     "DecimalLiteral",
     AnyOf(
       "(<DecimalIntegerLiteral>.<DecimalDigits>?<ExponentPart>?)",
@@ -76,48 +76,48 @@ function jsonLexer(): Lexer {
       "(<DecimalIntegerLiteral><ExponentPart>?)",
     ),
   );
-  lexer.addVar("DecimalIntegerLiteral", AnyOf("0", "<NonZeroDigit><DecimalDigits>"));
-  lexer.addVar("DecimalDigits", "<DecimalDigit>+");
-  lexer.addVar("DecimalDigit", "[0-9]");
-  lexer.addVar("NonZeroDigit", "[1-9]");
-  lexer.addVar("ExponentPart", "<ExponentIndicator><SignedPart>");
-  lexer.addVar("ExponentIndicator", "e|E");
-  lexer.addVar("SignedInteger", AnyOf("<DecimalDigits>", "[\\-\\+]<DecimalDigits>"));
-  lexer.addVar("HexIntegerLiteral", "0[xX]<HexDigit>+");
-  lexer.addVar("HexDigit", "[0-9a-fA-F]");
+  tokenizer.addVar("DecimalIntegerLiteral", AnyOf("0", "<NonZeroDigit><DecimalDigits>"));
+  tokenizer.addVar("DecimalDigits", "<DecimalDigit>+");
+  tokenizer.addVar("DecimalDigit", "[0-9]");
+  tokenizer.addVar("NonZeroDigit", "[1-9]");
+  tokenizer.addVar("ExponentPart", "<ExponentIndicator><SignedPart>");
+  tokenizer.addVar("ExponentIndicator", "e|E");
+  tokenizer.addVar("SignedInteger", AnyOf("<DecimalDigits>", "[\\-\\+]<DecimalDigits>"));
+  tokenizer.addVar("HexIntegerLiteral", "0[xX]<HexDigit>+");
+  tokenizer.addVar("HexDigit", "[0-9a-fA-F]");
 
   // JSON5String:
-  lexer.addRule(new Rule(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), "JSON5String"));
-  lexer.addVar("JSON5SingleQuoteString", "'<JSONSingleQuoteStringChar>*'");
-  lexer.addVar("JSON5DoubleQuoteString", "'<JSONDoubleQuoteStringChar>*'");
-  lexer.addVar("JSONSingleQuoteStringChar", AnyOf("(^('|\\|<LineTerminator>))", "<JSON5MiscStringChar>"));
-  lexer.addVar("JSONDoubleQuoteStringChar", AnyOf('(^("|\\|<LineTerminator>))', "<JSON5MiscStringChar>"));
-  lexer.addVar("JSON5MiscStringChar", AnyOf("\u2028", "\u2029", "<LineContinuation>", "\\<EscapeSequence>"));
+  tokenizer.addRule(new Rule(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), "JSON5String"));
+  tokenizer.addVar("JSON5SingleQuoteString", "'<JSONSingleQuoteStringChar>*'");
+  tokenizer.addVar("JSON5DoubleQuoteString", "'<JSONDoubleQuoteStringChar>*'");
+  tokenizer.addVar("JSONSingleQuoteStringChar", AnyOf("(^('|\\|<LineTerminator>))", "<JSON5MiscStringChar>"));
+  tokenizer.addVar("JSONDoubleQuoteStringChar", AnyOf('(^("|\\|<LineTerminator>))', "<JSON5MiscStringChar>"));
+  tokenizer.addVar("JSON5MiscStringChar", AnyOf("\u2028", "\u2029", "<LineContinuation>", "\\<EscapeSequence>"));
 
   // JSON5Comment - single and multi line
-  lexer.addRule(new Rule(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), "JSON5Comment"));
+  tokenizer.addRule(new Rule(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), "JSON5Comment"));
 
   // JSON5 Literals
-  lexer.addRule(new Rule("null", "NULL"));
-  lexer.addRule(new Rule("true|false", "JSON5Boolean"));
+  tokenizer.addRule(new Rule("null", "NULL"));
+  tokenizer.addRule(new Rule("true|false", "JSON5Boolean"));
 
   // operator tokens
-  lexer.addRule(new Rule(",", "COMMA"));
-  lexer.addRule(new Rule(":", "COLON"));
-  lexer.addRule(new Rule("\\[", "OSQ"));
-  lexer.addRule(new Rule("\\]", "CSQ"));
-  lexer.addRule(new Rule("\\{", "OBRACE"));
-  lexer.addRule(new Rule("\\}", "CBRACE"));
+  tokenizer.addRule(new Rule(",", "COMMA"));
+  tokenizer.addRule(new Rule(":", "COLON"));
+  tokenizer.addRule(new Rule("\\[", "OSQ"));
+  tokenizer.addRule(new Rule("\\]", "CSQ"));
+  tokenizer.addRule(new Rule("\\{", "OBRACE"));
+  tokenizer.addRule(new Rule("\\}", "CBRACE"));
 
   // Spaces - Indicate these are to be skipped
-  lexer.addRule(new Rule("[ \t\n\r]+", "SPACES"));
+  tokenizer.addRule(new Rule("[ \t\n\r]+", "SPACES"));
 
   // Default error rule
-  lexer.addRule(new Rule(".", "ERROR"));
-  return lexer;
+  tokenizer.addRule(new Rule(".", "ERROR"));
+  return tokenizer;
 }
 
-const lexer = jsonLexer();
+const tokenizer = jsonTokenizer();
 
 describe("JSON Tests", () => {
   test("Test Chars", () => {
