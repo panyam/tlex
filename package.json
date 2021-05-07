@@ -38,6 +38,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "precommit-msg": "echo 'Pre-commit checks...' && exit 0",
     "prepare": "npm run build",
+    "prepublishOnly": "echo prepublishOnly...",
     "preversion": "npm run build && npm run lintfix",
     "version": "git add -A src",
     "postversion": "git push && git push --tags"

@@ -9,7 +9,7 @@ import { ParseError, UnexpectedTokenError } from "./errors";
 export type TokenType = number | string;
 
 export class Token {
-  value = null as TSU.Nullable<string>;
+  value: any = null;
   groups: TSU.NumMap<number[]> = {};
   positions: TSU.NumMap<[number, number]> = {};
   constructor(

@@ -8,3 +8,4 @@ export * from "./tape";
 export * from "./tokenizer";
 export * from "./vm";
 export * from "./errors";
+export * as Misc from "./helpers";
