@@ -136,7 +136,10 @@ export class Tokenizer {
 
   next(tape: Tape): Token | null {
     const m = this.vm.match(tape);
-    return m == null ? null : toToken(this.allRules[m.matchIndex].tokenType, m, tape);
+    if (m == null) return null;
+    const rule = this.allRules[m.matchIndex];
+    if (rule.skip) return this.next(tape);
+    return toToken(rule.tokenType, m, tape);
   }
 }
 
