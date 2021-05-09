@@ -140,7 +140,7 @@ export class Tokenizer {
   }
 }
 
-export type NextTokenFunc = () => TSU.Nullable<Token>;
+export type NextTokenFunc = (tape: Tape) => TSU.Nullable<Token>;
 /**
  * A wrapper on a tokenizer for providing features like k-lookahead, token
  * insertion, rewinding, expectation enforcement etc.
@@ -153,8 +153,8 @@ export class TokenBuffer {
     this.nextToken = nextToken;
   }
 
-  next(): TSU.Nullable<Token> {
-    const out = this.peek();
+  next(tape: Tape): TSU.Nullable<Token> {
+    const out = this.peek(tape);
     if (out != null) {
       this.consume();
     }
@@ -164,9 +164,9 @@ export class TokenBuffer {
   /**
    * Peek at the nth token in the token stream.
    */
-  peek(nth = 0): TSU.Nullable<Token> {
+  peek(tape: Tape, nth = 0): TSU.Nullable<Token> {
     while (this.buffer.length <= nth) {
-      const tok = this.nextToken();
+      const tok = this.nextToken(tape);
       if (tok == null) return null;
       this.buffer.push(tok);
     }
@@ -174,12 +174,13 @@ export class TokenBuffer {
   }
 
   match(
+    tape: Tape,
     matchFunc: (token: Token) => boolean,
     ensure = false,
     consume = true,
     nextAction?: (token: Token) => boolean | undefined,
   ): TSU.Nullable<Token> {
-    const token = this.peek();
+    const token = this.peek(tape);
     if (token != null) {
       if (matchFunc(token)) {
         if (nextAction && nextAction != null) {
@@ -204,20 +205,20 @@ export class TokenBuffer {
     this.buffer.splice(0, 1);
   }
 
-  consumeIf(...expected: TokenType[]): TSU.Nullable<Token> {
-    return this.match((t) => t.isOneOf(...expected));
+  consumeIf(tape: Tape, ...expected: TokenType[]): TSU.Nullable<Token> {
+    return this.match(tape, (t) => t.isOneOf(...expected));
   }
 
-  expectToken(...expected: TokenType[]): Token {
-    return this.match((t) => t.isOneOf(...expected), true, true) as Token;
+  expectToken(tape: Tape, ...expected: TokenType[]): Token {
+    return this.match(tape, (t) => t.isOneOf(...expected), true, true) as Token;
   }
 
-  ensureToken(...expected: TokenType[]): Token {
-    return this.match((t) => t.isOneOf(...expected), true, false) as Token;
+  ensureToken(tape: Tape, ...expected: TokenType[]): Token {
+    return this.match(tape, (t) => t.isOneOf(...expected), true, false) as Token;
   }
 
-  nextMatches(...expected: TokenType[]): TSU.Nullable<Token> {
-    const token = this.peek();
+  nextMatches(tape: Tape, ...expected: TokenType[]): TSU.Nullable<Token> {
+    const token = this.peek(tape);
     if (token == null) return null;
     for (const tok of expected) {
       if (token.tag == tok) return token;

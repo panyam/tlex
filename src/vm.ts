@@ -76,7 +76,7 @@ export class Prog {
     return `Prog.with((p) => { ${out} })`;
   }
 
-  debugValue(instrDebugValue?: (instr: Instr) => string): any {
+  debugValue(instrDebugValue: (instr: Instr) => string = InstrDebugValue): any {
     if (instrDebugValue) {
       return this.instrs.map((instr, index) => {
         if (instr.comment.trim().length > 0) return `L${index}: ${instrDebugValue(instr)}     # ${instr.comment}`;
