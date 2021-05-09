@@ -623,6 +623,11 @@ export class Rule {
   readonly pattern: string;
 
   /**
+   * Whether to skip this rule or not.
+   */
+  skip = false;
+
+  /**
    * The generated expression for this rule.
    */
   expr: Regex;

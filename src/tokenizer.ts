@@ -92,7 +92,7 @@ export class Tokenizer {
     return this.allRules.find((r) => r.tokenType == value) || null;
   }
 
-  addRule(rule: Rule, skip = false): this {
+  addRule(rule: Rule): this {
     const old = this.allRules.findIndex((r) => r.tokenType == rule.tokenType);
     if (old >= 0) {
       const oldRule = this.allRules[old];
