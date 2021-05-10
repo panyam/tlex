@@ -27,7 +27,7 @@ export class Compiler {
       this.multiline = rule.multiline;
       split.add(out.instrs.length);
       this.compileExpr(rule.expr, out);
-      out.add(OpCode.Match, rule.priority, i);
+      out.add(OpCode.Match, rule.priority, rule.matchIndex >= 0 ? rule.matchIndex : i);
     });
     return out;
   }

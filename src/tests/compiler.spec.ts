@@ -329,4 +329,19 @@ describe("Regex Compile Tests", () => {
       }),
     );
   });
+
+  test("Test Priorities", () => {
+    testRegexCompile(
+      compile(null, new Rule("a*", { matchIndex: 1 }), new Rule("a", { matchIndex: 0 })),
+      Prog.with((p) => {
+        p.add(OpCode.Split, 1, 5);
+        p.add(OpCode.Split, 2, 4);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Jump, 1);
+        p.add(OpCode.Match, 10, 1);
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Match, 10, 0);
+      }),
+    );
+  });
 });

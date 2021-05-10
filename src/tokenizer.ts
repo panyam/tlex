@@ -93,6 +93,7 @@ export class Tokenizer {
   }
 
   addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
+    rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);
     this.onMatchHandlers.push(onMatch || null);
     rule.expr = new RegexParser(rule.pattern).parse();
@@ -101,20 +102,18 @@ export class Tokenizer {
   }
 
   compile(): Prog {
-    const sortedRules = this.sortRules().map(([r, i]) => r);
+    const sortedRules = this.sortRules();
     const prog = this.compiler.compile(sortedRules);
     this._vm = new VM(prog);
     return prog;
   }
 
-  sortRules(): [Rule, number][] {
+  sortRules(): Rule[] {
     // Sort rules so high priority ones appear first
-    const sortedRules: [Rule, number][] = this.allRules.map((rule, index) => [rule, index]);
-    sortedRules.sort((x, y) => {
-      const [r1, i1] = x;
-      const [r2, i2] = y;
+    const sortedRules: Rule[] = this.allRules.map((rule) => rule);
+    sortedRules.sort((r1, r2) => {
       if (r1.priority != r2.priority) return r2.priority - r1.priority;
-      return i1 - i2;
+      return r1.matchIndex - r2.matchIndex;
     });
     return sortedRules;
   }

@@ -615,6 +615,11 @@ export interface RuleConfig {
    * Whether ^ and $ are to be activated also on new line boundaries.
    */
   multiline?: boolean;
+
+  /**
+   * A value set later on to identify the match index
+   */
+  matchIndex?: number;
 }
 
 /**
@@ -665,6 +670,11 @@ export class Rule {
   multiline: boolean;
 
   /**
+   * A value set later on to identify the match index
+   */
+  matchIndex: number;
+
+  /**
    * Constructor
    *
    * @param pattern   - The pattern to match for the rule.
@@ -677,6 +687,7 @@ export class Rule {
     this.dotAll = TSU.Misc.dictGet(config, "dotAll", true);
     this.multiline = TSU.Misc.dictGet(config, "multiline", true);
     this.ignoreCase = TSU.Misc.dictGet(config, "ignoreCase", false);
+    this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
     if (typeof pattern === "string") {
       this.pattern = pattern;
     } else {
