@@ -199,6 +199,7 @@ export class VM {
     if (end < 0) {
       end = prog.length - 1;
     }
+    this.end = end;
   }
 
   savePosition(thread: Thread, pos: number, tapeIndex: number): void {
@@ -246,7 +247,11 @@ export class VM {
   }
 
   addThread(thread: Thread, list: Thread[], tape: Tape, delta = 0): void {
-    if (this.genForOffset[thread.offset - this.start] == this.gen) {
+    if (
+      thread.offset < this.start ||
+      thread.offset > this.end ||
+      this.genForOffset[thread.offset - this.start] == this.gen
+    ) {
       // duplicate
       return;
     }
@@ -429,6 +434,7 @@ export class VM {
    */
   match(tape: Tape): Match | null {
     // this.gen = 0; this.genForOffset = {};
+    if (this.end < this.start) return null;
     this.startMatching(tape);
     let bestMatch: TSU.Nullable<Match> = null;
     while (this.currThreads.length > 0) {
