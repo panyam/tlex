@@ -42,7 +42,8 @@ export function newTokenizer(contents: string): Tokenizer {
       if (name.length > 0 && (isExtern || value.length > 0)) {
         error = false;
         if (isExtern) {
-          tokenizer.addExtern(name);
+          throw new Error("Externs not yet supported");
+          // tokenizer.addExtern(name);
         }
         if (isVar) {
           tokenizer.addVar(name, value);
