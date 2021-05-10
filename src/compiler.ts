@@ -25,11 +25,9 @@ export class Compiler {
       this.dotAll = rule.dotAll;
       this.ignoreCase = rule.ignoreCase;
       this.multiline = rule.multiline;
-      if (rule.tokenType != null) {
-        split.add(out.instrs.length);
-        this.compileExpr(rule.expr, out);
-        out.add(OpCode.Match, rule.priority, i);
-      }
+      split.add(out.instrs.length);
+      this.compileExpr(rule.expr, out);
+      out.add(OpCode.Match, rule.priority, i);
     });
     return out;
   }

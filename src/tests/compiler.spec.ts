@@ -62,7 +62,7 @@ function compile(exprResolver: null | ((name: string) => Regex), ...rules: Rule[
 describe("Regex Compile Tests", () => {
   test("Test Chars", () => {
     testRegexCompile(
-      compile(null, new Rule("abcde", 0)),
+      compile(null, new Rule("abcde")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
@@ -76,7 +76,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Escape Chars", () => {
     testRegexCompile(
-      compile(null, new Rule("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", 0)),
+      compile(null, new Rule("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 10);
         p.add(OpCode.Char, CharType.SingleChar, 13);
@@ -95,7 +95,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Union", () => {
     testRegexCompile(
-      compile(null, new Rule("a|b|c|d|e", 0)),
+      compile(null, new Rule("a|b|c|d|e")),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 3, 5, 7, 9);
         p.add(OpCode.Char, CharType.SingleChar, 97);
@@ -114,7 +114,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Quants - a*", () => {
     testRegexCompile(
-      compile(null, new Rule("a*", 0)),
+      compile(null, new Rule("a*")),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 3);
         p.add(OpCode.Char, CharType.SingleChar, 97);
@@ -126,7 +126,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Quants - a+", () => {
     testRegexCompile(
-      compile(null, new Rule("a+", 0)),
+      compile(null, new Rule("a+")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Split, 0, 2);
@@ -137,7 +137,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Quants - a?", () => {
     testRegexCompile(
-      compile(null, new Rule("a?", 0)),
+      compile(null, new Rule("a?")),
       Prog.with((p) => {
         p.add(OpCode.Split, 1, 2);
         p.add(OpCode.Char, CharType.SingleChar, 97);
@@ -148,7 +148,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Quants - (ab){3,5}", () => {
     testRegexCompile(
-      compile(null, new Rule("(?:ab){3,5}", 0)),
+      compile(null, new Rule("(?:ab){3,5}")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
@@ -169,21 +169,21 @@ describe("Regex Compile Tests", () => {
 
   test("Test Char Ranges", () => {
     testRegexCompile(
-      compile(null, new Rule("[a-c]", 0)),
+      compile(null, new Rule("[a-c]")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99);
         p.add(OpCode.Match, 10, 0);
       }),
     );
     testRegexCompile(
-      compile(null, new Rule("[a-cb-j]", 0)),
+      compile(null, new Rule("[a-cb-j]")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99, 3, 98, 106);
         p.add(OpCode.Match, 10, 0);
       }),
     );
     testRegexCompile(
-      compile(null, new Rule("[a-cm-q]", 0)),
+      compile(null, new Rule("[a-cm-q]")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.CharGroup, 3, 97, 99, 3, 109, 113);
         p.add(OpCode.Match, 10, 0);
@@ -193,14 +193,14 @@ describe("Regex Compile Tests", () => {
 
   test("Test Special Char Ranges", () => {
     testRegexCompile(
-      compile(null, new Rule(".", 0)),
+      compile(null, new Rule(".")),
       Prog.with((p) => {
         p.add(OpCode.Any);
         p.add(OpCode.Match, 10, 0);
       }),
     );
     testRegexCompile(
-      compile(null, new Rule("^.$", 0)),
+      compile(null, new Rule("^.$")),
       Prog.with((p) => {
         p.add(OpCode.MLStartingChar);
         p.add(OpCode.Any);
@@ -211,7 +211,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Named Groups", () => {
-    const prog = compile((name) => parse("abcde"), new Rule("\\k<Hello  >", 10));
+    const prog = compile((name) => parse("abcde"), new Rule("\\k<Hello  >"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -227,7 +227,7 @@ describe("Regex Compile Tests", () => {
 
   test("Test Lookahead", () => {
     testRegexCompile(
-      compile(null, new Rule("abc(?=hello)", 0)),
+      compile(null, new Rule("abc(?=hello)")),
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
@@ -245,7 +245,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Negative Lookahead", () => {
-    const prog = compile(null, new Rule("abc(?!hello)", 0));
+    const prog = compile(null, new Rule("abc(?!hello)"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -265,7 +265,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Negative Lookahead", () => {
-    const prog = compile(null, new Rule("abc(?!hello)", 0));
+    const prog = compile(null, new Rule("abc(?!hello)"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -285,7 +285,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Negative Lookback", () => {
-    const prog = compile(null, new Rule("(?<!h*ell+o)abc", 0));
+    const prog = compile(null, new Rule("(?<!h*ell+o)abc"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -308,7 +308,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test LookBack", () => {
-    const prog = compile(null, new Rule("(?<=h*ell+o)abc", 0));
+    const prog = compile(null, new Rule("(?<=h*ell+o)abc"));
     testRegexCompile(
       prog,
       Prog.with((p) => {

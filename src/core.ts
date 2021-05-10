@@ -577,39 +577,106 @@ export class NumRef extends Regex {
 
 export type REPatternType = RegExp | Rule | string;
 
+export interface RuleConfig {
+  /**
+   * Token's tag associated with this Rule.
+   * This is used to associate a rule (and its lexeme)
+   * with its token by the parser.
+   */
+  tokenType?: any;
+
+  /**
+   * Priority for a rule.  As the NFA runs through the rules it could be
+   * matching several rules in parallel.  However as soon as a rule that
+   * is of a higher priority has matched all other rules (still running)
+   * with a lower priority are halted.
+   * We can use this to match literals over a regex even though a regex
+   * can have a longer match.
+   */
+  priority?: number;
+
+  /**
+   * Whether the rule is greedy or not.
+   */
+  isGreedy?: boolean;
+
+  /**
+   * Whether to ignore case int his particular rule (only).  The compiler will emit
+   * different instructions based on this flag.
+   */
+  ignoreCase?: boolean;
+
+  /**
+   * Whether to allow "." to match new lines.
+   */
+  dotAll?: boolean;
+
+  /**
+   * Whether ^ and $ are to be activated also on new line boundaries.
+   */
+  multiline?: boolean;
+}
+
 /**
  * A rule defines a match to be performed and recognized by the lexer.
  */
 export class Rule {
   /**
-   * Constructor
-   *
-   * @param pattern   - The pattern to match for the rule.
-   * @param tokenType - The token type to associate this rule with.
-   *                    If tokenType is null then this will be treated
-   *                    as a non-primary rule.  Only rules that are
-   *                    "primary" rules will be targetted for matching
-   *                    in the final NFA.  We can create non primary
-   *                    rules as a way for short cuts.  Eg:
+   * The token type tag to associate this rule with.  If tokenType is null
+   * then this will be treated as a non-primary rule.  Only rules that are
+   * "primary" rules will be targetted for matching in the final NFA.  We
+   * can create non primary rules as a way for short cuts.  Eg:
    *
    *                        WHITESPACE = [ \t\n]+
    *
-   *                    can be a rule that is only used "inside" other
-   *                    rules via <WHITESPACE>
-   * @param priority  - Priority for a rule.  As the NFA runs through
-   *                    the rules it could be matching several rules in
-   *                    parallel.  However as soon as a rule that is of a
-   *                    higher priority has matched all other rules
-   *                    (still running) with a lower priority are halted.
-   *                    We can use this to match literals over a regex
-   *                    even though a regex can have a longer match.
+   * can be a rule that is only used "inside" other rules via <WHITESPACE>.
    */
-  constructor(
-    pattern: string | RegExp,
-    public readonly tokenType: any | null,
-    public readonly priority = 10,
-    public readonly isGreedy = true,
-  ) {
+  tokenType: any;
+
+  /**
+   * Priority for a rule.  As the NFA runs through the rules it could be
+   * matching several rules in parallel.  However as soon as a rule that
+   * is of a higher priority has matched all other rules (still running)
+   * with a lower priority are halted.
+   * We can use this to match literals over a regex even though a regex
+   * can have a longer match.
+   */
+  priority: number;
+
+  /**
+   * Whether the rule is greedy or not.
+   */
+  isGreedy: boolean;
+
+  /**
+   * Whether to ignore case int his particular rule (only).  The compiler will emit
+   * different instructions based on this flag.
+   */
+  ignoreCase: boolean;
+
+  /**
+   * Whether to allow "." to match new lines.
+   */
+  dotAll: boolean;
+
+  /**
+   * Whether ^ and $ are to be activated also on new line boundaries.
+   */
+  multiline: boolean;
+
+  /**
+   * Constructor
+   *
+   * @param pattern   - The pattern to match for the rule.
+   */
+  constructor(pattern: string | RegExp, config?: RuleConfig) {
+    config = config || ({} as RuleConfig);
+    this.tokenType = TSU.Misc.dictGet(config, "tokenType", null);
+    this.priority = TSU.Misc.dictGet(config, "priority", 10);
+    this.isGreedy = TSU.Misc.dictGet(config, "isGreedy", true);
+    this.dotAll = TSU.Misc.dictGet(config, "dotAll", true);
+    this.multiline = TSU.Misc.dictGet(config, "multiline", true);
+    this.ignoreCase = TSU.Misc.dictGet(config, "ignoreCase", false);
     if (typeof pattern === "string") {
       this.pattern = pattern;
     } else {
@@ -632,28 +699,12 @@ export class Rule {
    */
   expr: Regex;
 
-  /**
-   * Whether to ignore case int his particular rule (only).  The compiler will emit
-   * different instructions based on this flag.
-   */
-  ignoreCase = false;
-
-  /**
-   * Whether to allow "." to match new lines.
-   */
-  dotAll = true;
-
-  /**
-   * Whether ^ and $ are to be activated also on new line boundaries.
-   */
-  multiline = true;
-
   static flatten(re: REPatternType | REPatternType[], index = 0, rules?: Rule[]): Rule[] {
     rules = rules || [];
     if (typeof re === "string") {
-      rules.push(new Rule(re, index));
+      rules.push(new Rule(re, { tokenType: index }));
     } else if (re.constructor == RegExp) {
-      rules.push(new Rule(re, index));
+      rules.push(new Rule(re, { tokenType: index }));
     } else if (re.constructor == Rule) {
       rules.push(re as Rule);
     } else {

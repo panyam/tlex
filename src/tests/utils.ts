@@ -47,7 +47,7 @@ export function newTokenizer(contents: string): Tokenizer {
         if (isVar) {
           tokenizer.addVar(name, value);
         } else {
-          const rule = new Rule(value, name, 10, isGreedy);
+          const rule = new Rule(value, { tokenType: name, priority: 10, isGreedy: isGreedy });
           tokenizer.addRule(rule);
         }
       }
@@ -126,21 +126,20 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   const patterns: Rule[] = [];
   if (typeof pattern === "string") {
     repatterns.push(pattern);
-    patterns.push(new Rule(pattern, 0));
+    patterns.push(new Rule(pattern, { tokenType: 0 }));
   } else {
     // list of string or Rule
     (pattern as any[]).forEach((pat, index) => {
       if (typeof pat === "string") {
         repatterns.push(pat);
-        patterns.push(new Rule(pat, index));
+        patterns.push(new Rule(pat, { tokenType: index }));
       } else {
         repatterns.push(pat.pattern);
-        const rule = new Rule(
-          pat.pattern,
-          "tokenType" in pat ? pat.tokenType : null,
-          "priority" in pat ? pat.priority : 10,
-          "isGreedy" in pat ? pat.isGreedy : true,
-        );
+        const rule = new Rule(pat.pattern, {
+          tokenType: "tokenType" in pat ? pat.tokenType : null,
+          priority: "priority" in pat ? pat.priority : 10,
+          isGreedy: "isGreedy" in pat ? pat.isGreedy : true,
+        });
         patterns.push(rule);
       }
     });

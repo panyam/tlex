@@ -65,7 +65,7 @@ function jsonTokenizer(): Tokenizer {
   const tokenizer = new Tokenizer();
   const AnyOf = (...x: string[]) => x.join("|");
   // JSON5NumericLiteral:
-  tokenizer.addRule(new Rule(AnyOf("Infinity", "NaN", "<NumericLiteral>"), "JSON5NumericLiteral"));
+  tokenizer.addRule(new Rule(AnyOf("Infinity", "NaN", "<NumericLiteral>"), { tokenType: "JSON5NumericLiteral" }));
 
   tokenizer.addVar("NumericLiteral", "<DecimalLiteral>|<HexIntegerLiteral>");
   tokenizer.addVar(
@@ -87,7 +87,9 @@ function jsonTokenizer(): Tokenizer {
   tokenizer.addVar("HexDigit", "[0-9a-fA-F]");
 
   // JSON5String:
-  tokenizer.addRule(new Rule(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), "JSON5String"));
+  tokenizer.addRule(
+    new Rule(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), { tokenType: "JSON5String" }),
+  );
   tokenizer.addVar("JSON5SingleQuoteString", "'<JSONSingleQuoteStringChar>*'");
   tokenizer.addVar("JSON5DoubleQuoteString", "'<JSONDoubleQuoteStringChar>*'");
   tokenizer.addVar("JSONSingleQuoteStringChar", AnyOf("(^('|\\|<LineTerminator>))", "<JSON5MiscStringChar>"));
@@ -95,25 +97,25 @@ function jsonTokenizer(): Tokenizer {
   tokenizer.addVar("JSON5MiscStringChar", AnyOf("\u2028", "\u2029", "<LineContinuation>", "\\<EscapeSequence>"));
 
   // JSON5Comment - single and multi line
-  tokenizer.addRule(new Rule(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), "JSON5Comment"));
+  tokenizer.addRule(new Rule(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), { tokenType: "JSON5Comment" }));
 
   // JSON5 Literals
-  tokenizer.addRule(new Rule("null", "NULL"));
-  tokenizer.addRule(new Rule("true|false", "JSON5Boolean"));
+  tokenizer.addRule(new Rule("null", { tokenType: "NULL" }));
+  tokenizer.addRule(new Rule("true|false", { tokenType: "JSON5Boolean" }));
 
   // operator tokens
-  tokenizer.addRule(new Rule(",", "COMMA"));
-  tokenizer.addRule(new Rule(":", "COLON"));
-  tokenizer.addRule(new Rule("\\[", "OSQ"));
-  tokenizer.addRule(new Rule("\\]", "CSQ"));
-  tokenizer.addRule(new Rule("\\{", "OBRACE"));
-  tokenizer.addRule(new Rule("\\}", "CBRACE"));
+  tokenizer.addRule(new Rule(",", { tokenType: "COMMA" }));
+  tokenizer.addRule(new Rule(":", { tokenType: "COLON" }));
+  tokenizer.addRule(new Rule("\\[", { tokenType: "OSQ" }));
+  tokenizer.addRule(new Rule("\\]", { tokenType: "CSQ" }));
+  tokenizer.addRule(new Rule("\\{", { tokenType: "OBRACE" }));
+  tokenizer.addRule(new Rule("\\}", { tokenType: "CBRACE" }));
 
   // Spaces - Indicate these are to be skipped
-  tokenizer.addRule(new Rule("[ \t\n\r]+", "SPACES"));
+  tokenizer.addRule(new Rule("[ \t\n\r]+", { tokenType: "SPACES" }));
 
   // Default error rule
-  tokenizer.addRule(new Rule(".", "ERROR"));
+  tokenizer.addRule(new Rule(".", { tokenType: "ERROR" }));
   return tokenizer;
 }
 

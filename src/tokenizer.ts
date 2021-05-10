@@ -1,5 +1,5 @@
 import * as TSU from "@panyam/tsutils";
-import { Regex, Union, Rule } from "./core";
+import { Regex, Union, Rule, RuleConfig } from "./core";
 import { RegexParser } from "./parser";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
@@ -7,6 +7,7 @@ import { Tape } from "./tape";
 import { ParseError, UnexpectedTokenError } from "./errors";
 
 export type TokenType = number | string;
+export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any) => any;
 
 export class Token {
   value: any = null;
@@ -52,7 +53,7 @@ export class Tokenizer {
   // Stores named rules
   // Rules are a "regex", whether literal or not
   allRules: Rule[] = [];
-  externs = new Set<string>();
+  onMatchHandlers: (RuleMatchHandler | null)[] = [];
   variables = new Map<string, Regex>();
   compiler: Compiler = new Compiler((name) => {
     let out = this.variables.get(name) || null;
@@ -63,11 +64,6 @@ export class Tokenizer {
 
   getVar(name: string): Regex | null {
     return this.variables.get(name) || null;
-  }
-
-  addExtern(name: string): this {
-    this.externs.add(name);
-    return this;
   }
 
   addVar(name: string, regex: string | Regex): this {
@@ -92,17 +88,13 @@ export class Tokenizer {
     return this.allRules.find((r) => r.tokenType == value) || null;
   }
 
-  addRule(rule: Rule): this {
-    const old = this.allRules.findIndex((r) => r.tokenType == rule.tokenType);
-    if (old >= 0) {
-      const oldRule = this.allRules[old];
-      if (oldRule.pattern != rule.pattern) {
-        rule = new Rule(oldRule.pattern + "|" + rule.pattern, oldRule.tokenType, oldRule.priority, oldRule.isGreedy);
-        this.allRules[old] = rule;
-      }
-    } else {
-      this.allRules.push(rule);
-    }
+  add(pattern: string, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
+    return this.addRule(new Rule(pattern, config), onMatch);
+  }
+
+  addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
+    this.allRules.push(rule);
+    this.onMatchHandlers.push(onMatch || null);
     rule.expr = new RegexParser(rule.pattern).parse();
     this._vm = null;
     return this;
@@ -138,8 +130,17 @@ export class Tokenizer {
     const m = this.vm.match(tape);
     if (m == null) return null;
     const rule = this.allRules[m.matchIndex];
-    if (rule.skip) return this.next(tape);
-    return toToken(rule.tokenType, m, tape);
+    let token = toToken(rule.tokenType, m, tape);
+    const onMatch = this.onMatchHandlers[m.matchIndex];
+    if (onMatch) {
+      token = onMatch(rule, tape, token);
+      if (token == null) {
+        // null return to skip tokens
+        return this.next(tape);
+      } else {
+      }
+    }
+    return token;
   }
 }
 
