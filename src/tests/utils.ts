@@ -48,7 +48,7 @@ export function newTokenizer(contents: string): Tokenizer {
         if (isVar) {
           tokenizer.addVar(name, value);
         } else {
-          const rule = new Rule(value, { tokenType: name, priority: 10, isGreedy: isGreedy });
+          const rule = new Rule(value, { tag: name, priority: 10, isGreedy: isGreedy });
           tokenizer.addRule(rule);
         }
       }
@@ -127,17 +127,17 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   const patterns: Rule[] = [];
   if (typeof pattern === "string") {
     repatterns.push(pattern);
-    patterns.push(new Rule(pattern, { tokenType: 0 }));
+    patterns.push(new Rule(pattern, { tag: 0 }));
   } else {
     // list of string or Rule
     (pattern as any[]).forEach((pat, index) => {
       if (typeof pat === "string") {
         repatterns.push(pat);
-        patterns.push(new Rule(pat, { tokenType: index }));
+        patterns.push(new Rule(pat, { tag: index }));
       } else {
         repatterns.push(pat.pattern);
         const rule = new Rule(pat.pattern, {
-          tokenType: "tokenType" in pat ? pat.tokenType : null,
+          tag: "tag" in pat ? pat.tag : null,
           priority: "priority" in pat ? pat.priority : 10,
           isGreedy: "isGreedy" in pat ? pat.isGreedy : true,
         });
@@ -152,7 +152,7 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   let next = vm.match(tape);
   const found: Token[] = [];
   while (next != null && next.end > next.start) {
-    found.push(toToken(patterns[next.matchIndex].tokenType, next, tape));
+    found.push(toToken(patterns[next.matchIndex].tag, next, tape));
     next = vm.match(tape);
   }
   if (debug) {

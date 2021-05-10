@@ -583,7 +583,7 @@ export interface RuleConfig {
    * This is used to associate a rule (and its lexeme)
    * with its token by the parser.
    */
-  tokenType?: any;
+  tag?: any;
 
   /**
    * Priority for a rule.  As the NFA runs through the rules it could be
@@ -622,7 +622,7 @@ export interface RuleConfig {
  */
 export class Rule {
   /**
-   * The token type tag to associate this rule with.  If tokenType is null
+   * The token type tag to associate this rule with.  If tag is null
    * then this will be treated as a non-primary rule.  Only rules that are
    * "primary" rules will be targetted for matching in the final NFA.  We
    * can create non primary rules as a way for short cuts.  Eg:
@@ -631,7 +631,7 @@ export class Rule {
    *
    * can be a rule that is only used "inside" other rules via <WHITESPACE>.
    */
-  tokenType: any;
+  tag: any;
 
   /**
    * Priority for a rule.  As the NFA runs through the rules it could be
@@ -671,7 +671,7 @@ export class Rule {
    */
   constructor(pattern: string | RegExp, config?: RuleConfig) {
     config = config || ({} as RuleConfig);
-    this.tokenType = TSU.Misc.dictGet(config, "tokenType", null);
+    this.tag = TSU.Misc.dictGet(config, "tag", null);
     this.priority = TSU.Misc.dictGet(config, "priority", 10);
     this.isGreedy = TSU.Misc.dictGet(config, "isGreedy", true);
     this.dotAll = TSU.Misc.dictGet(config, "dotAll", true);
@@ -702,9 +702,9 @@ export class Rule {
   static flatten(re: REPatternType | REPatternType[], index = 0, rules?: Rule[]): Rule[] {
     rules = rules || [];
     if (typeof re === "string") {
-      rules.push(new Rule(re, { tokenType: index }));
+      rules.push(new Rule(re, { tag: index }));
     } else if (re.constructor == RegExp) {
-      rules.push(new Rule(re, { tokenType: index }));
+      rules.push(new Rule(re, { tag: index }));
     } else if (re.constructor == Rule) {
       rules.push(re as Rule);
     } else {

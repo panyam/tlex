@@ -158,7 +158,7 @@ describe("VM Tests", () => {
   });
 
   test("Test a*? | aa with priority", () => {
-    const re = [new Rule("aa", { tokenType: 1, priority: 20 }), "a*?"];
+    const re = [new Rule("aa", { tag: 1, priority: 20 }), "a*?"];
     expectMatchStrings(execute({}, "aaaaa", ...re), ["aa", 0], ["aa", 0], ["a", 1]);
   });
 
@@ -181,11 +181,11 @@ describe("VM Tests", () => {
 
   test("Test Lines", () => {
     const re = [
-      new Rule("^ *a+", { tokenType: 0, priority: 20 }),
-      new Rule("b*$", { tokenType: 1, priority: 15 }),
-      new Rule(`[\n\r]+`, { tokenType: 3, priority: 10 }),
-      new Rule(`[ \t]+`, { tokenType: 2, priority: 10 }),
-      new Rule(".", { tokenType: 4, priority: 0 }),
+      new Rule("^ *a+", { tag: 0, priority: 20 }),
+      new Rule("b*$", { tag: 1, priority: 15 }),
+      new Rule(`[\n\r]+`, { tag: 3, priority: 10 }),
+      new Rule(`[ \t]+`, { tag: 2, priority: 10 }),
+      new Rule(".", { tag: 4, priority: 0 }),
     ];
     expectMatchStrings(
       execute(

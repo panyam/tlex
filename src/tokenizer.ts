@@ -30,8 +30,8 @@ export class Token {
   }
 }
 
-export function toToken(tokenType: TokenType, m: Match, tape: Tape | null): Token {
-  const out = new Token(tokenType, m.matchIndex, m.start, m.end);
+export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
+  const out = new Token(tag, m.matchIndex, m.start, m.end);
   for (let i = 0; i < m.positions.length; i += 2) {
     if (m.positions[i] >= 0) {
       out.positions[Math.floor(i / 2)] = [m.positions[i], m.positions[i + 1]];
@@ -85,10 +85,10 @@ export class Tokenizer {
   }
 
   findRuleByValue(value: any): Rule | null {
-    return this.allRules.find((r) => r.tokenType == value) || null;
+    return this.allRules.find((r) => r.tag == value) || null;
   }
 
-  add(pattern: string, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
+  add(pattern: string | RegExp, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
     return this.addRule(new Rule(pattern, config), onMatch);
   }
 
@@ -130,7 +130,7 @@ export class Tokenizer {
     const m = this.vm.match(tape);
     if (m == null) return null;
     const rule = this.allRules[m.matchIndex];
-    let token = toToken(rule.tokenType, m, tape);
+    let token = toToken(rule.tag, m, tape);
     const onMatch = this.onMatchHandlers[m.matchIndex];
     if (onMatch) {
       token = onMatch(rule, tape, token);
