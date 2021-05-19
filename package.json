@@ -44,7 +44,7 @@
     "postversion": "git push && git push --tags"
   },
   "dependencies": {
-    "@panyam/tsutils": "file:../tsutils"
+    "@panyam/tsutils": "^0.0.24"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
