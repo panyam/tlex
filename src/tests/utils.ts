@@ -79,10 +79,14 @@ export function execute(configs: any, input: string, ...repattern: REPatternType
   const vm = new VM(prog, 0, -1, true, configs);
   const tape = new Tape(input);
   let next = vm.match(tape);
-  while (next != null && next.end > next.start) {
+  while (next != null) {
+    if (next.end < next.start && !tape.hasMore) {
+      throw new Error(`Invalid character found at offset (${tape.index}): 'tape.currCh}'`);
+    }
     found.push(toToken(0, next, tape));
     next = vm.match(tape);
   }
+  // if (tape.hasMore) { throw new Error(`Invalid character found at offset (${tape.index}): '${tape.currCh}'`); }
   const debugProg = configs.debugProg || configs.debug == "all";
   const debugFound = configs.debug;
   if (debugProg) {

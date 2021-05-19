@@ -4,63 +4,6 @@ import { Rule } from "../core";
 import { Token } from "../tokenizer";
 import { execute } from "./utils";
 
-/*
-function testInput(
-  prog: Prog,
-  input: string,
-  expectedTokens: [string, number][],
-  debug = false,
-  reportFile: TSU.Nullable<string> = null,
-): void {
-  const tape = new Tape(input);
-  const vm = new VM(prog);
-  const tracer = new VMTracer();
-  if (debug) {
-    console.log(
-      "Prog: \n",
-      `${prog.debugValue(InstrDebugValue).join("\n")}`,
-      "\n",
-      "\n",
-      "Input: ",
-      input,
-      "\n",
-      "Expected Tokens: ",
-      expectedTokens,
-    );
-    vm.tracer = tracer;
-  }
-  const found = [] as [string, number][];
-  let next = vm.match(tape);
-  while (next != null && next.end > next.start) {
-    found.push([tape.substring(next.start, next.end), next.matchIndex]);
-    next = vm.match(tape);
-  }
-  if (debug) {
-    console.log("VM Tracer: ");
-    // console.log(tracer.trace.join("\n"));
-    console.log("Found Tokens: ", found);
-    const reportHtml = `<html>
-        <head>
-          <style>
-            .threadInstrsCell  { padding-left: 10px; padding-right: 10px; vertical-align: top; }
-            .inputCharCell { font-weight: bold; text-align: center; }
-            .threadIdCell { font-weight: bold; text-align: left; vertical-align: top; }
-          </style>
-        </head>
-        <body>${layoutThreadNodes(input, tracer.allThreadNodes)}</body>
-       </html>`;
-    if (reportFile != null) {
-      if (reportFile.trim().length > 0) {
-        fs.writeFileSync(reportFile, reportHtml);
-      } else {
-        console.log(reportHtml);
-      }
-    }
-  }
-  expect(found).toEqual(expectedTokens);
-}
-*/
-
 function expectMatchStrings(found: Token[], ...expected: [string, number][]): Token[] {
   const f2 = found.map((f) => [f.value, f.matchIndex]);
   expect(f2).toEqual(expected);
@@ -218,4 +161,11 @@ describe("VM Tests", () => {
       ["\n\n\n", 2],
     );
   });
+
+  /*
+  test("Test invalid char", () => {
+    const re = "[a-e]";
+    expectMatchStrings(execute({}, "abcdef", re), ["a", 0], ["b", 0], ["c", 0], ["d", 0], ["e", 0], ["f", 0]);
+  });
+  */
 });

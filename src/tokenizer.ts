@@ -127,7 +127,13 @@ export class Tokenizer {
 
   next(tape: Tape): Token | null {
     const m = this.vm.match(tape);
-    if (m == null) return null;
+    if (m == null) {
+      if (tape.hasMore) {
+        throw new Error(`Invalid character found at offset (${tape.index}): 'tape.currCh}'`);
+      }
+      // we have an EOF
+      return null;
+    }
     const rule = this.allRules[m.matchIndex];
     let token = toToken(rule.tag, m, tape);
     const onMatch = this.onMatchHandlers[m.matchIndex];
