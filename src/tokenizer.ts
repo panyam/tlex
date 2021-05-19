@@ -129,7 +129,7 @@ export class Tokenizer {
     const m = this.vm.match(tape);
     if (m == null) {
       if (tape.hasMore) {
-        throw new Error(`Invalid character found at offset (${tape.index}): 'tape.currCh}'`);
+        throw new Error(`Invalid character found at offset (${tape.index}): '${tape.currCh}'`);
       }
       // we have an EOF
       return null;
