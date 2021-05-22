@@ -9,14 +9,12 @@ export enum RegexType {
   END_OF_WORD,
   UNION,
   CAT,
-  // NEG,
   REF,
   NUM_REF,
   QUANT,
   LOOK_AHEAD,
   LOOK_BACK,
   // Individual matchables
-  // ANY,
   CHAR,
   // CHAR_GROUP,
 }
@@ -71,21 +69,6 @@ export abstract class Regex {
   protected abstract evalREString(): string;
 }
 
-/*
-export class Any extends Regex {
-  readonly tag: RegexType = RegexType.ANY;
-  get debugValue(): string {
-    return ".";
-  }
-  protected evalREString(): string {
-    return ".";
-  }
-  reverse(): this {
-    return this;
-  }
-}
-*/
-
 export class StartOfInput extends Regex {
   readonly tag: RegexType = RegexType.START_OF_INPUT;
   get debugValue(): string {
@@ -138,51 +121,47 @@ export class EndOfWord extends Regex {
   }
 }
 
-export class LookAhead extends Regex {
-  readonly tag: RegexType = RegexType.LOOK_AHEAD;
+abstract class Assertion extends Regex {
   /**
-   * Creates a lookahead assertion.
+   * Creates a look-back assertion.
    *
+   * @param expr - The regex to match before asserting.
    * @param cond  - The Condition to check.
    */
-  constructor(public readonly cond: Regex, public readonly negate = false) {
+  constructor(public readonly expr: Regex, public readonly cond: Regex, public readonly negate = false) {
     super();
-  }
-
-  protected evalREString(): string {
-    return `(?${this.negate ? "!" : "="}${this.cond.toString})`;
-  }
-
-  get debugValue(): any {
-    return ["LookAhead" + (this.negate ? "!" : ""), this.cond.debugValue];
-  }
-
-  reverse(): Regex {
-    return new LookBack(this.cond.reverse(), this.negate);
   }
 }
 
-export class LookBack extends Regex {
-  readonly tag: RegexType = RegexType.LOOK_BACK;
-  /**
-   * Creates an assertion.
-   *
-   * @param cond  - The Condition to check.
-   */
-  constructor(public readonly cond: Regex, public readonly negate = false) {
-    super();
-  }
+export class LookAhead extends Assertion {
+  readonly tag: RegexType = RegexType.LOOK_AHEAD;
 
   protected evalREString(): string {
-    return `(?<${this.negate ? "!" : "="}${this.cond.toString})`;
+    return `${this.expr.toString}(?${this.negate ? "!" : "="}${this.cond.toString})`;
   }
 
   get debugValue(): any {
-    return ["LookBack" + (this.negate ? "!" : ""), this.cond.debugValue];
+    return ["LookAhead" + (this.negate ? "!" : ""), { expr: this.expr.debugValue, cond: this.cond.debugValue }];
   }
 
   reverse(): Regex {
-    return new LookAhead(this.cond.reverse(), this.negate);
+    return new LookBack(this.expr.reverse(), this.cond.reverse(), this.negate);
+  }
+}
+
+export class LookBack extends Assertion {
+  readonly tag: RegexType = RegexType.LOOK_BACK;
+
+  protected evalREString(): string {
+    return `(?<${this.negate ? "!" : "="}${this.cond.toString})${this.expr.toString}`;
+  }
+
+  get debugValue(): any {
+    return ["LookBack" + (this.negate ? "!" : ""), { expr: this.expr.debugValue, cond: this.cond.debugValue }];
+  }
+
+  reverse(): Regex {
+    return new LookAhead(this.expr.reverse(), this.cond.reverse(), this.negate);
   }
 }
 
@@ -315,32 +294,6 @@ export class Union extends Regex {
     return ["Union", this.options.map((o) => o.debugValue)];
   }
 }
-
-/*
-export class Neg extends Regex {
-  readonly tag: RegexType = RegexType.NEG;
-  constructor(public expr: Regex) {
-    super();
-  }
-
-  reverse(): Neg {
-    return new Neg(this.expr.reverse());
-  }
-
-  evalREString(): string {
-    return `(^${this.expr.toString})`;
-  }
-
-  get debugValue(): any {
-    if (this.expr.tag == RegexType.CHAR_GROUP) {
-      const out = (this.expr as CharGroup).debugValue as string;
-      return "[^" + out.substring(1, out.length - 1) + "]";
-    } else {
-      return ["NOT", this.expr.debugValue];
-    }
-  }
-}
-*/
 
 /**
  * Opcode for each char.

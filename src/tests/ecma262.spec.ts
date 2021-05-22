@@ -7,6 +7,11 @@ import { parse, compile, execute, runMatchTest } from "./utils";
 import { Token } from "../tokenizer";
 import { Prog, VM } from "../vm";
 
+//
+// Test cases from
+//
+// https://github.com/tc39/test262/tree/6e61dd7754e7c94ebcf3ee679cb8db3c54a37b50/test/built-ins/RegExp
+//
 function stringRep(ch: number): string {
   return String.fromCharCode(ch)
     .replace("\n", "\\n")
@@ -1955,20 +1960,42 @@ describe("ECMA Tests - Unicode Char Tests", () => {
   });
 });
 
-describe.skip(`ECMA Tests - Lookbehind Tests`, () => {
-  test(testFileLink("lookBehind/alternations"), () => {
+describe(`ECMA Tests - Lookbehind Tests`, () => {
+  test.skip(testFileLink("lookBehind/alternations"), () => {
     expectMatchIndexes(execute({}, "xabcd", /.*(?<=(..|...|....))(.*)/), 0, 5);
     expectMatchIndexes(execute({}, "xabcd", /.*(?<=(xx|...|....))(.*)/), 0, 5);
     expectMatchIndexes(execute({}, "xxabcd", /.*(?<=(xx|...))(.*)/), 0, 6);
     expectMatchIndexes(execute({}, "xxabcd", /.*(?<=(xx|xxx))(.*)/), 0, 6);
   });
-  test(testFileLink("lookBehind/back-references-to-captures"), () => {
+  test.skip(testFileLink("lookBehind/back-references-to-captures"), () => {
     expectMatchIndexes(execute({}, "abcCd", /(?<=\1(\w))d/i));
     expectMatchIndexes(execute({}, "abxxd", /(?<=\1([abx]))d/));
     expectMatchIndexes(execute({}, "ababc", /(?<=\1(\w+))c/));
     expectMatchIndexes(execute({}, "ababbc", /(?<=\1(\w+))c/));
     expectMatchIndexes(execute({}, "ababdc", /(?<=\1(\w+))c/));
     expectMatchIndexes(execute({}, "ababc", /(?<=(\w+)\1)c/));
+  });
+  test(testFileLink("lookBehind/negative"), () => {
+    expectMatchIndexes(execute({ debug: "all" }, "abcdef", /(?<!abc)\w\w\w/), 0, 3);
+    /*
+    compareArray("abcdef".match(/(?<!a.c)\w\w\w/), ["abc"], "#2");
+    compareArray("abcdef".match(/(?<!a\wc)\w\w\w/), ["abc"], "#3");
+    compareArray("abcdef".match(/(?<!a[a-z])\w\w\w/), ["abc"], "#4");
+    compareArray("abcdef".match(/(?<!a[a-z]{2})\w\w\w/), ["abc"], "#5");
+    sameValue("abcdef".match(/(?<!abc)def/), null, "#6");
+    sameValue("abcdef".match(/(?<!a.c)def/), null, "#7");
+    sameValue("abcdef".match(/(?<!a\wc)def/), null, "#8");
+    sameValue("abcdef".match(/(?<!a[a-z][a-z])def/), null, "#9");
+    sameValue("abcdef".match(/(?<!a[a-z]{2})def/), null, "#10");
+    sameValue("abcdef".match(/(?<!a{1}b{1})cde/), null, "#11");
+    sameValue("abcdef".match(/(?<!a{1}[a-z]{2})def/), null, "#12");
+   */
+  });
+  test(testFileLink("lookBehind/back-references"), () => {
+    // TODO
+  });
+  test(testFileLink("lookBehind/captures-negative"), () => {
+    // TODO
   });
 });
 

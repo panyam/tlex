@@ -35,17 +35,19 @@ export class RegexParser {
     this.counter = new GroupCounter();
   }
 
+  reduceLeft(stack: Regex[]): Regex {
+    const r = stack.length == 1 ? stack[0] : new Cat(...stack);
+    // remove all elements on stack
+    stack.splice(0);
+    return r;
+  }
+
   /**
    * Creates a regex tree given a string
    */
   parse(curr = 0, end = -1): Regex {
     const pattern = this.pattern;
-    let stack: Regex[] = [];
-    function reduceLeft(): Regex {
-      const r = stack.length == 1 ? stack[0] : new Cat(...stack);
-      stack = [];
-      return r;
-    }
+    const stack: Regex[] = [];
     if (end < 0) end = pattern.length - 1;
     while (curr <= end) {
       const currCh = pattern[curr];
@@ -96,7 +98,7 @@ export class RegexParser {
       } else if (currCh == "|") {
         if (curr + 1 <= end) {
           // reduce everything "until now" and THEN apply
-          const prev = reduceLeft();
+          const prev = this.reduceLeft(stack);
           // this.parse everything to the right
           const rest = this.parse(curr + 1, end);
           return new Union(prev, rest);
@@ -105,7 +107,7 @@ export class RegexParser {
       } else if (currCh == "(") {
         curr = this.parseGroup(stack, curr, end);
       } else if (currCh == ")" || currCh == "]" || currCh == "}") {
-        throw new SyntaxError(`Unmatched ${currCh}`);
+        throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
       } else if (pattern[curr] == "*" || pattern[curr] == "?" || pattern[curr] == "+" || pattern[curr] == "{") {
         curr = this.parseQuant(stack, curr, end);
       } else {
@@ -225,9 +227,21 @@ export class RegexParser {
         const cond = this.parse(curr, clPos - 1);
         if (after) {
           // reduce everything "until now" and THEN apply
-          stack.push(new LookAhead(cond, neg));
+          if (stack.length == 0) {
+            throw new SyntaxError("LookAhead condition cannot be before empty rule");
+          }
+          // const endIndex = stack.length - 1;
+          // stack[endIndex] = new LookAhead(stack[endIndex], cond, neg);
+          const expr = new LookAhead(this.reduceLeft(stack), cond, neg);
+          stack.push(expr);
         } else {
-          stack.push(new LookBack(cond, neg));
+          // Lookbacks are interesting, we have something like:
+          // (?<!...)abcde
+          // clPos points to ")" We need abcde also parsed
+          // and then lookback applied to it
+          const rest = this.parse(clPos + 1, end);
+          stack.push(new LookBack(rest, cond, neg));
+          return end + 1;
         }
       }
     } else {

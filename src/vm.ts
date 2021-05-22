@@ -34,7 +34,8 @@ export enum OpCode {
   Save,
   Split,
   Jump,
-  Begin,
+  Begin,  // Forward lookahead matches
+  RBegin, // Reverse lookahead matches
   End,
 
   // Look ahead and Look back matchers
@@ -447,7 +448,7 @@ export class VM {
 
   recurseMatch(tape: Tape, startOffset: number, endOffset: number, forward = true, negate = false): [boolean, number] {
     const savedPos = tape.index;
-    if (!tape.canAdvance(forward ? 1 : -1)) return [false, -1];
+    if (!tape.canAdvance(forward ? 1 : -1)) return [negate, -1];
     // if (!forward)
     tape.advance(forward ? 1 : -1);
     const vm = new VM(this.prog, startOffset, endOffset, forward);

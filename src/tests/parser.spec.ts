@@ -7,6 +7,10 @@ function testRegex(input: string, expected: any, debug = false, enforce = true):
   const found = parse(input);
   if (debug) {
     console.log(
+      "Input: ",
+      input,
+      "RE String: ",
+      found.toString,
       "Found Value: \n",
       util.inspect(found.debugValue, {
         showHidden: false,
@@ -93,12 +97,70 @@ describe("Regex Tests", () => {
   });
 
   test("Test LookAheads", () => {
-    testRegex("abc(?=hello)", ["Cat", ["a", "b", "c", ["LookAhead", ["Cat", ["h", "e", "l", "l", "o"]]]]]);
-    testRegex("hello(?!world)", ["Cat", ["h", "e", "l", "l", "o", ["LookAhead!", ["Cat", ["w", "o", "r", "l", "d"]]]]]);
+    testRegex("hello (?=world)", [
+      "LookAhead",
+      {
+        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
+        cond: ["Cat", ["w", "o", "r", "l", "d"]],
+      },
+    ]);
+    testRegex("hello (?!world)", [
+      "LookAhead!",
+      {
+        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
+        cond: ["Cat", ["w", "o", "r", "l", "d"]],
+      },
+    ]);
   });
 
   test("Test LookBacks", () => {
-    testRegex("(?<=hello)world", ["Cat", [["LookBack", ["Cat", ["h", "e", "l", "l", "o"]]], "w", "o", "r", "l", "d"]]);
-    testRegex("(?<!hello)world", ["Cat", [["LookBack!", ["Cat", ["h", "e", "l", "l", "o"]]], "w", "o", "r", "l", "d"]]);
+    testRegex("(?<=hello)world", [
+      "LookBack",
+      {
+        expr: ["Cat", ["w", "o", "r", "l", "d"]],
+        cond: ["Cat", ["h", "e", "l", "l", "o"]],
+      },
+    ]);
+    testRegex("(?<!hello)world", [
+      "LookBack!",
+      {
+        expr: ["Cat", ["w", "o", "r", "l", "d"]],
+        cond: ["Cat", ["h", "e", "l", "l", "o"]],
+      },
+    ]);
+    testRegex("((?<=hello)world) tour", [
+      "Cat",
+      [
+        [
+          "LookBack",
+          {
+            expr: ["Cat", ["w", "o", "r", "l", "d"]],
+            cond: ["Cat", ["h", "e", "l", "l", "o"]],
+          },
+        ],
+        " ",
+        "t",
+        "o",
+        "u",
+        "r",
+      ],
+    ]);
+    testRegex("((?<!hello)world) tour", [
+      "Cat",
+      [
+        [
+          "LookBack!",
+          {
+            expr: ["Cat", ["w", "o", "r", "l", "d"]],
+            cond: ["Cat", ["h", "e", "l", "l", "o"]],
+          },
+        ],
+        " ",
+        "t",
+        "o",
+        "u",
+        "r",
+      ],
+    ]);
   });
 });
