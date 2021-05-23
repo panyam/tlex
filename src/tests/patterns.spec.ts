@@ -12,7 +12,15 @@ function expectMatchStrings(found: Token[], ...expected: [string, number][]): To
 
 describe("VM Tests", () => {
   test("Test STRING", () => {
-    const re = '".*?(?<!\\\\)"';
+    const re = '"(.*?(?<!\\\\))"';
     expectMatchStrings(execute({}, '"\\n"', re), ['"\\n"', 0]);
+    expectMatchStrings(execute({}, '"\\""', re), ['"\\""', 0]);
+    //  /"(.*(?<!abc))"/.exec('"asfzcxvadf"');
+    expectMatchStrings(execute({}, '"abcdef"', '".*(?<!a)"'), ['"abcdef"', 0]);
+    expectMatchStrings(execute({}, '"abcdefab"', '".*(?<!a)"'), ['"abcdefab"', 0]);
+    // Above 2 but with marked groups
+    expectMatchStrings(execute({}, '"abcdef"', '"(.*(?<!a))"'), ['"abcdef"', 0]);
+    expectMatchStrings(execute({}, '"abcdefa"', '"(.*(?<!a))"'));
+    expectMatchStrings(execute({}, '"abcdefab"', '"(.*(?<!a))"'), ['"abcdefab"', 0]);
   });
 });

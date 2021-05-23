@@ -117,7 +117,9 @@ export class RegexParser {
         curr += nchars;
       }
     }
-    TSU.assert(stack.length > 0);
+    if (stack.length <= 0) {
+      // throw new SyntaxError(`Invalid Regex (${curr} - ${end}): ${pattern}`);
+    }
     if (stack.length == 1) return stack[0];
     return new Cat(...stack);
   }
