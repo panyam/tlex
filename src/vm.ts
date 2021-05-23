@@ -34,7 +34,7 @@ export enum OpCode {
   Save,
   Split,
   Jump,
-  Begin,  // Forward lookahead matches
+  Begin, // Forward lookahead matches
   RBegin, // Reverse lookahead matches
   End,
 
@@ -334,19 +334,46 @@ export class VM {
         }
        */
         break;
+      case OpCode.RBegin:
+        {
+          const [groupIndex, negate, end] = instr.args;
+          const pos = (1 + groupIndex) * 2;
+          const groupStart = thread.positions[pos];
+          const [matchSuccess, matchEnd] = this.recurseMatch(
+            tape,
+            groupStart - 1,
+            instr.offset + 1,
+            end,
+            false,
+            negate == 1,
+          );
+          if (matchSuccess) {
+            // TODO - Consider using a DFA for this case so we can mitigate
+            // pathological cases with an exponential blowup on a success
+            this.addThread(this.jumpTo(thread, end + 1), list, tape, delta);
+          }
+        }
+        break;
       case OpCode.Begin:
         // This results in a new VM being created for this sub program and
         // kicking off a backtracking execution - Making these as explicit
         // constructs for the user to use means the user can make this choice
         // on their own voilition
-        const [forward, consume, negate, end] = instr.args;
+        const [consume, negate, end] = instr.args;
         if (consume == 1) {
           // since this results in the consumption of a character (similar to "Char")
           // defer this to the list
           if (this.tracer) this.tracer.threadQueued(thread, tape.index);
           list.push(thread);
         } else {
-          const [matchSuccess, matchEnd] = this.recurseMatch(tape, instr.offset + 1, end, forward == 1, negate == 1);
+          const [matchSuccess, matchEnd] = this.recurseMatch(
+            tape,
+            tape.index + 1,
+            instr.offset + 1,
+            end,
+            true,
+            negate == 1,
+          );
           if (matchSuccess) {
             // TODO - Consider using a DFA for this case so we can mitigate
             // pathological cases with an exponential blowup on a success
@@ -446,11 +473,18 @@ export class VM {
     return bestMatch;
   }
 
-  recurseMatch(tape: Tape, startOffset: number, endOffset: number, forward = true, negate = false): [boolean, number] {
+  recurseMatch(
+    tape: Tape,
+    tapeIndex: number,
+    startOffset: number,
+    endOffset: number,
+    forward = true,
+    negate = false,
+  ): [boolean, number] {
     const savedPos = tape.index;
     if (!tape.canAdvance(forward ? 1 : -1)) return [negate, -1];
-    // if (!forward)
-    tape.advance(forward ? 1 : -1);
+    tape.index = tapeIndex;
+    // tape.advance(forward ? 1 : -1);
     const vm = new VM(this.prog, startOffset, endOffset, forward);
     const match = vm.match(tape);
     const newPos = tape.index;
@@ -511,10 +545,13 @@ export class VM {
     let advanceTape = false;
     let ch: number;
     switch (opcode) {
+      case OpCode.RBegin:
+        throw new Error("Invalid state.  Reverse matches must be handled in addThread");
+        break;
       case OpCode.Begin:
-        const [forward, consume, negate, end] = instr.args;
+        const [consume, negate, end] = instr.args;
         TSU.assert(consume == 1, "Plain lookahead cannot be here");
-        const [matchSuccess, matchEnd] = this.recurseMatch(tape, instr.offset + 1, end, forward == 1, negate == 1);
+        const [matchSuccess, matchEnd] = this.recurseMatch(tape, tape.index, instr.offset + 1, end, true, negate == 1);
         if (matchSuccess) {
           // TODO - Consider using a DFA for this case so we can mitigate
           // pathological cases with an exponential blowup
@@ -608,6 +645,8 @@ export function InstrDebugValue(instr: Instr): string {
       return `Jump ${instr.args[0]}`;
     case OpCode.Begin:
       return `Begin ${instr.args.join(" ")}`;
+    case OpCode.RBegin:
+      return `RBegin ${instr.args.join(" ")}`;
     case OpCode.End:
       return `End ${instr.args.join(" ")}`;
     default:

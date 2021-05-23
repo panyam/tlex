@@ -232,24 +232,13 @@ export class Compiler {
   }
 
   /**
-   * Compiles Negative matches.
-   */
-  /*
-  compileNeg(neg: Neg, prog: Prog): void {
-    const begin = prog.add(OpCode.Begin, 1, 1, 1); // forward, advance and negate if needed
-    this.compileExpr(neg.expr, prog);
-    const end = prog.add(OpCode.End, begin.offset);
-    begin.add(end.offset);
-  }
- */
-
-  /**
    * Compiles lookahead assertions
    */
   compileLookAhead(la: LookAhead, prog: Prog): void {
     // how should this work?
     // Ensure that assertion matches first before continuing with the expression
-    const begin = prog.add(OpCode.Begin, 1, 0, la.negate ? 1 : 0); // forward and negate if needed
+    this.compileExpr(la.expr, prog);
+    const begin = prog.add(OpCode.Begin, 0, la.negate ? 1 : 0); // negate if needed
     this.compileExpr(la.cond, prog);
     const end = prog.add(OpCode.End, begin.offset);
     begin.add(end.offset);
@@ -260,7 +249,9 @@ export class Compiler {
    */
   compileLookBack(lb: LookBack, prog: Prog): void {
     // Ensure that assertion matches first before continuing with the expression
-    const begin = prog.add(OpCode.Begin, 0, 0, lb.negate ? 1 : 0); // forward and negate if needed
+    this.compileExpr(lb.expr, prog);
+    TSU.assert(lb.expr.groupIndex >= 0, "LookBack Assertion requires expression to have a group Index");
+    const begin = prog.add(OpCode.RBegin, lb.expr.groupIndex, lb.negate ? 1 : 0); // negate if needed
     this.compileExpr(lb.cond.reverse(), prog);
     const end = prog.add(OpCode.End, begin.offset);
     begin.add(end.offset);

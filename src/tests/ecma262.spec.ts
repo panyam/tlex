@@ -1976,20 +1976,16 @@ describe(`ECMA Tests - Lookbehind Tests`, () => {
     expectMatchIndexes(execute({}, "ababc", /(?<=(\w+)\1)c/));
   });
   test(testFileLink("lookBehind/negative"), () => {
-    expectMatchIndexes(execute({ debug: "all" }, "abcdef", /(?<!abc)\w\w\w/), 0, 3);
-    /*
-    compareArray("abcdef".match(/(?<!a.c)\w\w\w/), ["abc"], "#2");
-    compareArray("abcdef".match(/(?<!a\wc)\w\w\w/), ["abc"], "#3");
-    compareArray("abcdef".match(/(?<!a[a-z])\w\w\w/), ["abc"], "#4");
-    compareArray("abcdef".match(/(?<!a[a-z]{2})\w\w\w/), ["abc"], "#5");
-    sameValue("abcdef".match(/(?<!abc)def/), null, "#6");
-    sameValue("abcdef".match(/(?<!a.c)def/), null, "#7");
-    sameValue("abcdef".match(/(?<!a\wc)def/), null, "#8");
-    sameValue("abcdef".match(/(?<!a[a-z][a-z])def/), null, "#9");
-    sameValue("abcdef".match(/(?<!a[a-z]{2})def/), null, "#10");
-    sameValue("abcdef".match(/(?<!a{1}b{1})cde/), null, "#11");
-    sameValue("abcdef".match(/(?<!a{1}[a-z]{2})def/), null, "#12");
-   */
+    expectMatchIndexes(execute({}, "abcdef", /(?<!abc)\w\w\w/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /(?<!a[a-z])\w\w\w/), 0, 3, 6);
+    expectMatchIndexes(execute({}, "abcdef", /(?<!a[a-z]{2})\w\w\w/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!abc)def/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!a.c)def/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!a\wc)def/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!a[a-z][a-z])def/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!a[a-z]{2})def/), 0, 3);
+    expectMatchIndexes(execute({}, "abcdef", /ab|(?<!a{1}b{1})cde/), 0, 2);
+    expectMatchIndexes(execute({}, "abcdef", /abc|(?<!a{1}[a-z]{2})def/), 0, 3);
   });
   test(testFileLink("lookBehind/back-references"), () => {
     // TODO

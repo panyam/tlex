@@ -42,6 +42,8 @@ export abstract class Regex {
   // Name of the group corresponding to this part of the regex - MUST
   // be unique within the subtree.
   groupName: TSU.Nullable<string> = null;
+  // Tells whether the group is silent or not
+  groupIsSilent = false;
 
   get debugValue(): any {
     return "";

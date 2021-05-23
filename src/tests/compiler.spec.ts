@@ -227,12 +227,35 @@ describe("Regex Compile Tests", () => {
 
   test("Test Lookahead", () => {
     testRegexCompile(
-      compile(null, new Rule("abc(?=hello)")),
+      compile(null, new Rule("hello (?=world)")),
+      Prog.with((p) => {
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 32);
+        p.add(OpCode.Begin, 0, 0, 12);
+        p.add(OpCode.Char, CharType.SingleChar, 119);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 114);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 100);
+        p.add(OpCode.End, 6);
+        p.add(OpCode.Match, 10, 0);
+      }),
+    );
+  });
+
+  test("Test Negative Lookahead", () => {
+    const prog = compile(null, new Rule("abc(?!hello)"));
+    testRegexCompile(
+      prog,
       Prog.with((p) => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Char, CharType.SingleChar, 99);
-        p.add(OpCode.Begin, 1, 0, 0, 9);
+        p.add(OpCode.Begin, 0, 1, 9);
         p.add(OpCode.Char, CharType.SingleChar, 104);
         p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Char, CharType.SingleChar, 108);
@@ -252,27 +275,7 @@ describe("Regex Compile Tests", () => {
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Char, CharType.SingleChar, 99);
-        p.add(OpCode.Begin, 1, 0, 1, 9);
-        p.add(OpCode.Char, CharType.SingleChar, 104);
-        p.add(OpCode.Char, CharType.SingleChar, 101);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Char, CharType.SingleChar, 111);
-        p.add(OpCode.End, 3);
-        p.add(OpCode.Match, 10, 0);
-      }),
-    );
-  });
-
-  test("Test Negative Lookahead", () => {
-    const prog = compile(null, new Rule("abc(?!hello)"));
-    testRegexCompile(
-      prog,
-      Prog.with((p) => {
-        p.add(OpCode.Char, CharType.SingleChar, 97);
-        p.add(OpCode.Char, CharType.SingleChar, 98);
-        p.add(OpCode.Char, CharType.SingleChar, 99);
-        p.add(OpCode.Begin, 1, 0, 1, 9);
+        p.add(OpCode.Begin, 0, 1, 9);
         p.add(OpCode.Char, CharType.SingleChar, 104);
         p.add(OpCode.Char, CharType.SingleChar, 101);
         p.add(OpCode.Char, CharType.SingleChar, 108);
@@ -289,19 +292,21 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       prog,
       Prog.with((p) => {
-        p.add(OpCode.Begin, 0, 0, 1, 9);
-        p.add(OpCode.Char, CharType.SingleChar, 111);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Split, 2, 4);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Char, CharType.SingleChar, 101);
-        p.add(OpCode.Split, 7, 9);
-        p.add(OpCode.Char, CharType.SingleChar, 104);
-        p.add(OpCode.Jump, 6);
-        p.add(OpCode.End, 0);
+        p.add(OpCode.Save, 2);
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Char, CharType.SingleChar, 99);
+        p.add(OpCode.Save, 3);
+        p.add(OpCode.RBegin, 0, 1, 14);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Split, 7, 9);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Split, 12, 14);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Jump, 11);
+        p.add(OpCode.End, 5);
         p.add(OpCode.Match, 10, 0);
       }),
     );
@@ -312,19 +317,21 @@ describe("Regex Compile Tests", () => {
     testRegexCompile(
       prog,
       Prog.with((p) => {
-        p.add(OpCode.Begin, 0, 0, 0, 9);
-        p.add(OpCode.Char, CharType.SingleChar, 111);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Split, 2, 4);
-        p.add(OpCode.Char, CharType.SingleChar, 108);
-        p.add(OpCode.Char, CharType.SingleChar, 101);
-        p.add(OpCode.Split, 7, 9);
-        p.add(OpCode.Char, CharType.SingleChar, 104);
-        p.add(OpCode.Jump, 6);
-        p.add(OpCode.End, 0);
+        p.add(OpCode.Save, 2);
         p.add(OpCode.Char, CharType.SingleChar, 97);
         p.add(OpCode.Char, CharType.SingleChar, 98);
         p.add(OpCode.Char, CharType.SingleChar, 99);
+        p.add(OpCode.Save, 3);
+        p.add(OpCode.RBegin, 0, 0, 14);
+        p.add(OpCode.Char, CharType.SingleChar, 111);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Split, 7, 9);
+        p.add(OpCode.Char, CharType.SingleChar, 108);
+        p.add(OpCode.Char, CharType.SingleChar, 101);
+        p.add(OpCode.Split, 12, 14);
+        p.add(OpCode.Char, CharType.SingleChar, 104);
+        p.add(OpCode.Jump, 11);
+        p.add(OpCode.End, 5);
         p.add(OpCode.Match, 10, 0);
       }),
     );

@@ -13,6 +13,6 @@ function expectMatchStrings(found: Token[], ...expected: [string, number][]): To
 describe("VM Tests", () => {
   test("Test STRING", () => {
     const re = '".*?(?<!\\\\)"';
-    expectMatchStrings(execute({ debug: "all" }, '"\\n"', re), ['"\\n"', 0]);
+    expectMatchStrings(execute({}, '"\\n"', re), ['"\\n"', 0]);
   });
 });

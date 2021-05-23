@@ -228,7 +228,7 @@ export class RegexParser {
         if (after) {
           // reduce everything "until now" and THEN apply
           if (stack.length == 0) {
-            throw new SyntaxError("LookAhead condition cannot be before empty rule");
+            // throw new SyntaxError("LookAhead condition cannot be before empty rule");
           }
           // const endIndex = stack.length - 1;
           // stack[endIndex] = new LookAhead(stack[endIndex], cond, neg);
@@ -240,6 +240,10 @@ export class RegexParser {
           // clPos points to ")" We need abcde also parsed
           // and then lookback applied to it
           const rest = this.parse(clPos + 1, end);
+          if (rest.groupIndex < 0) {
+            rest.groupIndex = this.counter.next();
+            rest.groupIsSilent = true;
+          }
           stack.push(new LookBack(rest, cond, neg));
           return end + 1;
         }
