@@ -10,6 +10,9 @@ export type TokenType = number | string;
 export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any) => any;
 
 export class Token {
+  private static idCounter = 0;
+  // ID for uniquely identifying tokens if needed for shallow equality
+  id = Token.idCounter++;
   value: any = null;
   groups: TSU.NumMap<number[]> = {};
   positions: TSU.NumMap<[number, number]> = {};
@@ -125,6 +128,7 @@ export class Tokenizer {
     return this._vm!;
   }
 
+  idCounter = 0;
   next(tape: Tape): Token | null {
     const m = this.vm.match(tape);
     if (m == null) {
@@ -136,13 +140,13 @@ export class Tokenizer {
     }
     const rule = this.allRules[m.matchIndex];
     let token = toToken(rule.tag, m, tape);
+    token.id = this.idCounter++;
     const onMatch = this.onMatchHandlers[m.matchIndex];
     if (onMatch) {
       token = onMatch(rule, tape, token);
       if (token == null) {
         // null return to skip tokens
         return this.next(tape);
-      } else {
       }
     }
     return token;
