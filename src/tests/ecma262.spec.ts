@@ -1182,6 +1182,7 @@ describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
     expect(matches).toEqual([
       {
         matchIndex: 0,
+        id: 549,
         tag: 0,
         start: 0,
         end: 5,
