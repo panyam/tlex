@@ -30,11 +30,9 @@ class GroupCounter {
 export class RegexParser {
   counter: GroupCounter;
   unicode: boolean;
-  allowSubstitutions: boolean;
   constructor(public readonly pattern: string, config?: any) {
     this.counter = new GroupCounter();
     this.unicode = config?.unicode || false;
-    this.allowSubstitutions = config?.allowSubstitutions || false;
   }
 
   reduceLeft(stack: Regex[]): Regex {
@@ -151,8 +149,8 @@ export class RegexParser {
       curr = clPos;
       if (parts.length == 1) {
         if (isNaN(parts[0])) {
-          if (this.allowSubstitutions) {
-            stack.push(new Var(sub));
+          if (sub.trim().length > 0) {
+            stack.push(new Var(sub.trim()));
             return curr + 1;
           } else {
             throw new SyntaxError(`Invalid quantifier: /${sub}/`);

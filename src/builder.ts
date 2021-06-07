@@ -32,7 +32,6 @@ export function fromJSRE(re: RegExp, config?: any): Rule {
 export function fromFlexRE(re: string, config?: any): Rule {
   const pattern = re;
   const parser = new RegexParser(pattern, config);
-  parser.allowSubstitutions = true;
   const expr = parser.parse();
   const rule = new Rule(expr, config);
   rule.pattern = pattern;

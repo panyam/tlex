@@ -170,7 +170,7 @@ describe("Regex Tests", () => {
   test("Test Vars", () => {
     const input = "a|b|{abcd}|e";
     const expected = ["Union", ["a", "b", "<abcd>", "e"]];
-    const found = new RegexParser(input, { allowSubstitutions: true }).parse();
+    const found = new RegexParser(input).parse();
     expectRegex(input, found, expected);
   });
 });

@@ -349,7 +349,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Vars", () => {
-    const prog = compile((name) => parse("x"), Builder.build("a{hello}c", { allowSubstitutions: true }));
+    const prog = compile((name) => parse("x"), Builder.build("a{hello}c"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -359,5 +359,9 @@ describe("Regex Compile Tests", () => {
         p.add(OpCode.Match, 10, 0);
       }),
     );
+  });
+
+  test("Test Invalid Vars", () => {
+    expect(() => compile(null, Builder.build("a{hello}c"))).toThrowError("Cannot find expression: hello");
   });
 });
