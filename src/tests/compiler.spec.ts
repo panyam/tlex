@@ -211,7 +211,7 @@ describe("Regex Compile Tests", () => {
     );
   });
 
-  test("Test Named Groups", () => {
+  test("Test Back Named Groups", () => {
     const prog = compile((name) => parse("abcde"), Builder.build("\\k<Hello  >"));
     testRegexCompile(
       prog,
@@ -343,6 +343,19 @@ describe("Regex Compile Tests", () => {
         p.add(OpCode.Jump, 1);
         p.add(OpCode.Match, 10, 1);
         p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Match, 10, 0);
+      }),
+    );
+  });
+
+  test("Test Vars", () => {
+    const prog = compile((name) => parse("x"), Builder.build("a{hello}c", { allowSubstitutions: true }));
+    testRegexCompile(
+      prog,
+      Prog.with((p) => {
+        p.add(OpCode.Char, CharType.SingleChar, 97);
+        p.add(OpCode.Char, CharType.SingleChar, 120);
+        p.add(OpCode.Char, CharType.SingleChar, 99);
         p.add(OpCode.Match, 10, 0);
       }),
     );

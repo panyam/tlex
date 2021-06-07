@@ -12,7 +12,7 @@ export function build(pattern: string | RegExp | Regex, config?: any): Rule {
 }
 
 export function fromRE(pattern: string, config?: any): Rule {
-  const expr = new RegexParser(pattern).parse();
+  const expr = new RegexParser(pattern, config).parse();
   const rule = new Rule(expr, config);
   rule.pattern = pattern;
   return rule;
@@ -20,7 +20,7 @@ export function fromRE(pattern: string, config?: any): Rule {
 
 export function fromJSRE(re: RegExp, config?: any): Rule {
   const pattern = re.source;
-  const expr = new RegexParser(pattern).parse();
+  const expr = new RegexParser(pattern, config).parse();
   const rule = new Rule(expr, config);
   rule.pattern = pattern;
   rule.dotAll = re.dotAll;
@@ -31,7 +31,7 @@ export function fromJSRE(re: RegExp, config?: any): Rule {
 
 export function fromFlexRE(re: string, config?: any): Rule {
   const pattern = re;
-  const parser = new RegexParser(pattern);
+  const parser = new RegexParser(pattern, config);
   parser.allowSubstitutions = true;
   const expr = parser.parse();
   const rule = new Rule(expr, config);

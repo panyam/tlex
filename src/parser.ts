@@ -29,8 +29,12 @@ class GroupCounter {
 
 export class RegexParser {
   counter: GroupCounter;
-  constructor(public readonly pattern: string, readonly unicode = false, public allowSubstitutions = false) {
+  unicode: boolean;
+  allowSubstitutions: boolean;
+  constructor(public readonly pattern: string, config?: any) {
     this.counter = new GroupCounter();
+    this.unicode = config?.unicode || false;
+    this.allowSubstitutions = config?.allowSubstitutions || false;
   }
 
   reduceLeft(stack: Regex[]): Regex {

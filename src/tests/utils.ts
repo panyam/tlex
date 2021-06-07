@@ -10,8 +10,8 @@ import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
 import { Tokenizer, toToken, Token } from "../tokenizer";
 
-export function parse(input: string, unicode = false, allowSubstitutions = false): Regex {
-  return new RegexParser(input, unicode, allowSubstitutions).parse();
+export function parse(input: string, config?: any): Regex {
+  return new RegexParser(input, config).parse();
 }
 
 // Read tokenizer tokens from contents.
