@@ -5,7 +5,7 @@ import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
 import { ParseError, UnexpectedTokenError } from "./errors";
-import { Builder } from "./builder";
+import * as Builder from "./builder";
 
 export type TokenType = number | string;
 export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any) => any;
@@ -85,7 +85,7 @@ export class Tokenizer {
   }
 
   findRulesByRegex(pattern: string | RegExp): Rule[] {
-    return this.allRules.filter((r) => r.source == pattern);
+    return this.allRules.filter((r) => r.pattern == pattern);
   }
 
   findRuleByValue(value: any): Rule | null {
