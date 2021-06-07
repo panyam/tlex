@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
-import { Rule } from "../core";
+import * as Builder from "../builder";
 import { Prog, InstrDebugValue, VM } from "../vm";
 import { Tape } from "../tape";
 import { Tokenizer } from "../tokenizer";
@@ -65,7 +65,7 @@ function jsonTokenizer(): Tokenizer {
   const tokenizer = new Tokenizer();
   const AnyOf = (...x: string[]) => x.join("|");
   // JSON5NumericLiteral:
-  tokenizer.addRule(new Rule(AnyOf("Infinity", "NaN", "<NumericLiteral>"), { tag: "JSON5NumericLiteral" }));
+  tokenizer.addRule(Builder.build(AnyOf("Infinity", "NaN", "<NumericLiteral>"), { tag: "JSON5NumericLiteral" }));
 
   tokenizer.addVar("NumericLiteral", "<DecimalLiteral>|<HexIntegerLiteral>");
   tokenizer.addVar(
@@ -87,7 +87,9 @@ function jsonTokenizer(): Tokenizer {
   tokenizer.addVar("HexDigit", "[0-9a-fA-F]");
 
   // JSON5String:
-  tokenizer.addRule(new Rule(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), { tag: "JSON5String" }));
+  tokenizer.addRule(
+    Builder.build(AnyOf("<JSON5SingleQuoteString>", "<JSON5DoubleQuoteString>"), { tag: "JSON5String" }),
+  );
   tokenizer.addVar("JSON5SingleQuoteString", "'<JSONSingleQuoteStringChar>*'");
   tokenizer.addVar("JSON5DoubleQuoteString", "'<JSONDoubleQuoteStringChar>*'");
   tokenizer.addVar("JSONSingleQuoteStringChar", AnyOf("(^('|\\|<LineTerminator>))", "<JSON5MiscStringChar>"));
@@ -95,25 +97,25 @@ function jsonTokenizer(): Tokenizer {
   tokenizer.addVar("JSON5MiscStringChar", AnyOf("\u2028", "\u2029", "<LineContinuation>", "\\<EscapeSequence>"));
 
   // JSON5Comment - single and multi line
-  tokenizer.addRule(new Rule(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), { tag: "JSON5Comment" }));
+  tokenizer.addRule(Builder.build(AnyOf("//.*$", `/\\*(^\\*/)*\\*/`), { tag: "JSON5Comment" }));
 
   // JSON5 Literals
-  tokenizer.addRule(new Rule("null", { tag: "NULL" }));
-  tokenizer.addRule(new Rule("true|false", { tag: "JSON5Boolean" }));
+  tokenizer.addRule(Builder.build("null", { tag: "NULL" }));
+  tokenizer.addRule(Builder.build("true|false", { tag: "JSON5Boolean" }));
 
   // operator tokens
-  tokenizer.addRule(new Rule(",", { tag: "COMMA" }));
-  tokenizer.addRule(new Rule(":", { tag: "COLON" }));
-  tokenizer.addRule(new Rule("\\[", { tag: "OSQ" }));
-  tokenizer.addRule(new Rule("\\]", { tag: "CSQ" }));
-  tokenizer.addRule(new Rule("\\{", { tag: "OBRACE" }));
-  tokenizer.addRule(new Rule("\\}", { tag: "CBRACE" }));
+  tokenizer.addRule(Builder.build(",", { tag: "COMMA" }));
+  tokenizer.addRule(Builder.build(":", { tag: "COLON" }));
+  tokenizer.addRule(Builder.build("\\[", { tag: "OSQ" }));
+  tokenizer.addRule(Builder.build("\\]", { tag: "CSQ" }));
+  tokenizer.addRule(Builder.build("\\{", { tag: "OBRACE" }));
+  tokenizer.addRule(Builder.build("\\}", { tag: "CBRACE" }));
 
   // Spaces - Indicate these are to be skipped
-  tokenizer.addRule(new Rule("[ \t\n\r]+", { tag: "SPACES" }));
+  tokenizer.addRule(Builder.build("[ \t\n\r]+", { tag: "SPACES" }));
 
   // Default error rule
-  tokenizer.addRule(new Rule(".", { tag: "ERROR" }));
+  tokenizer.addRule(Builder.build(".", { tag: "ERROR" }));
   return tokenizer;
 }
 

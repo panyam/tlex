@@ -5,6 +5,7 @@ import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
 import { ParseError, UnexpectedTokenError } from "./errors";
+import { Builder } from "./builder";
 
 export type TokenType = number | string;
 export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any) => any;
@@ -83,23 +84,22 @@ export class Tokenizer {
     return this;
   }
 
-  findRulesByRegex(pattern: string): Rule[] {
-    return this.allRules.filter((r) => r.pattern == pattern);
+  findRulesByRegex(pattern: string | RegExp): Rule[] {
+    return this.allRules.filter((r) => r.source == pattern);
   }
 
   findRuleByValue(value: any): Rule | null {
     return this.allRules.find((r) => r.tag == value) || null;
   }
 
-  add(pattern: string | RegExp, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
-    return this.addRule(new Rule(pattern, config), onMatch);
+  add(pattern: string | RegExp | Regex, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
+    return this.addRule(Builder.build(pattern, config), onMatch);
   }
 
   addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
     rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);
     this.onMatchHandlers.push(onMatch || null);
-    rule.expr = new RegexParser(rule.pattern).parse();
     this._vm = null;
     return this;
   }

@@ -1,7 +1,7 @@
 import * as TSU from "@panyam/tsutils";
 const util = require("util");
 import fs from "fs";
-import { Rule } from "../core";
+import * as Builder from "../builder";
 import { Tape } from "../tape";
 import { parse, compile, execute, runMatchTest } from "./utils";
 import { Token } from "../tokenizer";

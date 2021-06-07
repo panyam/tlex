@@ -2,9 +2,9 @@ const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Regex, Char, CharType } from "../core";
 import { parse } from "./utils";
+import { RegexParser } from "../parser";
 
-function testRegex(input: string, expected: any, debug = false, enforce = true): Regex {
-  const found = parse(input);
+function expectRegex(input: string, found: any, expected: any, debug = false, enforce = true): void {
   if (debug) {
     console.log(
       "Input: ",
@@ -28,6 +28,10 @@ function testRegex(input: string, expected: any, debug = false, enforce = true):
     );
   }
   if (enforce) expect(found.debugValue).toEqual(expected);
+}
+function testRegex(input: string, expected: any, debug = false, enforce = true, config?: any): Regex {
+  const found = parse(input, config);
+  expectRegex(input, found, expected, debug, enforce);
   return found;
 }
 
@@ -54,8 +58,8 @@ describe("Regex Tests", () => {
     testRegex("a|b|c|d|e", ["Union", ["a", "b", "c", "d", "e"]]);
   });
 
-  test("Test Named Refs", () => {
-    testRegex("a|b|\\k<Hello>|e", ["Union", ["a", "b", "<Hello>", "e"]]);
+  test("Test Named Named Back Refs", () => {
+    testRegex("a|b|\\k<Hello>|e", ["Union", ["a", "b", "\\k<Hello>", "e"]]);
     expect(() => testRegex("<  >", [])).toThrowError();
   });
 
@@ -162,5 +166,11 @@ describe("Regex Tests", () => {
         "r",
       ],
     ]);
+  });
+  test("Test Vars", () => {
+    const input = "a|b|{abcd}|e";
+    const expected = ["Union", ["a", "b", "<abcd>", "e"]];
+    const found = new RegexParser(input, false, true).parse();
+    expectRegex(input, found, expected);
   });
 });

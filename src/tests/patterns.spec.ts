@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
-import { Rule } from "../core";
 import { Token } from "../tokenizer";
 import { execute } from "./utils";
 

@@ -6,13 +6,11 @@ import {
   EndOfInput,
   Regex,
   Cat,
-  // Any,
-  // Neg,
   Char,
   CharType,
-  // CharGroup,
-  Ref,
-  NumRef,
+  Var,
+  BackNamedRef,
+  BackNumRef,
   LookAhead,
   LookBack,
   Union,
@@ -31,7 +29,7 @@ class GroupCounter {
 
 export class RegexParser {
   counter: GroupCounter;
-  constructor(public readonly pattern: string, readonly unicode = false) {
+  constructor(public readonly pattern: string, readonly unicode = false, public allowSubstitutions = false) {
     this.counter = new GroupCounter();
   }
 
@@ -66,7 +64,7 @@ export class RegexParser {
         if (refNum > this.counter.current + 1) {
           throw new SyntaxError("Invalid reference: " + refNum);
         }
-        stack.push(new NumRef(refNum));
+        stack.push(new BackNumRef(refNum));
       } else if (currCh == "\\" && pattern[curr + 1] == "k" && pattern[curr + 2] == "<") {
         // Named references
         curr += 3;
@@ -77,7 +75,7 @@ export class RegexParser {
         if (name.trim() == "") {
           throw new SyntaxError("Expected name");
         }
-        stack.push(new Ref(name));
+        stack.push(new BackNamedRef(name));
         curr = gtPos + 1;
       } else if (currCh == "[") {
         // character ranges
@@ -126,6 +124,49 @@ export class RegexParser {
 
   parseQuant(stack: Regex[], curr: number, end: number): number {
     const pattern = this.pattern;
+    const lastCh = pattern[curr - 1];
+    let minCount = 1,
+      maxCount = 1;
+    if (pattern[curr] == "*") {
+      minCount = 0;
+      maxCount = TSU.Constants.MAX_INT;
+    } else if (pattern[curr] == "+") {
+      minCount = Math.min(minCount, 1);
+      maxCount = TSU.Constants.MAX_INT;
+    } else if (pattern[curr] == "?") {
+      minCount = 0;
+      maxCount = Math.max(maxCount, 1);
+    } else if (pattern[curr] == "{") {
+      // find the next "}"
+      const clPos = pattern.indexOf("}", curr + 1);
+      if (clPos <= curr || clPos > end) {
+        throw new SyntaxError("Unexpected end of input while looking for '}'");
+      }
+      const sub = pattern.substring(curr + 1, clPos).trim();
+      const parts = sub.split(",").map((x) => parseInt(x.trim()));
+      curr = clPos;
+      if (parts.length == 1) {
+        if (isNaN(parts[0])) {
+          if (this.allowSubstitutions) {
+            stack.push(new Var(sub));
+            return curr + 1;
+          } else {
+            throw new SyntaxError(`Invalid quantifier: /${sub}/`);
+          }
+        }
+        minCount = maxCount = parts[0];
+      } else if (parts.length == 2) {
+        minCount = isNaN(parts[0]) ? 0 : parts[0];
+        maxCount = isNaN(parts[1]) ? TSU.Constants.MAX_INT : parts[1];
+        if (minCount > maxCount) {
+          throw new SyntaxError(`Invalid Quant /${sub}/: Min must be <= Max`);
+        }
+      } else if (parts.length > 2) {
+        throw new SyntaxError(`Invalid quantifier spec: "{${sub}}"`);
+      }
+    } else {
+      throw new Error("Here?");
+    }
     // Quantifiers
     if (stack.length <= 0) {
       throw new SyntaxError("Quantifier cannot appear before an expression");
@@ -133,51 +174,17 @@ export class RegexParser {
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
     const last = stack[stack.length - 1];
-    if (
-      last.tag == RegexType.QUANT &&
-      (pattern[curr - 1] == "*" || pattern[curr - 1] == "?" || pattern[curr - 1] == "+" || pattern[curr - 1] == "}")
-    ) {
+    if (last.tag == RegexType.QUANT && (lastCh == "*" || lastCh == "?" || lastCh == "+" || lastCh == "}")) {
       throw new SyntaxError("Nothing to repeat");
     }
     if (this.unicode && (last.tag == RegexType.LOOK_AHEAD || last.tag == RegexType.LOOK_BACK)) {
       throw new SyntaxError("Cannot have quantifier on assertion in unicode mode");
     }
     const quant = (stack[stack.length - 1] = new Quant(last));
-    if (pattern[curr] == "*") {
-      quant.minCount = 0;
-      quant.maxCount = TSU.Constants.MAX_INT;
-    } else if (pattern[curr] == "+") {
-      quant.minCount = Math.min(quant.minCount, 1);
-      quant.maxCount = TSU.Constants.MAX_INT;
-    } else if (pattern[curr] == "?") {
-      quant.minCount = 0;
-      quant.maxCount = Math.max(quant.maxCount, 1);
-    } else if (pattern[curr] == "{") {
-      // find the next "}"
-      const clPos = pattern.indexOf("}", curr + 1);
-      if (clPos <= curr || clPos > end) {
-        throw new SyntaxError("Unexpected end of input while looking for '}'");
-      }
-      const sub = pattern.substring(curr + 1, clPos);
-      const parts = sub.split(",").map((x) => parseInt(x.trim()));
-      if (parts.length == 1) {
-        if (isNaN(parts[0])) {
-          throw new SyntaxError(`Invalid quantifier: /${sub}/`);
-        }
-        quant.minCount = quant.maxCount = parts[0];
-      } else if (parts.length == 2) {
-        quant.minCount = isNaN(parts[0]) ? 0 : parts[0];
-        quant.maxCount = isNaN(parts[1]) ? TSU.Constants.MAX_INT : parts[1];
-        if (quant.minCount > quant.maxCount) {
-          throw new SyntaxError(`Invalid Quant /${sub}/: Min must be <= Max`);
-        }
-      } else if (parts.length > 2) {
-        throw new SyntaxError(`Invalid quantifier spec: "{${sub}}"`);
-      }
-      curr = clPos;
-    }
-    curr++;
+    quant.minCount = minCount;
+    quant.maxCount = maxCount;
     // check if there is an extra lazy quantifier
+    curr++;
     if (curr <= end && pattern[curr] == "?" && quant.greedy) {
       curr++;
       quant.greedy = false;

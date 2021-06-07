@@ -9,8 +9,9 @@ export enum RegexType {
   END_OF_WORD,
   UNION,
   CAT,
-  REF,
-  NUM_REF,
+  VAR,
+  BACK_NAMED_REF,
+  BACK_NUM_REF,
   QUANT,
   LOOK_AHEAD,
   LOOK_BACK,
@@ -426,77 +427,16 @@ export class Char extends Regex {
 }
 
 /**
- * Character ranges
+ * Variables referring to shared expressions by name.
  */
-/*
-export class CharGroup extends Regex {
-  readonly tag: RegexType = RegexType.CHAR_GROUP;
-  neg = false;
-  chars: Char[];
-  constructor(...chars: Char[]) {
-    super();
-    this.chars = chars;
-    // this.mergeRanges();
-  }
-
-  reverse(): CharGroup {
-    return this;
-  }
-
- */
-/**
- * Adds a new Char into this range.
- * Doing so "merges" renges in this class so we dont have overlaps.
- */
-/*
-  add(ch: Char): this {
-    this.chars.push(ch);
-    // return this.mergeRanges();
-  }
- */
-
-/*
-  protected mergeRanges(): this {
-    // sort ranges
-    this.chars.sort((c1, c2) => c1.compareTo(c2));
-    // merge ranges
-    const ch2 = [] as Char[];
-    for (const ch of this.chars) {
-      const last = ch2[ch2.length - 1] || null;
-      if (last == null || last.end < ch.start) {
-        ch2.push(ch);
-      } else {
-        last.end = Math.max(last.end, ch.end);
-      }
-    }
-    this.chars = ch2;
-    return this;
-  }
-  */
-
-/*
-  protected evalREString(): string {
-    const out = this.chars.map((ch) => ch.debugValue).join("");
-    return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
-  }
-
-  get debugValue(): any {
-    return this.chars.map((ch) => ch.debugValue);
-  }
-}
-*/
-
-/**
- * Named expression referring to another regex by name.
- */
-export class Ref extends Regex {
-  readonly tag: RegexType = RegexType.REF;
+export class Var extends Regex {
+  readonly tag: RegexType = RegexType.VAR;
   constructor(public readonly name: string, public readonly reversed = false) {
     super();
   }
 
-  reverse(): Ref {
-    return new Ref(this.name, !this.reversed);
+  reverse(): Var {
+    return new Var(this.name, !this.reversed);
   }
 
   protected evalREString(): string {
@@ -505,20 +445,42 @@ export class Ref extends Regex {
 
   get debugValue(): any {
     return "<" + this.name + ">";
+  }
+}
+
+/**
+ * Named expression referring to another regex by name.
+ */
+export class BackNamedRef extends Regex {
+  readonly tag: RegexType = RegexType.BACK_NAMED_REF;
+  constructor(public readonly name: string, public readonly reversed = false) {
+    super();
+  }
+
+  reverse(): BackNamedRef {
+    return new BackNamedRef(this.name, !this.reversed);
+  }
+
+  protected evalREString(): string {
+    return "\\k<" + this.name + ">";
+  }
+
+  get debugValue(): any {
+    return "\\k<" + this.name + ">";
   }
 }
 
 /**
  * Numeric reference to a capture group.
  */
-export class NumRef extends Regex {
-  readonly tag: RegexType = RegexType.NUM_REF;
+export class BackNumRef extends Regex {
+  readonly tag: RegexType = RegexType.BACK_NUM_REF;
   constructor(public readonly num: number, public readonly reversed = false) {
     super();
   }
 
-  reverse(): NumRef {
-    return new NumRef(this.num, !this.reversed);
+  reverse(): BackNumRef {
+    return new BackNumRef(this.num, !this.reversed);
   }
 
   protected evalREString(): string {
@@ -629,12 +591,24 @@ export class Rule {
    */
   matchIndex: number;
 
+  // readonly pattern: string;
+
+  /**
+   * Whether to skip this rule or not.
+   */
+  skip = false;
+
+  /**
+   * Source for this Regex before it is compiled.
+   */
+  pattern: string | RegExp;
+
   /**
    * Constructor
    *
    * @param pattern   - The pattern to match for the rule.
    */
-  constructor(pattern: string | RegExp, config?: RuleConfig) {
+  constructor(public expr: Regex, config?: RuleConfig) {
     config = config || ({} as RuleConfig);
     this.tag = TSU.Misc.dictGet(config, "tag", null);
     this.priority = TSU.Misc.dictGet(config, "priority", 10);
@@ -643,42 +617,66 @@ export class Rule {
     this.multiline = TSU.Misc.dictGet(config, "multiline", true);
     this.ignoreCase = TSU.Misc.dictGet(config, "ignoreCase", false);
     this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
-    if (typeof pattern === "string") {
-      this.pattern = pattern;
-    } else {
-      this.pattern = pattern.source;
-      this.dotAll = pattern.dotAll;
-      this.ignoreCase = pattern.ignoreCase;
-      this.multiline = pattern.multiline;
-    }
-  }
-
-  readonly pattern: string;
-
-  /**
-   * Whether to skip this rule or not.
-   */
-  skip = false;
-
-  /**
-   * The generated expression for this rule.
-   */
-  expr: Regex;
-
-  static flatten(re: REPatternType | REPatternType[], index = 0, rules?: Rule[]): Rule[] {
-    rules = rules || [];
-    if (typeof re === "string") {
-      rules.push(new Rule(re, { tag: index }));
-    } else if (re.constructor == RegExp) {
-      rules.push(new Rule(re, { tag: index }));
-    } else if (re.constructor == Rule) {
-      rules.push(re as Rule);
-    } else {
-      const res = re as (RegExp | Rule | string)[];
-      for (let i = 0; i < res.length; i++) {
-        Rule.flatten(res[i], i, rules);
-      }
-    }
-    return rules;
   }
 }
+
+/**
+ * Character ranges
+ */
+/*
+export class CharGroup extends Regex {
+  readonly tag: RegexType = RegexType.CHAR_GROUP;
+  neg = false;
+  chars: Char[];
+  constructor(...chars: Char[]) {
+    super();
+    this.chars = chars;
+    // this.mergeRanges();
+  }
+
+  reverse(): CharGroup {
+    return this;
+  }
+
+ */
+/**
+ * Adds a new Char into this range.
+ * Doing so "merges" renges in this class so we dont have overlaps.
+ */
+/*
+  add(ch: Char): this {
+    this.chars.push(ch);
+    // return this.mergeRanges();
+  }
+ */
+
+/*
+  protected mergeRanges(): this {
+    // sort ranges
+    this.chars.sort((c1, c2) => c1.compareTo(c2));
+    // merge ranges
+    const ch2 = [] as Char[];
+    for (const ch of this.chars) {
+      const last = ch2[ch2.length - 1] || null;
+      if (last == null || last.end < ch.start) {
+        ch2.push(ch);
+      } else {
+        last.end = Math.max(last.end, ch.end);
+      }
+    }
+    this.chars = ch2;
+    return this;
+  }
+  */
+
+/*
+  protected evalREString(): string {
+    const out = this.chars.map((ch) => ch.debugValue).join("");
+    return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
+  }
+
+  get debugValue(): any {
+    return this.chars.map((ch) => ch.debugValue);
+  }
+}
+*/

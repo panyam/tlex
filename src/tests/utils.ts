@@ -4,13 +4,14 @@ import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "../tape";
 import { REPatternType, Regex, Rule } from "../core";
+import * as Builder from "../builder";
 import { RegexParser } from "../parser";
 import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
 import { Tokenizer, toToken, Token } from "../tokenizer";
 
-export function parse(input: string, unicode = false): Regex {
-  return new RegexParser(input, unicode).parse();
+export function parse(input: string, unicode = false, allowSubstitutions = false): Regex {
+  return new RegexParser(input, unicode, allowSubstitutions).parse();
 }
 
 // Read tokenizer tokens from contents.
@@ -48,7 +49,7 @@ export function newTokenizer(contents: string): Tokenizer {
         if (isVar) {
           tokenizer.addVar(name, value);
         } else {
-          const rule = new Rule(value, { tag: name, priority: 10, isGreedy: isGreedy });
+          const rule = Builder.build(value, { tag: name, priority: 10, isGreedy: isGreedy });
           tokenizer.addRule(rule);
         }
       }
@@ -66,10 +67,7 @@ export function compile(exprResolver: null | ((name: string) => Regex), ...patte
     if (instr.comment.length == 0) instr.comment = expr.toString;
   });
 
-  const rules = Rule.flatten(patterns);
-  rules.forEach((r) => {
-    r.expr = parse(r.pattern);
-  });
+  const rules = Builder.flatten(patterns);
   return out.compile(rules);
 }
 
@@ -131,16 +129,16 @@ function runTestCase(testCase: any, index: number, caseFile: string, debug = fal
   const patterns: Rule[] = [];
   if (typeof pattern === "string") {
     repatterns.push(pattern);
-    patterns.push(new Rule(pattern, { tag: 0 }));
+    patterns.push(Builder.build(pattern, { tag: 0 }));
   } else {
     // list of string or Rule
     (pattern as any[]).forEach((pat, index) => {
       if (typeof pat === "string") {
         repatterns.push(pat);
-        patterns.push(new Rule(pat, { tag: index }));
+        patterns.push(Builder.build(pat, { tag: index }));
       } else {
         repatterns.push(pat.pattern);
-        const rule = new Rule(pat.pattern, {
+        const rule = Builder.build(pat.pattern, {
           tag: "tag" in pat ? pat.tag : null,
           priority: "priority" in pat ? pat.priority : 10,
           isGreedy: "isGreedy" in pat ? pat.isGreedy : true,

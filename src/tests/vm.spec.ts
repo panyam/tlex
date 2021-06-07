@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as TSU from "@panyam/tsutils";
 import { Rule } from "../core";
+import * as Builder from "../builder";
 import { Token } from "../tokenizer";
 import { execute } from "./utils";
 
@@ -33,7 +34,7 @@ describe("VM Tests", () => {
   });
 
   test("Test a|aa|aaa with priority", () => {
-    const re = [new Rule("a", { priority: 100 }), "aa", "aaa"];
+    const re = [Builder.build("a", { priority: 100 }), "aa", "aaa"];
     expectMatchStrings(execute({}, "aaaa", ...re), ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
   });
 
@@ -101,7 +102,7 @@ describe("VM Tests", () => {
   });
 
   test("Test a*? | aa with priority", () => {
-    const re = [new Rule("aa", { tag: 1, priority: 20 }), "a*?"];
+    const re = [Builder.build("aa", { tag: 1, priority: 20 }), "a*?"];
     expectMatchStrings(execute({}, "aaaaa", ...re), ["aa", 0], ["aa", 0], ["a", 1]);
   });
 
@@ -124,11 +125,11 @@ describe("VM Tests", () => {
 
   test("Test Lines", () => {
     const re = [
-      new Rule("^ *a+", { tag: 0, priority: 20 }),
-      new Rule("b*$", { tag: 1, priority: 15 }),
-      new Rule(`[\n\r]+`, { tag: 3, priority: 10 }),
-      new Rule(`[ \t]+`, { tag: 2, priority: 10 }),
-      new Rule(".", { tag: 4, priority: 0 }),
+      Builder.build("^ *a+", { tag: 0, priority: 20 }),
+      Builder.build("b*$", { tag: 1, priority: 15 }),
+      Builder.build(`[\n\r]+`, { tag: 3, priority: 10 }),
+      Builder.build(`[ \t]+`, { tag: 2, priority: 10 }),
+      Builder.build(".", { tag: 4, priority: 0 }),
     ];
     expectMatchStrings(
       execute(

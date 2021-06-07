@@ -1,6 +1,20 @@
 import * as TSU from "@panyam/tsutils";
 
-import { Rule, RegexType, Quant, Regex, Cat, Char, CharType, NumRef, Ref, LookAhead, LookBack, Union } from "./core";
+import {
+  Rule,
+  RegexType,
+  Quant,
+  Regex,
+  Cat,
+  Char,
+  CharType,
+  Var,
+  BackNumRef,
+  BackNamedRef,
+  LookAhead,
+  LookBack,
+  Union,
+} from "./core";
 import { OpCode, Prog, Instr } from "./vm";
 
 type RegexResolver = (name: string) => Regex;
@@ -58,10 +72,12 @@ export class Compiler {
       this.compileUnion(expr as Union, prog);
     } else if (expr.tag == RegexType.QUANT) {
       this.compileQuant(expr as Quant, prog);
-    } else if (expr.tag == RegexType.REF) {
-      this.compileRef(expr as Ref, prog);
-    } else if (expr.tag == RegexType.NUM_REF) {
-      this.compileNumRef(expr as NumRef, prog);
+    } else if (expr.tag == RegexType.VAR) {
+      this.compileVar(expr as Var, prog);
+    } else if (expr.tag == RegexType.BACK_NAMED_REF) {
+      this.compileBackNamedRef(expr as BackNamedRef, prog);
+    } else if (expr.tag == RegexType.BACK_NUM_REF) {
+      this.compileBackNumRef(expr as BackNumRef, prog);
       // } else if (expr.tag == RegexType.NEG) { this.compileNeg(expr as Neg, prog);
     } else if (expr.tag == RegexType.LOOK_AHEAD) {
       this.compileLookAhead(expr as LookAhead, prog);
@@ -102,13 +118,18 @@ export class Compiler {
     }
   }
 
-  compileNumRef(ne: NumRef, prog: Prog): void {
+  compileBackNumRef(ne: BackNumRef, prog: Prog): void {
     // TODO - This may need a resolution at "runtime" so the instruction
     // should reflect as such?
   }
 
-  compileRef(ne: Ref, prog: Prog): void {
-    const name = ne.name.trim();
+  compileBackNamedRef(ne: BackNamedRef, prog: Prog): void {
+    // TODO - This may need a resolution at "runtime" so the instruction
+    // should reflect as such?
+  }
+
+  compileVar(v: Var, prog: Prog): void {
+    const name = v.name.trim();
     const expr = this.regexResolver ? this.regexResolver(name) : null;
     if (expr == null) {
       throw new Error(`Cannot find expression: ${name}`);
