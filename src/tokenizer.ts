@@ -58,6 +58,7 @@ export class Tokenizer {
   // Rules are a "regex", whether literal or not
   allRules: Rule[] = [];
   onMatchHandlers: (RuleMatchHandler | null)[] = [];
+  matchHandlersByValue: any = {};
   variables = new Map<string, Regex>();
   compiler: Compiler = new Compiler((name) => {
     let out = this.variables.get(name) || null;
@@ -104,6 +105,14 @@ export class Tokenizer {
     return this;
   }
 
+  /**
+   * Add a token match callback by value.
+   */
+  on(tag: any, onMatch: RuleMatchHandler): this {
+    this.matchHandlersByValue[tag] = onMatch;
+    return this;
+  }
+
   compile(): Prog {
     const sortedRules = this.sortRules();
     const prog = this.compiler.compile(sortedRules);
@@ -141,7 +150,10 @@ export class Tokenizer {
     const rule = this.allRules[m.matchIndex];
     let token = toToken(rule.tag, m, tape);
     token.id = this.idCounter++;
-    const onMatch = this.onMatchHandlers[m.matchIndex];
+    let onMatch = this.onMatchHandlers[m.matchIndex];
+    if (!onMatch) {
+      onMatch = this.matchHandlersByValue[rule.tag];
+    }
     if (onMatch) {
       token = onMatch(rule, tape, token);
       if (token == null) {
