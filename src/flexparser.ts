@@ -36,30 +36,6 @@ export class RegexParser extends BaseRegexParser {
       if (currCh == ".") {
         stack.push(Char.Any());
         curr++;
-      } else if (currCh == "\\" && pattern[curr + 1] >= "1" && pattern[curr + 1] <= "9") {
-        // Numeric references
-        curr++;
-        let num = "";
-        while (curr <= end && pattern[curr] >= "0" && pattern[curr] <= "9") {
-          num = num + pattern[curr++];
-        }
-        const refNum = parseInt(num);
-        if (refNum > this.counter.current + 1) {
-          throw new SyntaxError("Invalid reference: " + refNum);
-        }
-        stack.push(new BackNumRef(refNum));
-      } else if (currCh == "\\" && pattern[curr + 1] == "k" && pattern[curr + 2] == "<") {
-        // Named references
-        curr += 3;
-        let gtPos = curr;
-        while (gtPos <= end && pattern[gtPos] != ">") gtPos++;
-        if (gtPos > end) throw new SyntaxError("Expected '>' found EOI");
-        const name = pattern.substring(curr, gtPos);
-        if (name.trim() == "") {
-          throw new SyntaxError("Expected name");
-        }
-        stack.push(new BackNamedRef(name));
-        curr = gtPos + 1;
       } else if (currCh == "[") {
         // character ranges
         let clPos = curr + 1;
@@ -76,6 +52,8 @@ export class RegexParser extends BaseRegexParser {
       } else if (currCh == "$") {
         stack.push(new EndOfInput());
         curr++;
+      } else if (pattern[curr] == "*" || pattern[curr] == "?" || pattern[curr] == "+" || pattern[curr] == "{") {
+        curr = this.parseQuant(stack, curr, end);
       } else if (currCh == "|") {
         if (curr + 1 <= end) {
           // reduce everything "until now" and THEN apply
@@ -89,8 +67,6 @@ export class RegexParser extends BaseRegexParser {
         curr = this.parseGroup(stack, curr, end);
       } else if (currCh == ")" || currCh == "]" || currCh == "}") {
         throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
-      } else if (pattern[curr] == "*" || pattern[curr] == "?" || pattern[curr] == "+" || pattern[curr] == "{") {
-        curr = this.parseQuant(stack, curr, end);
       } else {
         // plain old alphabets
         const [result, nchars] = this.parseChar(curr, end);
@@ -120,56 +96,8 @@ export class RegexParser extends BaseRegexParser {
 
     curr++;
     if (pattern[curr] == "?") {
-      // assertions
-      curr++; // skip the "?"
-      if (pattern[curr] == ":") {
-        // A non capturing
-        stack.push(this.parse(curr + 1, clPos - 1));
-      } else if (pattern[curr] == "<" && pattern[curr + 1] != "!" && pattern[curr + 1] != "=") {
-        // Named capture group
-        const groupIndex = this.counter.next();
-        let groupName = "";
-        // get name of this group
-        let gtPos = curr + 1;
-        while (gtPos <= end && pattern[gtPos] != ">") {
-          groupName += pattern[gtPos];
-          gtPos++;
-        }
-        const subExpr = this.parse(gtPos + 1, clPos - 1);
-        subExpr.groupIndex = groupIndex;
-        if (groupName.length > 0) subExpr.groupName = groupName;
-      } else {
-        // We have lookback/ahead assertions
-        let after = true;
-        if (pattern[curr] == "<") {
-          curr++;
-          after = false;
-        }
-        const neg = pattern[curr++] == "!";
-        const cond = this.parse(curr, clPos - 1);
-        if (after) {
-          // reduce everything "until now" and THEN apply
-          if (stack.length == 0) {
-            // throw new SyntaxError("LookAhead condition cannot be before empty rule");
-          }
-          // const endIndex = stack.length - 1;
-          // stack[endIndex] = new LookAhead(stack[endIndex], cond, neg);
-          const expr = new LookAhead(this.reduceLeft(stack), cond, neg);
-          stack.push(expr);
-        } else {
-          // Lookbacks are interesting, we have something like:
-          // (?<!...)abcde
-          // clPos points to ")" We need abcde also parsed
-          // and then lookback applied to it
-          const rest = this.parse(clPos + 1, end);
-          if (rest.groupIndex < 0) {
-            rest.groupIndex = this.counter.next();
-            rest.groupIsSilent = true;
-          }
-          stack.push(new LookBack(rest, cond, neg));
-          return end + 1;
-        }
-      }
+      // special patterns of the form:
+      // (?r-s:pattern)
     } else {
       // plain old grouping of the form (xyz)
       const groupIndex = this.counter.next();

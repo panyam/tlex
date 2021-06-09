@@ -17,7 +17,6 @@ export enum RegexType {
   LOOK_BACK,
   // Individual matchables
   CHAR,
-  // CHAR_GROUP,
 }
 
 function stringRep(ch: number): string {
@@ -309,6 +308,7 @@ export enum CharType {
   PropertyEscape,
   CharClass,
   CharGroup,
+  Intersection,
   Custom, // User defined matchers to be plugged here
 }
 
@@ -369,6 +369,22 @@ export class Char extends Regex {
       out.args.push(...ch.args);
     }
     return out;
+  }
+
+  static Intersect(neg = false, ...chars: Char[]): Char {
+    throw new Error("To be implemented");
+    /*
+    const out = new Char(CharType.Intersection, neg);
+    for (const ch of chars) {
+      if (ch.op == CharType.CharGroup) {
+        // Or should these just be flattened?
+        throw new SyntaxError("Char intersections cannot be recursive");
+      }
+      out.args.push(ch.neg ? -ch.op : ch.op);
+      out.args.push(...ch.args);
+    }
+    return out;
+   */
   }
 
   compareTo(another: Char): number {
@@ -619,64 +635,3 @@ export class Rule {
     this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
   }
 }
-
-/**
- * Character ranges
- */
-/*
-export class CharGroup extends Regex {
-  readonly tag: RegexType = RegexType.CHAR_GROUP;
-  neg = false;
-  chars: Char[];
-  constructor(...chars: Char[]) {
-    super();
-    this.chars = chars;
-    // this.mergeRanges();
-  }
-
-  reverse(): CharGroup {
-    return this;
-  }
-
- */
-/**
- * Adds a new Char into this range.
- * Doing so "merges" renges in this class so we dont have overlaps.
- */
-/*
-  add(ch: Char): this {
-    this.chars.push(ch);
-    // return this.mergeRanges();
-  }
- */
-
-/*
-  protected mergeRanges(): this {
-    // sort ranges
-    this.chars.sort((c1, c2) => c1.compareTo(c2));
-    // merge ranges
-    const ch2 = [] as Char[];
-    for (const ch of this.chars) {
-      const last = ch2[ch2.length - 1] || null;
-      if (last == null || last.end < ch.start) {
-        ch2.push(ch);
-      } else {
-        last.end = Math.max(last.end, ch.end);
-      }
-    }
-    this.chars = ch2;
-    return this;
-  }
-  */
-
-/*
-  protected evalREString(): string {
-    const out = this.chars.map((ch) => ch.debugValue).join("");
-    return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
-  }
-
-  get debugValue(): any {
-    return this.chars.map((ch) => ch.debugValue);
-  }
-}
-*/
