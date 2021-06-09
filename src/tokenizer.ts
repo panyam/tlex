@@ -1,6 +1,5 @@
 import * as TSU from "@panyam/tsutils";
 import { Regex, Union, Rule, RuleConfig } from "./core";
-import { RegexParser } from "./parser";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
@@ -71,10 +70,7 @@ export class Tokenizer {
     return this.variables.get(name) || null;
   }
 
-  addVar(name: string, regex: string | Regex): this {
-    if (typeof regex === "string") {
-      regex = new RegexParser(regex).parse();
-    }
+  addVar(name: string, regex: Regex): this {
     let currValue = this.variables.get(name) || null;
     if (currValue == null) {
       currValue = regex;
@@ -83,10 +79,6 @@ export class Tokenizer {
     }
     this.variables.set(name, regex);
     return this;
-  }
-
-  findRulesByRegex(pattern: string | RegExp): Rule[] {
-    return this.allRules.filter((r) => r.pattern == pattern);
   }
 
   findRuleByValue(value: any): Rule | null {

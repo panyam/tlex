@@ -2,7 +2,7 @@ const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Regex, Char, CharType } from "../core";
 import { parse } from "./utils";
-import { RegexParser } from "../parser";
+import { RegexParser } from "../jsparser";
 
 function expectRegex(input: string, found: any, expected: any, debug = false, enforce = true): void {
   if (debug) {
