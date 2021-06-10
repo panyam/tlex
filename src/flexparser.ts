@@ -26,7 +26,7 @@ export class RegexParser extends BaseRegexParser {
   /**
    * Creates a regex tree given a string
    */
-  parse(curr = 0, end = -1): Regex {
+  parse(curr = 0, end = -1, ignoreCase = false, anyWithNL = false, ignoreComments = false): Regex {
     const pattern = this.pattern;
     const stack: Regex[] = [];
     if (end < 0) end = pattern.length - 1;

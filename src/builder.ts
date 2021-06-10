@@ -23,9 +23,9 @@ export function fromJSRE(re: RegExp, config?: any): Rule {
   const expr = new JSREParser(pattern, config).parse();
   const rule = new Rule(expr, config);
   rule.pattern = pattern;
-  rule.dotAll = re.dotAll;
-  rule.ignoreCase = re.ignoreCase;
-  rule.multiline = re.multiline;
+  expr.dotAll = re.dotAll;
+  expr.ignoreCase = re.ignoreCase;
+  expr.multiline = re.multiline;
   return rule;
 }
 

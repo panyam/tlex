@@ -45,6 +45,27 @@ export abstract class Regex {
   // Tells whether the group is silent or not
   groupIsSilent = false;
 
+  /**
+   * Whether to ignore case in this particular subtree (only).
+   * The compiler will emit different instructions based on
+   * this flag.
+   * null implies value is inherited from parent.
+   */
+  ignoreCase: boolean | null = null;
+
+  /**
+   * Whether to allow "." to match new lines.
+   * null implies value is inherited from parent.
+   */
+  dotAll: boolean | null = null;
+
+  /**
+   * Whether ^ and $ are to be activated also on new line
+   * boundaries.
+   * null implies value is inherited from parent.
+   */
+  multiline: boolean | null = null;
+
   get debugValue(): any {
     return "";
   }
@@ -534,22 +555,6 @@ export interface RuleConfig {
   isGreedy?: boolean;
 
   /**
-   * Whether to ignore case int his particular rule (only).  The compiler will emit
-   * different instructions based on this flag.
-   */
-  ignoreCase?: boolean;
-
-  /**
-   * Whether to allow "." to match new lines.
-   */
-  dotAll?: boolean;
-
-  /**
-   * Whether ^ and $ are to be activated also on new line boundaries.
-   */
-  multiline?: boolean;
-
-  /**
    * A value set later on to identify the match index
    */
   matchIndex?: number;
@@ -587,22 +592,6 @@ export class Rule {
   isGreedy: boolean;
 
   /**
-   * Whether to ignore case int his particular rule (only).  The compiler will emit
-   * different instructions based on this flag.
-   */
-  ignoreCase: boolean;
-
-  /**
-   * Whether to allow "." to match new lines.
-   */
-  dotAll: boolean;
-
-  /**
-   * Whether ^ and $ are to be activated also on new line boundaries.
-   */
-  multiline: boolean;
-
-  /**
    * A value set later on to identify the match index
    */
   matchIndex: number;
@@ -629,9 +618,6 @@ export class Rule {
     this.tag = TSU.Misc.dictGet(config, "tag", null);
     this.priority = TSU.Misc.dictGet(config, "priority", 10);
     this.isGreedy = TSU.Misc.dictGet(config, "isGreedy", true);
-    this.dotAll = TSU.Misc.dictGet(config, "dotAll", true);
-    this.multiline = TSU.Misc.dictGet(config, "multiline", true);
-    this.ignoreCase = TSU.Misc.dictGet(config, "ignoreCase", false);
     this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
   }
 }
