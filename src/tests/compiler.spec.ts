@@ -2,7 +2,6 @@ const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { CharType, Rule, Regex } from "../core";
 import * as Builder from "../builder";
-import { parse } from "./utils";
 import { Prog, OpCode, InstrDebugValue } from "../vm";
 import { Compiler } from "../compiler";
 
@@ -212,7 +211,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Back Named Groups", () => {
-    const prog = compile((name) => parse("abcde"), Builder.build("\\k<Hello  >"));
+    const prog = compile((name) => Builder.build("abcde").expr, Builder.build("\\k<Hello  >"));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -349,7 +348,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Vars", () => {
-    const prog = compile((name) => parse("x"), Builder.build("a{hello}c"));
+    const prog = compile((name) => Builder.build("x").expr, Builder.build("a{hello}c"));
     testRegexCompile(
       prog,
       Prog.with((p) => {

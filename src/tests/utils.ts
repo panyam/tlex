@@ -10,55 +10,32 @@ import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
 import { Tokenizer, toToken, Token } from "../tokenizer";
 
-export function parse(input: string, config?: any): Regex {
-  return new RegexParser(input, config).parse();
-}
+// export function parse(input: string, config?: any): Regex { return new RegexParser(input, config).parse(); }
 
-// Read tokenizer tokens from contents.
-// Our tokenizer spec is very simple.  Just a bunch
-// of rules where each line is either empty or a comment or
-// a spec of the form:
-//
-// <name> := regex_string
-//
-// <name> is either an IDENT or an IDENT!
-//
-// Where the latter form denotes a variable.
-export function newTokenizer(contents: string): Tokenizer {
-  const tokenizer = new Tokenizer();
-  const lines = contents.split("\n");
-  lines.forEach((line, index) => {
-    line = line.trim();
-    if (line.length == 0 || line.startsWith("#")) return;
-    const eqIndex = line.indexOf(":=");
-    let error = true;
-    if (eqIndex >= 0) {
-      let name = line.substring(0, eqIndex).trim();
-      const value = line.substring(eqIndex + 2).trim();
-      const isExtern = name[0] == "*";
-      const isVar = name[0] == "!" || isExtern;
-      if (isVar) name = name.substring(1);
-      const isGreedy = name[name.length - 1] != "?";
-      if (!isGreedy) name = name.substring(0, name.length - 1);
-      if (name.length > 0 && (isExtern || value.length > 0)) {
-        error = false;
-        if (isExtern) {
-          throw new Error("Externs not yet supported");
-          // tokenizer.addExtern(name);
-        }
-        if (isVar) {
-          tokenizer.addVar(name, value);
-        } else {
-          const rule = Builder.build(value, { tag: name, priority: 10, isGreedy: isGreedy });
-          tokenizer.addRule(rule);
-        }
-      }
-    }
-    if (error) {
-      throw new Error(`Invalid line (#${index}): "${line}"`);
-    }
-  });
-  return tokenizer;
+export function expectRegex(input: string, found: any, expected: any, debug = false, enforce = true): void {
+  if (debug) {
+    console.log(
+      "Input: ",
+      input,
+      "RE String: ",
+      found.toString,
+      "Found Value: \n",
+      util.inspect(found.debugValue, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+      "\nExpected Value: \n",
+      util.inspect(expected, {
+        showHidden: false,
+        depth: null,
+        maxArrayLength: null,
+        maxStringLength: null,
+      }),
+    );
+  }
+  if (enforce) expect(found.debugValue).toEqual(expected);
 }
 
 export function compile(exprResolver: null | ((name: string) => Regex), ...patterns: REPatternType[]): Prog {

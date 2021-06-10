@@ -1,11 +1,13 @@
 import * as TSU from "@panyam/tsutils";
 const util = require("util");
 import fs from "fs";
-import * as Builder from "../builder";
 import { Tape } from "../tape";
-import { parse, compile, execute, runMatchTest } from "./utils";
+import { compile, execute, runMatchTest } from "./utils";
 import { Token } from "../tokenizer";
 import { Prog, VM } from "../vm";
+import * as Builder from "../builder";
+
+const parse = (pattern: any, config?: any) => Builder.build(pattern, config).expr;
 
 //
 // Test cases from

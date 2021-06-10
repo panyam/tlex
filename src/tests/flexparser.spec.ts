@@ -1,36 +1,11 @@
 const util = require("util");
 import * as TSU from "@panyam/tsutils";
 import { Regex, Char, CharType } from "../core";
-import { parse } from "./utils";
-import { RegexParser } from "../flexparser";
+import * as Builder from "../builder";
+import { expectRegex } from "./utils";
 
-function expectRegex(input: string, found: any, expected: any, debug = false, enforce = true): void {
-  if (debug) {
-    console.log(
-      "Input: ",
-      input,
-      "RE String: ",
-      found.toString,
-      "Found Value: \n",
-      util.inspect(found.debugValue, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-      "\nExpected Value: \n",
-      util.inspect(expected, {
-        showHidden: false,
-        depth: null,
-        maxArrayLength: null,
-        maxStringLength: null,
-      }),
-    );
-  }
-  if (enforce) expect(found.debugValue).toEqual(expected);
-}
 function testRegex(input: string, expected: any, debug = false, enforce = true, config?: any): Regex {
-  const found = parse(input, config);
+  const found = Builder.fromFlexRE(input, config).expr;
   expectRegex(input, found, expected, debug, enforce);
   return found;
 }
@@ -166,11 +141,5 @@ describe("Regex Tests", () => {
         "r",
       ],
     ]);
-  });
-  test("Test Vars", () => {
-    const input = "a|b|{abcd}|e";
-    const expected = ["Union", ["a", "b", "<abcd>", "e"]];
-    const found = new RegexParser(input).parse();
-    expectRegex(input, found, expected);
   });
 });
