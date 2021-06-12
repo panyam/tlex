@@ -84,7 +84,11 @@ export abstract class Regex {
     if (this.reString == null) {
       this.reString = this.evalREString();
     }
-    return this.reString;
+    let mod = "";
+    if (this.dotAll) mod += "d";
+    if (this.ignoreCase) mod += "i";
+    if (this.multiline) mod += "m";
+    return mod.length == 0 ? this.reString : this.reString + "<" + mod + ">";
   }
 
   // Returns a minimally bracketted and syntactically valid string

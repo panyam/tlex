@@ -1,5 +1,7 @@
 import { Rule, Regex, REPatternType } from "./core";
 import { RegexParser as JSREParser } from "./jsparser";
+import { RegexParser as FlexREParser } from "./flexparser";
+import { Tape } from "./tape";
 
 export function build(pattern: string | RegExp | Regex, config?: any): Rule {
   if (typeof pattern === "string") {
@@ -31,8 +33,8 @@ export function fromJSRE(re: RegExp, config?: any): Rule {
 
 export function fromFlexRE(re: string, config?: any): Rule {
   const pattern = re;
-  const parser = new JSREParser(pattern, config);
-  const expr = parser.parse();
+  const parser = new FlexREParser();
+  const expr = parser.parse(new Tape(pattern));
   const rule = new Rule(expr, config);
   rule.pattern = pattern;
   return rule;
