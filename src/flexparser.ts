@@ -150,7 +150,7 @@ export class RegexParser {
       while (pattern.hasMore && pattern.currCh != "}") {
         if (pattern.currCh == ",") foundComma = true;
         else {
-          if (foundComma) p1 += pattern.currCh;
+          if (!foundComma) p1 += pattern.currCh;
           else p2 += pattern.currCh;
         }
         pattern.advance();
@@ -256,7 +256,7 @@ export class RegexParser {
     while (pattern.hasMore && pattern.currCh != "}") {
       if (pattern.currCh == "=") foundEq = true;
       else {
-        if (foundEq) propName += pattern.currCh;
+        if (!foundEq) propName += pattern.currCh;
         else propValue += pattern.currCh;
       }
       pattern.advance();

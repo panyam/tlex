@@ -37,7 +37,6 @@ describe("Regex Tests", () => {
     testRegex("a|b|(?:c|d)|e", ["Union", ["a", "b", ["Union", ["c", "d"]], "e"]]);
   });
 
-  /*
   test("Test Quants", () => {
     testRegex("a*", ["Quant", ["a", "*"]]);
     testRegex("a+", ["Quant", ["a", "+"]]);
@@ -71,6 +70,7 @@ describe("Regex Tests", () => {
     testRegex("^.$", ["Cat", ["^", ".", "$"]]);
   });
 
+  /*
   test("Test LookAheads", () => {
     testRegex("hello (?=world)", [
       "LookAhead",
