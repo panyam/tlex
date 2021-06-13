@@ -12,47 +12,48 @@ function testRegex(input: string, expected: any, debug = false, enforce = true, 
 
 describe("Regex Tests", () => {
   test("Test Chars", () => {
-    testRegex("abcde", ["Cat", ["a", "b", "c", "d", "e"]]);
+    testRegex("abcde", ["Cat", {}, ["a", "b", "c", "d", "e"]]);
     expect(Char.Range(10, 20).compareTo(Char.Range(10, 40))).toBeLessThan(0);
     expect(Char.Range(20, 20).compareTo(Char.Range(10, 40))).toBeGreaterThan(0);
-    testRegex("\\x32\\u2028", ["Cat", ["2", "\u2028"]]);
+    testRegex("\\x32\\u2028", ["Cat", {}, ["2", "\u2028"]]);
   });
 
   test("Test Escape Chars", () => {
     testRegex("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", [
       "Cat",
+      {},
       ["\\n", "\\r", "\\t", "\\f", "\\b", "\\", '"', "'", "2", "y"],
     ]);
   });
 
   test("Test Cat", () => {
-    testRegex("a(?:b(?:c(?:d(?:e))))", ["Cat", ["a", "b", "c", "d", "e"]]);
+    testRegex("a(?:b(?:c(?:d(?:e))))", ["Cat", {}, ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Union", () => {
-    testRegex("a|b|c|d|e", ["Union", ["a", "b", "c", "d", "e"]]);
+    testRegex("a|b|c|d|e", ["Union", {}, ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Named Named Back Refs", () => {
-    testRegex("a|b|\\k<Hello>|e", ["Union", ["a", "b", "\\k<Hello>", "e"]]);
+    testRegex("a|b|\\k<Hello>|e", ["Union", {}, ["a", "b", { BackRef: "Hello" }, "e"]]);
     expect(() => testRegex("<  >", [])).toThrowError();
   });
 
   test("Test Grouping", () => {
-    testRegex("a|b|(?:c|d)|e", ["Union", ["a", "b", "c", "d", "e"]]);
+    testRegex("a|b|(?:c|d)|e", ["Union", {}, ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Quants", () => {
-    testRegex("a*", ["Quant", ["a", "*"]]);
-    testRegex("a+", ["Quant", ["a", "+"]]);
-    testRegex("a?", ["Quant", ["a", "?"]]);
-    testRegex("abc*?", ["Cat", ["a", "b", ["QuantLazy", ["c", "*"]]]]);
-    testRegex("a(bc){10, 20}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,20}"]]]]);
-    testRegex("a(bc){10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,10}"]]]]);
-    testRegex("a(bc){,10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{0,10}"]]]]);
-    testRegex("((ab)*)*", ["Quant", [["Quant", [["Cat", ["a", "b"]], "*"]], "*"]]);
+    testRegex("a*", ["*?", {}, "a"]);
+    testRegex("a+", ["+?", {}, "a"]);
+    testRegex("a?", ["??", {}, "a"]);
+    testRegex("abc*?", ["Cat", {}, ["a", "b", ["*", {}, "c"]]]);
+    testRegex("a(bc){10, 20}", ["Cat", {}, ["a", ["{10,20}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("a(bc){10}", ["Cat", {}, ["a", ["{10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("a(bc){,10}", ["Cat", {}, ["a", ["{0,10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("((ab)*)*", ["*?", {}, ["*?", { groupIndex: 0 }, ["Cat", { groupIndex: 1 }, ["a", "b"]]]]);
     expect(() => testRegex("a{1,2,3}", [])).toThrowError();
-    testRegex("a[a-z]{2,4}?", ["Cat", ["a", ["QuantLazy", ["[a-z]", "{2,4}"]]]]);
+    testRegex("a[a-z]{2,4}?", ["Cat", {}, ["a", ["{2,4}", {}, "[a-z]"]]]);
   });
 
   test("Test Char Ranges", () => {
@@ -72,22 +73,24 @@ describe("Regex Tests", () => {
 
   test("Test Special Char Ranges", () => {
     testRegex(".", ".");
-    testRegex("^.$", ["Cat", ["^", ".", "$"]]);
+    testRegex("^.$", ["Cat", {}, ["^", ".", "$"]]);
   });
 
   test("Test LookAheads", () => {
     testRegex("hello (?=world)", [
       "LookAhead",
       {
-        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
-        cond: ["Cat", ["w", "o", "r", "l", "d"]],
+        negate: false,
+        expr: ["Cat", {}, ["h", "e", "l", "l", "o", " "]],
+        cond: ["Cat", {}, ["w", "o", "r", "l", "d"]],
       },
     ]);
     testRegex("hello (?!world)", [
-      "LookAhead!",
+      "LookAhead",
       {
-        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
-        cond: ["Cat", ["w", "o", "r", "l", "d"]],
+        negate: true,
+        expr: ["Cat", {}, ["h", "e", "l", "l", "o", " "]],
+        cond: ["Cat", {}, ["w", "o", "r", "l", "d"]],
       },
     ]);
   });
@@ -96,25 +99,30 @@ describe("Regex Tests", () => {
     testRegex("(?<=hello)world", [
       "LookBack",
       {
-        expr: ["Cat", ["w", "o", "r", "l", "d"]],
-        cond: ["Cat", ["h", "e", "l", "l", "o"]],
+        negate: false,
+        expr: ["Cat", { groupIndex: 0 }, ["w", "o", "r", "l", "d"]],
+        cond: ["Cat", {}, ["h", "e", "l", "l", "o"]],
       },
     ]);
     testRegex("(?<!hello)world", [
-      "LookBack!",
+      "LookBack",
       {
-        expr: ["Cat", ["w", "o", "r", "l", "d"]],
-        cond: ["Cat", ["h", "e", "l", "l", "o"]],
+        negate: true,
+        expr: ["Cat", { groupIndex: 0 }, ["w", "o", "r", "l", "d"]],
+        cond: ["Cat", {}, ["h", "e", "l", "l", "o"]],
       },
     ]);
     testRegex("((?<=hello)world) tour", [
       "Cat",
+      {},
       [
         [
           "LookBack",
           {
-            expr: ["Cat", ["w", "o", "r", "l", "d"]],
-            cond: ["Cat", ["h", "e", "l", "l", "o"]],
+            expr: ["Cat", { groupIndex: 1 }, ["w", "o", "r", "l", "d"]],
+            cond: ["Cat", {}, ["h", "e", "l", "l", "o"]],
+            negate: false,
+            groupIndex: 0,
           },
         ],
         " ",
@@ -126,12 +134,15 @@ describe("Regex Tests", () => {
     ]);
     testRegex("((?<!hello)world) tour", [
       "Cat",
+      {},
       [
         [
-          "LookBack!",
+          "LookBack",
           {
-            expr: ["Cat", ["w", "o", "r", "l", "d"]],
-            cond: ["Cat", ["h", "e", "l", "l", "o"]],
+            groupIndex: 0,
+            negate: true,
+            expr: ["Cat", { groupIndex: 1 }, ["w", "o", "r", "l", "d"]],
+            cond: ["Cat", {}, ["h", "e", "l", "l", "o"]],
           },
         ],
         " ",
@@ -144,7 +155,7 @@ describe("Regex Tests", () => {
   });
   test("Test Vars", () => {
     const input = "a|b|{abcd}|e";
-    const expected = ["Union", ["a", "b", "<abcd>", "e"]];
+    const expected = ["Union", {}, ["a", "b", ["V:abcd", {}], "e"]];
     const found = Builder.build(input).expr;
     expectRegex(input, found, expected);
   });

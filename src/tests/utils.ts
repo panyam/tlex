@@ -20,7 +20,7 @@ export function expectRegex(input: string, found: any, expected: any, debug = fa
       "RE String: ",
       found.toString,
       "Found Value: \n",
-      util.inspect(found.debugValue, {
+      util.inspect(found.debugValue(), {
         showHidden: false,
         depth: null,
         maxArrayLength: null,
@@ -35,7 +35,7 @@ export function expectRegex(input: string, found: any, expected: any, debug = fa
       }),
     );
   }
-  if (enforce) expect(found.debugValue).toEqual(expected);
+  if (enforce) expect(found.debugValue()).toEqual(expected);
 }
 
 export function compile(exprResolver: null | ((name: string) => Regex), ...patterns: REPatternType[]): Prog {

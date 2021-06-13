@@ -12,29 +12,45 @@ function testRegex(input: string, expected: any, debug = false, enforce = true, 
 
 describe("Regex Tests", () => {
   test("Test Chars", () => {
-    testRegex("abcde", ["Cat", ["a", "b", "c", "d", "e"]]);
+    testRegex("abcde", ["Cat", {}, ["a", "b", "c", "d", "e"]]);
     expect(Char.Range(10, 20).compareTo(Char.Range(10, 40))).toBeLessThan(0);
     expect(Char.Range(20, 20).compareTo(Char.Range(10, 40))).toBeGreaterThan(0);
-    testRegex("\\x32\\u2028", ["Cat", ["2", "\u2028"]]);
+    testRegex("\\x32\\u2028", ["Cat", {}, ["2", "\u2028"]]);
   });
 
   test("Test Escape Chars", () => {
     testRegex("\\n\\r\\t\\f\\b\\\\\\\"\\'\\x32\\y", [
       "Cat",
+      {},
       ["\\n", "\\r", "\\t", "\\f", "\\b", "\\", '"', "'", "2", "y"],
     ]);
   });
 
   test("Test Union", () => {
-    testRegex("a|b|c|d|e", ["Union", ["a", "b", "c", "d", "e"]]);
+    testRegex("a|b|c|d|e", ["Union", {}, ["a", "b", "c", "d", "e"]]);
   });
 
   test("Test Cat", () => {
-    testRegex("a(?:b(?:c(?:d(?:e))))", ["Cat", ["a", ["Cat", ["b", ["Cat", ["c", ["Cat", ["d", "e"]]]]]]]]);
+    testRegex("a(?:b(?:c(?:d(?:e))))", [
+      "Cat",
+      {},
+      [
+        "a",
+        [
+          "Cat",
+          { groupIndex: 0 },
+          ["b", ["Cat", { groupIndex: 1 }, ["c", ["Cat", { groupIndex: 2 }, ["d", "e<g:3>"]]]]],
+        ],
+      ],
+    ]);
   });
 
   test("Test Grouping", () => {
     testRegex("a|b|(?:c|d)|e", ["Union", ["a", "b", ["Union", ["c", "d"]], "e"]]);
+  });
+
+  test("Test Grouping2", () => {
+    testRegex("(?:foo)", ["Cat", { groupIndex: 0 }, ["f", "o", "o"]]);
   });
 
   test("Test Quants", () => {
@@ -67,7 +83,7 @@ describe("Regex Tests", () => {
 
   test("Test Special Char Ranges", () => {
     testRegex(".", ".");
-    testRegex("^.$", ["Cat", ["^", ".", "$"]]);
+    testRegex("^.$", ["Cat", {}, ["^", ".", "$"]]);
   });
 
   /*

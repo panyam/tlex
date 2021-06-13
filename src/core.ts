@@ -66,8 +66,13 @@ export abstract class Regex {
    */
   multiline: boolean | null = null;
 
-  get debugValue(): any {
-    return "";
+  debugValue(): any {
+    const out = {} as any;
+    if (this.dotAll) out.dotAll = true;
+    if (this.ignoreCase) out.ignoreCase = true;
+    if (this.multiline) out.multiline = true;
+    if (this.groupIndex >= 0) out.groupIndex = this.groupIndex;
+    return out;
   }
 
   // Tells if this regex is of a variable size (ie has quantifiers)
@@ -84,21 +89,26 @@ export abstract class Regex {
     if (this.reString == null) {
       this.reString = this.evalREString();
     }
-    let mod = "";
-    if (this.dotAll) mod += "d";
-    if (this.ignoreCase) mod += "i";
-    if (this.multiline) mod += "m";
-    return mod.length == 0 ? this.reString : this.reString + "<" + mod + ">";
+    return this.reString;
   }
 
   // Returns a minimally bracketted and syntactically valid string
   // representation of this expression.
   protected abstract evalREString(): string;
+
+  get modifiers(): string {
+    let mod = "";
+    if (this.dotAll) mod += "d";
+    if (this.ignoreCase) mod += "i";
+    if (this.multiline) mod += "m";
+    if (this.groupIndex >= 0) mod += "g:" + this.groupIndex;
+    return mod.length == 0 ? mod : "<" + mod + ">";
+  }
 }
 
 export class StartOfInput extends Regex {
   readonly tag: RegexType = RegexType.START_OF_INPUT;
-  get debugValue(): string {
+  debugValue(): string {
     return "^";
   }
   reverse(): this {
@@ -111,7 +121,7 @@ export class StartOfInput extends Regex {
 
 export class EndOfInput extends Regex {
   readonly tag: RegexType = RegexType.END_OF_INPUT;
-  get debugValue(): string {
+  debugValue(): string {
     return "$";
   }
   protected evalREString(): string {
@@ -124,7 +134,7 @@ export class EndOfInput extends Regex {
 
 export class StartOfWord extends Regex {
   readonly tag: RegexType = RegexType.START_OF_WORD;
-  get debugValue(): string {
+  debugValue(): string {
     return "\\b";
   }
   reverse(): this {
@@ -137,7 +147,7 @@ export class StartOfWord extends Regex {
 
 export class EndOfWord extends Regex {
   readonly tag: RegexType = RegexType.END_OF_WORD;
-  get debugValue(): string {
+  debugValue(): string {
     return "\\b";
   }
   reverse(): this {
@@ -167,8 +177,16 @@ export class LookAhead extends Assertion {
     return `${this.expr.toString}(?${this.negate ? "!" : "="}${this.cond.toString})`;
   }
 
-  get debugValue(): any {
-    return ["LookAhead" + (this.negate ? "!" : ""), { expr: this.expr.debugValue, cond: this.cond.debugValue }];
+  debugValue(): any {
+    return [
+      "LookAhead",
+      {
+        ...super.debugValue(),
+        negate: this.negate,
+        expr: this.expr.debugValue(),
+        cond: this.cond.debugValue(),
+      },
+    ];
   }
 
   reverse(): Regex {
@@ -183,8 +201,16 @@ export class LookBack extends Assertion {
     return `(?<${this.negate ? "!" : "="}${this.cond.toString})${this.expr.toString}`;
   }
 
-  get debugValue(): any {
-    return ["LookBack" + (this.negate ? "!" : ""), { expr: this.expr.debugValue, cond: this.cond.debugValue }];
+  debugValue(): any {
+    return [
+      "LookBack",
+      {
+        ...super.debugValue(),
+        negate: this.negate,
+        expr: this.expr.debugValue(),
+        cond: this.cond.debugValue(),
+      },
+    ];
   }
 
   reverse(): Regex {
@@ -217,19 +243,29 @@ export class Quant extends Regex {
     if (this.minCount == 1 && this.isUnlimited) quant = "+";
     else if (this.minCount == 0 && this.isUnlimited) quant = "*";
     else if (this.minCount == 0 && this.maxCount == 1) quant = "?";
-    else if (this.minCount != 1 || this.maxCount != 1)
-      quant = `{${this.minCount},${this.isUnlimited ? "" : this.maxCount}}`;
+    else if (this.minCount != 1 || this.maxCount != 1) {
+      if (this.minCount == this.maxCount) {
+        quant = `{${this.minCount}}`;
+      } else {
+        quant = `{${this.minCount},${this.isUnlimited ? "" : this.maxCount}}`;
+      }
+    }
     return `${this.expr.toString}${quant}`;
   }
 
-  get debugValue(): any {
+  debugValue(): any {
     let quant = "*";
-    if (this.minCount == 1 && this.isUnlimited) quant = "+";
-    else if (this.minCount == 0 && this.isUnlimited) quant = "*";
-    else if (this.minCount == 0 && this.maxCount == 1) quant = "?";
-    else if (this.minCount != 1 || this.maxCount != 1)
-      quant = `{${this.minCount},${this.isUnlimited ? "" : this.maxCount}}`;
-    return [this.greedy ? "Quant" : "QuantLazy", [this.expr.debugValue, quant]];
+    if (this.minCount == 1 && this.isUnlimited) quant = this.greedy ? "+?" : "+";
+    else if (this.minCount == 0 && this.isUnlimited) quant = this.greedy ? "*?" : "*";
+    else if (this.minCount == 0 && this.maxCount == 1) quant = this.greedy ? "??" : "?";
+    else if (this.minCount != 1 || this.maxCount != 1) {
+      if (this.minCount == this.maxCount) {
+        quant = `{${this.minCount}}` + (this.greedy ? "?" : "");
+      } else {
+        quant = `{${this.minCount},${this.maxCount}}` + (this.greedy ? "?" : "");
+      }
+    }
+    return [quant, super.debugValue(), this.expr.debugValue()];
   }
 }
 
@@ -273,8 +309,8 @@ export class Cat extends Regex {
     return this;
   }
 
-  get debugValue(): any {
-    return ["Cat", this.children.map((c) => c.debugValue)];
+  debugValue(): any {
+    return ["Cat", { ...super.debugValue() }, this.children.map((c) => c.debugValue())];
   }
 }
 
@@ -317,8 +353,8 @@ export class Union extends Regex {
     return this;
   }
 
-  get debugValue(): any {
-    return ["Union", this.options.map((o) => o.debugValue)];
+  debugValue(): any {
+    return ["Union", { ...super.debugValue() }, this.options.map((c) => c.debugValue())];
   }
 }
 
@@ -456,14 +492,14 @@ export class Char extends Regex {
           throw new Error("Unsupported op in CharGroup: " + op);
         }
       }
-      const out = chars.map((ch) => ch.debugValue).join("");
+      const out = chars.map((ch) => ch.debugValue()).join("");
       return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
     }
     return "Custom " + this.args.join(" ");
   }
 
-  get debugValue(): any {
-    return this.toString;
+  debugValue(): any {
+    return this.toString + this.modifiers;
   }
 }
 
@@ -484,8 +520,8 @@ export class Var extends Regex {
     return "<" + this.name + ">";
   }
 
-  get debugValue(): any {
-    return "<" + this.name + ">";
+  debugValue(): any {
+    return ["V:" + this.name, { ...super.debugValue() }];
   }
 }
 
@@ -506,8 +542,8 @@ export class BackNamedRef extends Regex {
     return "\\k<" + this.name + ">";
   }
 
-  get debugValue(): any {
-    return "\\k<" + this.name + ">";
+  debugValue(): any {
+    return { ...super.debugValue, BackRef: this.name };
   }
 }
 
@@ -528,7 +564,7 @@ export class BackNumRef extends Regex {
     return "\\" + this.num;
   }
 
-  get debugValue(): any {
+  debugValue(): any {
     return "\\" + this.num;
   }
 }
