@@ -52,19 +52,19 @@ export class RegexParser {
         stack.push(this.parseCharGroup(pattern));
       } else if (currCh == "*" || currCh == "?" || currCh == "+" || currCh == "{") {
         this.parseQuant(pattern, stack);
-      } else if (ignoreSpaces) {
-        if (isSpace(currCh)) {
-          // do nothing
-        } else if (advanceIf(pattern, "/*")) {
-          // Read everything until a */
-          while (pattern.currCh != "*" || pattern.nextCh != "/") {
-            if (!pattern.hasMore) {
-              throw new SyntaxError("Unterminated comment");
-            }
-            pattern.advance();
+      } else if (ignoreSpaces && isSpace(currCh)) {
+        // do nothing
+        pattern.advance();
+      } else if (ignoreSpaces && advanceIf(pattern, "/*")) {
+        // Read everything until a */
+        while (pattern.currCh != "*" || pattern.nextCh != "/") {
+          if (!pattern.hasMore) {
+            throw new SyntaxError("Unterminated comment");
           }
-          // now do nothing
+          pattern.advance();
         }
+        pattern.advance(2);
+        // now do nothing
       } else if (advanceIf(pattern, "(")) {
         if (advanceIf(pattern, "?")) {
           if (advanceIf(pattern, "#")) {
@@ -121,6 +121,15 @@ export class RegexParser {
         break;
       } else if (currCh == "]" || currCh == "}") {
         throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
+      } else if (advanceIf(pattern, '"')) {
+        // raw string
+        while (pattern.currCh != '"') {
+          if (!pattern.hasMore) {
+            throw new SyntaxError("Unterminated comment");
+          }
+          stack.push(this.parseChar(pattern));
+        }
+        pattern.advance();
       } else {
         // plain old alphabets
         stack.push(this.parseChar(pattern));

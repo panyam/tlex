@@ -49,8 +49,28 @@ describe("Regex Tests", () => {
     testRegex("a|b|(?:c|d)|e", ["Union", {}, ["a", "b", ["Union", { groupIndex: 0 }, ["c", "d"]], "e"]]);
   });
 
+  test("Test Comments", () => {
+    testRegex("abc(?#this is a comment. .*)de", ["Cat", {}, ["a", "b", "c", "d", "e"]]);
+  });
+
   test("Test Grouping2", () => {
     testRegex("(?:foo)", ["Cat", { groupIndex: 0 }, ["f", "o", "o"]]);
+    testRegex("(?i:ab7)", ["Cat", { groupIndex: 0, ignoreCase: true }, ["a", "b", "7"]]);
+    testRegex("(?-i:ab)", ["Cat", { groupIndex: 0 }, ["a", "b"]]);
+    testRegex("(?s:.)", ".<dg:0>");
+    testRegex("(?-s:.)", ".<g:0>");
+    testRegex("(?ix-s: a . b)", ["Cat", { groupIndex: 0, ignoreCase: true }, ["a", ".", "b"]]);
+    testRegex("(?x:a  b)", ["Cat", { groupIndex: 0 }, ["a", "b"]]);
+    testRegex("(?x:a\\ b)", ["Cat", { groupIndex: 0 }, ["a", " ", "b"]]);
+    testRegex("(?x:a[ ]b)", ["Cat", { groupIndex: 0 }, ["a", " ", "b"]]);
+    testRegex(
+      `(?x:a
+    /* comment */
+    b
+    c)`,
+      ["Cat", { groupIndex: 0 }, ["a", "b", "c"]],
+    );
+    testRegex('(?x:a" "b)', ["Cat", { groupIndex: 0 }, ["a", " ", "b"]]);
   });
 
   test("Test Quants", () => {
