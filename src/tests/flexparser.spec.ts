@@ -46,7 +46,7 @@ describe("Regex Tests", () => {
   });
 
   test("Test Grouping", () => {
-    testRegex("a|b|(?:c|d)|e", ["Union", ["a", "b", ["Union", ["c", "d"]], "e"]]);
+    testRegex("a|b|(?:c|d)|e", ["Union", {}, ["a", "b", ["Union", { groupIndex: 0 }, ["c", "d"]], "e"]]);
   });
 
   test("Test Grouping2", () => {
@@ -54,16 +54,16 @@ describe("Regex Tests", () => {
   });
 
   test("Test Quants", () => {
-    testRegex("a*", ["Quant", ["a", "*"]]);
-    testRegex("a+", ["Quant", ["a", "+"]]);
-    testRegex("a?", ["Quant", ["a", "?"]]);
-    testRegex("abc*?", ["Cat", ["a", "b", ["QuantLazy", ["c", "*"]]]]);
-    testRegex("a(bc){10, 20}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,20}"]]]]);
-    testRegex("a(bc){10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{10,10}"]]]]);
-    testRegex("a(bc){,10}", ["Cat", ["a", ["Quant", [["Cat", ["b", "c"]], "{0,10}"]]]]);
-    testRegex("((ab)*)*", ["Quant", [["Quant", [["Cat", ["a", "b"]], "*"]], "*"]]);
+    testRegex("a*", ["*?", {}, "a"]);
+    testRegex("a+", ["+?", {}, "a"]);
+    testRegex("a?", ["??", {}, "a"]);
+    testRegex("abc*?", ["Cat", {}, ["a", "b", ["*", {}, "c"]]]);
+    testRegex("a(bc){10, 20}", ["Cat", {}, ["a", ["{10,20}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("a(bc){10}", ["Cat", {}, ["a", ["{10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("a(bc){,10}", ["Cat", {}, ["a", ["{0,10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
+    testRegex("((ab)*)*", ["*?", {}, ["*?", { groupIndex: 0 }, ["Cat", { groupIndex: 1 }, ["a", "b"]]]]);
     expect(() => testRegex("a{1,2,3}", [])).toThrowError();
-    testRegex("a[a-z]{2,4}?", ["Cat", ["a", ["QuantLazy", ["[a-z]", "{2,4}"]]]]);
+    testRegex("a[a-z]{2,4}?", ["Cat", {}, ["a", ["{2,4}", {}, "[a-z]"]]]);
   });
 
   test("Test Char Ranges", () => {
