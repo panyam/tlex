@@ -24,6 +24,11 @@ describe("Regex Tests", () => {
       {},
       ["\\n", "\\r", "\\t", "\\f", "\\b", "\\", '"', "'", "2", "y"],
     ]);
+    testRegex(String.raw`\n\r\t\f\b\\\"\'\x32\y`, [
+      "Cat",
+      {},
+      ["\\n", "\\r", "\\t", "\\f", "\\b", "\\", '"', "'", "2", "y"],
+    ]);
   });
 
   test("Test Union", () => {
@@ -116,57 +121,4 @@ describe("Regex Tests", () => {
       },
     ]);
   });
-
-  /*
-  test("Test LookBacks", () => {
-    testRegex("(?<=hello)world", [
-      "LookBack",
-      {
-        expr: ["Cat", ["w", "o", "r", "l", "d"]],
-        cond: ["Cat", ["h", "e", "l", "l", "o"]],
-      },
-    ]);
-    testRegex("(?<!hello)world", [
-      "LookBack!",
-      {
-        expr: ["Cat", ["w", "o", "r", "l", "d"]],
-        cond: ["Cat", ["h", "e", "l", "l", "o"]],
-      },
-    ]);
-    testRegex("((?<=hello)world) tour", [
-      "Cat",
-      [
-        [
-          "LookBack",
-          {
-            expr: ["Cat", ["w", "o", "r", "l", "d"]],
-            cond: ["Cat", ["h", "e", "l", "l", "o"]],
-          },
-        ],
-        " ",
-        "t",
-        "o",
-        "u",
-        "r",
-      ],
-    ]);
-    testRegex("((?<!hello)world) tour", [
-      "Cat",
-      [
-        [
-          "LookBack!",
-          {
-            expr: ["Cat", ["w", "o", "r", "l", "d"]],
-            cond: ["Cat", ["h", "e", "l", "l", "o"]],
-          },
-        ],
-        " ",
-        "t",
-        "o",
-        "u",
-        "r",
-      ],
-    ]);
-  });
- */
 });
