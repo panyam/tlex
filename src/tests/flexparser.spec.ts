@@ -106,24 +106,18 @@ describe("Regex Tests", () => {
     testRegex("^.$", ["Cat", {}, ["^", ".", "$"]]);
   });
 
-  /*
   test("Test LookAheads", () => {
-    testRegex("hello (?=world)", [
+    testRegex("hello/world", [
       "LookAhead",
       {
-        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
-        cond: ["Cat", ["w", "o", "r", "l", "d"]],
-      },
-    ]);
-    testRegex("hello (?!world)", [
-      "LookAhead!",
-      {
-        expr: ["Cat", ["h", "e", "l", "l", "o", " "]],
-        cond: ["Cat", ["w", "o", "r", "l", "d"]],
+        negate: false,
+        expr: ["Cat", {}, ["h", "e", "l", "l", "o"]],
+        cond: ["Cat", {}, ["w", "o", "r", "l", "d"]],
       },
     ]);
   });
 
+  /*
   test("Test LookBacks", () => {
     testRegex("(?<=hello)world", [
       "LookBack",

@@ -1,6 +1,6 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "./tape";
-import { Quant, RegexType, StartOfInput, EndOfInput, Regex, Cat, Char, CharType, Var, Union } from "./core";
+import { LookAhead, Quant, RegexType, StartOfInput, EndOfInput, Regex, Cat, Char, CharType, Var, Union } from "./core";
 import { CharClassType } from "./charclasses";
 import { GroupCounter } from "./parser";
 
@@ -65,6 +65,12 @@ export class RegexParser {
         }
         pattern.advance(2);
         // now do nothing
+      } else if (advanceIf(pattern, "{-}")) {
+        // char class intersection
+        throw new Error("Intersection Not yet supported");
+      } else if (advanceIf(pattern, "{+}")) {
+        // char class union
+        throw new Error("Union Not yet supported");
       } else if (advanceIf(pattern, "(")) {
         if (advanceIf(pattern, "?")) {
           if (advanceIf(pattern, "#")) {
@@ -121,6 +127,12 @@ export class RegexParser {
         break;
       } else if (currCh == "]" || currCh == "}") {
         throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
+      } else if (advanceIf(pattern, "/")) {
+        // LookAheads
+        const prev = this.reduceLeft(stack);
+        // this.parse everything to the right
+        const rest = this.parse(pattern, ignoreSpaces, obCount);
+        return new LookAhead(prev, rest, false);
       } else if (advanceIf(pattern, '"')) {
         // raw string
         while (pattern.currCh != '"') {
