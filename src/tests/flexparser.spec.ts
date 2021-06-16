@@ -127,12 +127,6 @@ describe("Regex Tests", () => {
   });
 
   test("Test 2", () => {
-    testRegex("([Ee][+-]?{D}+)", [
-      'Cat',
-      { groupIndex: 0 },
-      ['[Ee]',
-        ['??', {}, '[+-]'],
-        ['+?', {}, ['V:D', {}]]]
-    ]);
+    testRegex("([Ee][+-]?{D}+)", ["Cat", { groupIndex: 0 }, ["[Ee]", ["??", {}, "[+-]"], ["+?", {}, ["V:D", {}]]]]);
   });
 });

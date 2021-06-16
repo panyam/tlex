@@ -209,23 +209,23 @@ export class RegexParser extends BaseRegexParser {
       i += nchars;
       if (i < pattern.length && pattern[i] == "-") {
         i++;
-          // TODO - Should this be for all such "operator" charactors?
+        // TODO - Should this be for all such "operator" charactors?
         if (pattern[i] == "]" || pattern[i] == "[") {
           // Special case for something like:
           // [....x-] or [.....x-[:alpha:]]
           out.push(currch);
           out.push(Char.Single("-"));
         } else if (i <= end) {
-            const [endch, nchars] = this.parseChar(i, end);
-            if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
-              throw new SyntaxError("Char range cannot start or end in a char class");
-            }
-            if (endch.args[0] < currch.args[0]) {
-              throw new SyntaxError("End cannot be less than start");
-            }
-            // currch.end = endch.start;
-            out.push(Char.Range(currch.args[0], endch.args[0]));
-            i += nchars;
+          const [endch, nchars] = this.parseChar(i, end);
+          if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
+            throw new SyntaxError("Char range cannot start or end in a char class");
+          }
+          if (endch.args[0] < currch.args[0]) {
+            throw new SyntaxError("End cannot be less than start");
+          }
+          // currch.end = endch.start;
+          out.push(Char.Range(currch.args[0], endch.args[0]));
+          i += nchars;
         } else {
           throw new SyntaxError("Unterminated char class");
         }

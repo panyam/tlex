@@ -219,10 +219,10 @@ export class RegexParser {
     if (last.tag == RegexType.QUANT && last.groupIndex < 0) {
       // Fold repeated quants unless they are not in a group
       quant = last as Quant;
-      quant.minCount = Math.min(minCount, quant.minCount)
-      quant.maxCount = Math.max(maxCount, quant.maxCount)
+      quant.minCount = Math.min(minCount, quant.minCount);
+      quant.maxCount = Math.max(maxCount, quant.maxCount);
     } else {
-      quant = (stack[stack.length - 1] = new Quant(last));
+      quant = stack[stack.length - 1] = new Quant(last);
       quant.minCount = minCount;
       quant.maxCount = maxCount;
     }
