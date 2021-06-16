@@ -200,8 +200,10 @@ export class RegexParser {
           } else {
             throw new SyntaxError(`Invalid quantifier: /${p1}/`);
           }
+          minCount = maxCount = 1;
+        } else {
+          minCount = maxCount = part1;
         }
-        minCount = maxCount = part1;
       }
     } else {
       throw new SyntaxError("Expected '{', '*', '?' or '+', Found: " + pattern.currCh);
@@ -213,12 +215,17 @@ export class RegexParser {
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
     const last = stack[stack.length - 1];
-    if (last.tag == RegexType.QUANT && (lastCh == "*" || lastCh == "?" || lastCh == "+" || lastCh == "}")) {
-      throw new SyntaxError("Nothing to repeat");
+    let quant: Quant;
+    if (last.tag == RegexType.QUANT && last.groupIndex < 0) {
+      // Fold repeated quants unless they are not in a group
+      quant = last as Quant;
+      quant.minCount = Math.min(minCount, quant.minCount)
+      quant.maxCount = Math.max(maxCount, quant.maxCount)
+    } else {
+      quant = (stack[stack.length - 1] = new Quant(last));
+      quant.minCount = minCount;
+      quant.maxCount = maxCount;
     }
-    const quant = (stack[stack.length - 1] = new Quant(last));
-    quant.minCount = minCount;
-    quant.maxCount = maxCount;
     // check if there is an extra lazy quantifier
     if (quant.greedy && advanceIf(pattern, "?")) {
       quant.greedy = false;
@@ -232,18 +239,27 @@ export class RegexParser {
     const neg = advanceIf(pattern, "^");
     while (pattern.currCh != "]") {
       const currch = this.parseChar(pattern);
-      if (pattern.currCh == "-") {
-        pattern.advance();
+      if (advanceIf(pattern, "-")) {
         if (pattern.hasMore) {
-          const endch = this.parseChar(pattern);
-          if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
-            throw new SyntaxError("Char range cannot start or end in a char class");
+          // TODO - Should this be for all such "operator" charactors?
+          if (pattern.currCh == "]" || pattern.currCh == "[") {
+            // Special case for something like:
+            // [....x-] or [.....x-[:alpha:]]
+            out.push(currch);
+            out.push(Char.Single("-"));
+          } else {
+            const endch = this.parseChar(pattern);
+            if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
+              throw new SyntaxError("Char range cannot start or end in a char class");
+            }
+            if (endch.args[0] < currch.args[0]) {
+              throw new SyntaxError("End cannot be less than start");
+            }
+            // currch.end = endch.start;
+            out.push(Char.Range(currch.args[0], endch.args[0]));
           }
-          if (endch.args[0] < currch.args[0]) {
-            throw new SyntaxError("End cannot be less than start");
-          }
-          // currch.end = endch.start;
-          out.push(Char.Range(currch.args[0], endch.args[0]));
+        } else {
+          throw new SyntaxError("Unterminated char class");
         }
       } else {
         out.push(currch);

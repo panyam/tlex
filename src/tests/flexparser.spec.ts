@@ -121,4 +121,18 @@ describe("Regex Tests", () => {
       },
     ]);
   });
+
+  test("Char Class with Hyphen", () => {
+    testRegex("[+-]", "[+-]");
+  });
+
+  test("Test 2", () => {
+    testRegex("([Ee][+-]?{D}+)", [
+      'Cat',
+      { groupIndex: 0 },
+      ['[Ee]',
+        ['??', {}, '[+-]'],
+        ['+?', {}, ['V:D', {}]]]
+    ]);
+  });
 });

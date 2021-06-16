@@ -159,4 +159,8 @@ describe("Regex Tests", () => {
     const found = Builder.build(input).expr;
     expectRegex(input, found, expected);
   });
+
+  test("Char Class with Hyphen", () => {
+    testRegex("[+-]", "[+-]");
+  });
 });
