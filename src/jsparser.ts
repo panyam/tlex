@@ -7,6 +7,8 @@ import {
   Regex,
   Cat,
   Char,
+  LeafChar,
+  CharGroup,
   CharType,
   Var,
   BackNamedRef,
@@ -36,7 +38,7 @@ export class RegexParser extends BaseRegexParser {
       const currCh = pattern[curr];
       // see if we have groups so they get highest preference
       if (currCh == ".") {
-        stack.push(Char.Any());
+        stack.push(LeafChar.Any());
         curr++;
       } else if (currCh == "\\" && pattern[curr + 1] >= "1" && pattern[curr + 1] <= "9") {
         // Numeric references
@@ -214,7 +216,7 @@ export class RegexParser extends BaseRegexParser {
           // Special case for something like:
           // [....x-] or [.....x-[:alpha:]]
           out.push(currch);
-          out.push(Char.Single("-"));
+          out.push(LeafChar.Single("-"));
         } else if (i <= end) {
           const [endch, nchars] = this.parseChar(i, end);
           if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
@@ -223,8 +225,7 @@ export class RegexParser extends BaseRegexParser {
           if (endch.args[0] < currch.args[0]) {
             throw new SyntaxError("End cannot be less than start");
           }
-          // currch.end = endch.start;
-          out.push(Char.Range(currch.args[0], endch.args[0]));
+          out.push(CharGroup.Range(currch, endch));
           i += nchars;
         } else {
           throw new SyntaxError("Unterminated char class");
@@ -233,10 +234,10 @@ export class RegexParser extends BaseRegexParser {
         out.push(currch);
       }
     }
-    return Char.Group(neg, ...out);
+    return CharGroup.Union(neg, out);
   }
 
-  parseChar(index = 0, end = 0): [Char, number] {
+  parseChar(index = 0, end = 0): [LeafChar, number] {
     if (this.pattern[index] == "\\") {
       return this.parseEscapeChar(index, end);
     } else {
@@ -244,13 +245,13 @@ export class RegexParser extends BaseRegexParser {
     }
   }
 
-  parseSingleChar(index = 0, end = 0): [Char, number] {
+  parseSingleChar(index = 0, end = 0): [LeafChar, number] {
     // single char
     const ch = this.pattern.charCodeAt(index);
-    return [Char.Single(ch), 1];
+    return [LeafChar.Single(ch), 1];
   }
 
-  parsePropertyEscape(index = 0, end = 0): [Char, number] {
+  parsePropertyEscape(index = 0, end = 0): [LeafChar, number] {
     const pattern = this.pattern;
     if (pattern[index] + 1 != "{") {
       throw new SyntaxError("Invalid property escape");
@@ -275,10 +276,10 @@ export class RegexParser extends BaseRegexParser {
       propName = parts[0].trim();
       propValue = parts[1].trim();
     }
-    return [Char.PropertyEscape(propName, propValue), 2 + clEnd + 1 - index];
+    return [LeafChar.PropertyEscape(propName, propValue), 2 + clEnd + 1 - index];
   }
 
-  parseEscapeChar(index = 0, end = 0): [Char, number] {
+  parseEscapeChar(index = 0, end = 0): [LeafChar, number] {
     const pattern = this.pattern;
     TSU.assert(pattern[index] == "\\", "Expected '\\'");
     // escape char
@@ -294,40 +295,40 @@ export class RegexParser extends BaseRegexParser {
     switch (ch) {
       // char classes
       case "w":
-        return [Char.Class(CharClassType.WORD_CHAR), 2];
+        return [LeafChar.Class(CharClassType.WORD_CHAR), 2];
       case "W":
-        return [Char.Class(CharClassType.WORD_CHAR, true), 2];
+        return [LeafChar.Class(CharClassType.WORD_CHAR, true), 2];
       case "d":
-        return [Char.Class(CharClassType.DIGITS), 2];
+        return [LeafChar.Class(CharClassType.DIGITS), 2];
       case "D":
-        return [Char.Class(CharClassType.DIGITS, true), 2];
+        return [LeafChar.Class(CharClassType.DIGITS, true), 2];
       case "s":
-        return [Char.Class(CharClassType.SPACES), 2];
+        return [LeafChar.Class(CharClassType.SPACES), 2];
       case "S":
-        return [Char.Class(CharClassType.SPACES, true), 2];
+        return [LeafChar.Class(CharClassType.SPACES, true), 2];
       case "0":
         if (pattern[index + 1] >= "0" && pattern[index + 1] <= "9" && this.unicode) {
           throw new SyntaxError("Invalid decimal escape");
         }
-        return [Char.Single("\0"), 2];
+        return [LeafChar.Single("\0"), 2];
       case "r":
-        return [Char.Single("\r"), 2];
+        return [LeafChar.Single("\r"), 2];
       case "n":
-        return [Char.Single("\n"), 2];
+        return [LeafChar.Single("\n"), 2];
       case "f":
-        return [Char.Single("\f"), 2];
+        return [LeafChar.Single("\f"), 2];
       case "b":
-        return [Char.Single("\b"), 2];
+        return [LeafChar.Single("\b"), 2];
       case "v":
-        return [Char.Single("\v"), 2];
+        return [LeafChar.Single("\v"), 2];
       case "t":
-        return [Char.Single("\t"), 2];
+        return [LeafChar.Single("\t"), 2];
       case "\\":
-        return [Char.Single("\\"), 2];
+        return [LeafChar.Single("\\"), 2];
       case "'":
-        return [Char.Single("'"), 2];
+        return [LeafChar.Single("'"), 2];
       case '"':
-        return [Char.Single('"'), 2];
+        return [LeafChar.Single('"'), 2];
       case "c":
         // ControlEscape:
         // https://262.ecma-international.org/5.1/#sec-15.10.2.10
@@ -335,7 +336,7 @@ export class RegexParser extends BaseRegexParser {
           throw new SyntaxError(`Invalid char sequence at ${index}, ${end}`);
         }
         const next = pattern.charCodeAt(index + 1) % 32;
-        return [Char.Single(next), 3];
+        return [LeafChar.Single(next), 3];
       case "x":
         // 2 digit hex digits
         index++;
@@ -345,7 +346,7 @@ export class RegexParser extends BaseRegexParser {
         const hexSeq = pattern.substring(index, index + 2);
         const hexVal = parseInt(hexSeq, 16);
         TSU.assert(!isNaN(hexVal), `Invalid hex sequence: '${hexSeq}'`);
-        return [Char.Single(hexVal), 4];
+        return [LeafChar.Single(hexVal), 4];
       case "u": // this could \uABCD or \u{ABCDEF}
         index++;
         // 4 digit hex digits for unicode
@@ -357,10 +358,10 @@ export class RegexParser extends BaseRegexParser {
         if (isNaN(ucodeVal)) {
           throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
         }
-        return [Char.Single(ucodeVal), 6];
+        return [LeafChar.Single(ucodeVal), 6];
       default:
         if (this.unicode) throw new SyntaxError("Invalid escape character: " + ch);
-        return [Char.Single(ch), 2];
+        return [LeafChar.Single(ch), 2];
     }
   }
 

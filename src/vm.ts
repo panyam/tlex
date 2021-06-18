@@ -1,7 +1,7 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "./tape";
 import { CharClassHelpers } from "./charclasses";
-import { CharType } from "./core";
+import { Char, CharType } from "./core";
 
 function isNewLineChar(ch: string): boolean {
   return ch == "\r" || ch == "\n" || ch == "\u2028" || ch == "\u2029";
@@ -25,8 +25,8 @@ export enum OpCode {
   // Char and CI Chars
   Char,
   CIChar,
-  NegChar,
-  NegCIChar,
+  // NegChar,
+  // NegCIChar,
 
   // Non char opcodes
   Match,
@@ -58,8 +58,8 @@ export class Prog {
     return this.instrs.length;
   }
 
-  add(opcode: any, ...args: number[]): Instr {
-    const out = new Instr(opcode).add(...args);
+  add(opcode: any, char: null | Char = null, ...args: number[]): Instr {
+    const out = new Instr(opcode, char).add(...args);
     out.offset = this.instrs.length;
     this.instrs.push(out);
     return out;
@@ -69,12 +69,6 @@ export class Prog {
     const out = new Prog();
     initializer(out);
     return out;
-  }
-
-  get reprString(): any {
-    let out = "";
-    this.instrs.forEach((instr) => (out += `p.add(${instr.opcode}, ${instr.args.join(", ")});`));
-    return `Prog.with((p) => { ${out} })`;
   }
 
   debugValue(instrDebugValue: (instr: Instr) => string = InstrDebugValue): any {
@@ -93,20 +87,20 @@ export class Instr {
   offset = 0;
   comment = "";
   args: number[] = [];
-  constructor(public readonly opcode: any) {}
+  // used for char match instructions - if opcode == Char or CIChar
+  constructor(public readonly opcode: any, public char: null | Char = null) {
+    this.char = char;
+  }
 
   add(...args: number[]): this {
     this.args.push(...args);
     return this;
   }
 
-  get reprString(): any {
-    return `new Instr(${this.opcode}, ${this.args.join(", ")})`;
-  }
-
   get debugValue(): any {
-    if (this.comment.trim().length > 0) return `${this.opcode} ${this.args.join(" ")}     # ${this.comment}`;
-    else return `${this.opcode} ${this.args.join(" ")}`;
+    let c = this.comment.trim();
+    if (c.length > 0) c = "    # " + c;
+    return `${this.opcode} ${this.args.join(" ")}    ${this.char || ""}   ${c}`;
   }
 }
 
@@ -388,57 +382,11 @@ export class VM {
     }
   }
 
-  matchChar(ch: number, args: number[]): boolean {
-    const op = args[0];
-    switch (op) {
-      case CharType.SingleChar:
-        return ch == args[1];
-      case CharType.CharClass:
-        return CharClassHelpers[args[1]].matches(ch, false);
-      case CharType.CharRange:
-        return ch >= args[1] && ch <= args[2];
-      case CharType.PropertyEscape:
-        throw new Error("Property Escapes - TBD");
-        return ch >= args[1] && ch <= args[2];
-      case CharType.CharGroup:
-        for (let i = 1; i < args.length; ) {
-          const gop = args[i];
-          const neg = args[i++] < 0;
-          switch (neg ? -gop : gop) {
-            case CharType.SingleChar:
-              if ((neg && ch != args[i]) || (!neg && ch == args[i])) return true;
-              i++;
-              break;
-            case CharType.CharClass:
-              if (CharClassHelpers[args[i]].matches(ch, neg)) return true;
-              i++;
-              break;
-            case CharType.CharRange:
-              const res = ch >= args[i] && ch <= args[i + 1];
-              if ((neg && !res) || (!neg && res)) return true;
-              i += 2;
-              break;
-            case CharType.PropertyEscape:
-              throw new Error("Property Escapes - TBD");
-              if (ch >= args[i] && ch <= args[i + 1]) return !neg;
-              i += 2;
-              break;
-            default:
-              throw new Error("Custom Chars - TBD, i: " + (i - 1) + ", args[i]: " + args[i - 1]);
-          }
-        }
-        return false;
-      default:
-        throw new Error("Custom Chars - TBD i: " + op);
-    }
-    return false;
-  }
-
-  matchCurrPos(tape: Tape, args: number[], ignoreCase = false): boolean {
+  matchCurrPos(tape: Tape, char: Char, ignoreCase = false): boolean {
     if (ignoreCase) {
-      return this.matchChar(tape.currChCodeLower, args) || this.matchChar(tape.currChCodeUpper, args);
+      return char.match(tape.currChCodeLower) || char.match(tape.currChCodeUpper);
     } else {
-      return this.matchChar(tape.currChCode, args);
+      return char.match(tape.currChCode);
     }
   }
 
@@ -585,15 +533,17 @@ export class VM {
       case OpCode.Char:
       case OpCode.CIChar:
         if (this.hasMore(tape)) {
-          advanceTape = this.matchCurrPos(tape, args, opcode == OpCode.CIChar);
+          advanceTape = this.matchCurrPos(tape, instr.char!, opcode == OpCode.CIChar);
         }
         break;
+      /*
       case OpCode.NegChar:
       case OpCode.NegCIChar:
         if (this.hasMore(tape)) {
           advanceTape = !this.matchCurrPos(tape, args, opcode == OpCode.NegCIChar);
         }
         break;
+      */
       case OpCode.AnyNonNL:
       case OpCode.Any:
         if (this.hasMore(tape)) {
@@ -612,13 +562,14 @@ export function InstrDebugValue(instr: Instr): string {
   switch (instr.opcode) {
     case OpCode.Match:
       return `Match ${instr.args[0]} ${instr.args[1]}`;
-    case OpCode.NegChar:
-    case OpCode.NegCIChar:
+    // case OpCode.NegChar:
+    // case OpCode.NegCIChar:
     case OpCode.Char:
     case OpCode.CIChar: {
       let out = `${OpCode[instr.opcode].toString()} `;
-      out += `${CharType[instr.args[0]]}`;
-      for (let i = 1; i < instr.args.length; i++) out += " " + instr.args[i];
+      // out += `${CharType[instr.args[0]]}`;
+      // for (let i = 1; i < instr.args.length; i++) out += " " + instr.args[i];
+      out += `${instr.char!.debugValue()}`;
       return out;
     }
     case OpCode.Any:

@@ -1,6 +1,6 @@
 const util = require("util");
 import * as TSU from "@panyam/tsutils";
-import { Regex, Char, CharType } from "../core";
+import { Regex, LeafChar, CharGroup, CharType } from "../core";
 import * as Builder from "../builder";
 import { expectRegex } from "./utils";
 
@@ -13,8 +13,16 @@ function testRegex(input: string, expected: any, debug = false, enforce = true, 
 describe("Regex Tests", () => {
   test("Test Chars", () => {
     testRegex("abcde", ["Cat", {}, ["a", "b", "c", "d", "e"]]);
-    expect(Char.Range(10, 20).compareTo(Char.Range(10, 40))).toBeLessThan(0);
-    expect(Char.Range(20, 20).compareTo(Char.Range(10, 40))).toBeGreaterThan(0);
+    expect(
+      CharGroup.Range(LeafChar.Single(10), LeafChar.Single(20)).compareTo(
+        CharGroup.Range(LeafChar.Single(10), LeafChar.Single(40)),
+      ),
+    ).toBeLessThan(0);
+    expect(
+      CharGroup.Range(LeafChar.Single(20), LeafChar.Single(20)).compareTo(
+        CharGroup.Range(LeafChar.Single(10), LeafChar.Single(40)),
+      ),
+    ).toBeGreaterThan(0);
     testRegex("\\x32\\u2028", ["Cat", {}, ["2", "\u2028"]]);
   });
 
@@ -91,22 +99,25 @@ describe("Regex Tests", () => {
     testRegex("a[a-z]{2,4}?", ["Cat", {}, ["a", ["{2,4}", {}, "[a-z]"]]]);
   });
 
-  test("Test Char Ranges", () => {
+  test("Test CharGroup.Ranges", () => {
     testRegex("[a-c]", "[a-c]");
-    const ch = Char.Group(false, Char.Range(90, 200), Char.Range(10, 20), Char.Range(50, 150));
-    expect(ch.args.length).toBe(9);
-    expect(ch.args[0]).toBe(CharType.CharRange);
-    expect(ch.args[1]).toBe(90);
-    expect(ch.args[2]).toBe(200);
-    expect(ch.args[3]).toBe(CharType.CharRange);
-    expect(ch.args[4]).toBe(10);
-    expect(ch.args[5]).toBe(20);
-    expect(ch.args[6]).toBe(CharType.CharRange);
-    expect(ch.args[7]).toBe(50);
-    expect(ch.args[8]).toBe(150);
+    const ch = CharGroup.Union(false, [
+      CharGroup.Range(LeafChar.Single(90), LeafChar.Single(200)),
+      CharGroup.Range(LeafChar.Single(10), LeafChar.Single(20)),
+      CharGroup.Range(LeafChar.Single(50), LeafChar.Single(150)),
+    ]);
+    expect(ch.chars.length).toBe(3);
+    expect(ch.chars[0].op).toBe(CharType.CharRange);
+    const chgs = ch.chars as CharGroup[];
+    expect((chgs[0].chars[0] as LeafChar).args[0]).toBe(90);
+    expect((chgs[0].chars[1] as LeafChar).args[0]).toBe(200);
+    expect((chgs[1].chars[0] as LeafChar).args[0]).toBe(10);
+    expect((chgs[1].chars[1] as LeafChar).args[0]).toBe(20);
+    expect((chgs[2].chars[0] as LeafChar).args[0]).toBe(50);
+    expect((chgs[2].chars[1] as LeafChar).args[0]).toBe(150);
   });
 
-  test("Test Special Char Ranges", () => {
+  test("Test Special CharGroup.Ranges", () => {
     testRegex(".", ".");
     testRegex("^.$", ["Cat", {}, ["^", ".", "$"]]);
   });

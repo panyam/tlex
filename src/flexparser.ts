@@ -1,6 +1,20 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape } from "./tape";
-import { LookAhead, Quant, RegexType, StartOfInput, EndOfInput, Regex, Cat, Char, CharType, Var, Union } from "./core";
+import {
+  LookAhead,
+  Quant,
+  RegexType,
+  StartOfInput,
+  EndOfInput,
+  Regex,
+  Cat,
+  CharType,
+  Char,
+  LeafChar,
+  CharGroup,
+  Var,
+  Union,
+} from "./core";
 import { CharClassType } from "./charclasses";
 import { GroupCounter } from "./parser";
 
@@ -37,7 +51,7 @@ export class RegexParser {
       const currCh = pattern.currCh;
       // see if we have groups so they get highest preference
       if (advanceIf(pattern, ".")) {
-        stack.push(Char.Any());
+        stack.push(LeafChar.Any());
       } else if (advanceIf(pattern, "^")) {
         stack.push(new StartOfInput());
       } else if (advanceIf(pattern, "$")) {
@@ -152,7 +166,6 @@ export class RegexParser {
   }
 
   parseQuant(pattern: Tape, stack: Regex[]): void {
-    const lastCh = pattern.prevCh;
     let minCount = 1,
       maxCount = 1;
     if (advanceIf(pattern, "*")) {
@@ -246,7 +259,7 @@ export class RegexParser {
             // Special case for something like:
             // [....x-] or [.....x-[:alpha:]]
             out.push(currch);
-            out.push(Char.Single("-"));
+            out.push(LeafChar.Single("-"));
           } else {
             const endch = this.parseChar(pattern);
             if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
@@ -256,7 +269,7 @@ export class RegexParser {
               throw new SyntaxError("End cannot be less than start");
             }
             // currch.end = endch.start;
-            out.push(Char.Range(currch.args[0], endch.args[0]));
+            out.push(CharGroup.Range(currch, endch));
           }
         } else {
           throw new SyntaxError("Unterminated char class");
@@ -266,10 +279,10 @@ export class RegexParser {
       }
     }
     TSU.assert(advanceIf(pattern, "]"), "']' expected");
-    return Char.Group(neg, ...out);
+    return CharGroup.Union(neg, out);
   }
 
-  parseChar(pattern: Tape): Char {
+  parseChar(pattern: Tape): LeafChar {
     if (pattern.currCh == "\\") {
       return this.parseEscapeChar(pattern);
     } else {
@@ -277,14 +290,14 @@ export class RegexParser {
     }
   }
 
-  parseSingleChar(pattern: Tape): Char {
+  parseSingleChar(pattern: Tape): LeafChar {
     // single char
     const ch = pattern.currCh;
     pattern.advance();
-    return Char.Single(ch);
+    return LeafChar.Single(ch);
   }
 
-  parsePropertyEscape(pattern: Tape): Char {
+  parsePropertyEscape(pattern: Tape): LeafChar {
     TSU.assert(advanceIf(pattern, "\\{"), "Invalid property escape");
     pattern.advance(2);
     let foundEq = false;
@@ -310,47 +323,47 @@ export class RegexParser {
     }
     // advance over the "}"
     pattern.advance();
-    return Char.PropertyEscape(propName, propValue);
+    return LeafChar.PropertyEscape(propName, propValue);
   }
 
-  parseEscapeChar(pattern: Tape): Char {
+  parseEscapeChar(pattern: Tape): LeafChar {
     TSU.assert(advanceIf(pattern, "\\"), "Expected '\\'");
     // escape char
     if (!pattern.hasMore) {
       throw new SyntaxError("Encounted unexpected end of input after \\");
     }
     if (advanceIf(pattern, "w")) {
-      return Char.Class(CharClassType.WORD_CHAR);
+      return LeafChar.Class(CharClassType.WORD_CHAR);
     } else if (advanceIf(pattern, "W")) {
-      return Char.Class(CharClassType.WORD_CHAR, true);
+      return LeafChar.Class(CharClassType.WORD_CHAR, true);
     } else if (advanceIf(pattern, "d")) {
-      return Char.Class(CharClassType.DIGITS);
+      return LeafChar.Class(CharClassType.DIGITS);
     } else if (advanceIf(pattern, "D")) {
-      return Char.Class(CharClassType.DIGITS, true);
+      return LeafChar.Class(CharClassType.DIGITS, true);
     } else if (advanceIf(pattern, "s")) {
-      return Char.Class(CharClassType.SPACES);
+      return LeafChar.Class(CharClassType.SPACES);
     } else if (advanceIf(pattern, "S")) {
-      return Char.Class(CharClassType.SPACES, true);
+      return LeafChar.Class(CharClassType.SPACES, true);
     } else if (advanceIf(pattern, "0")) {
-      return Char.Single("\0");
+      return LeafChar.Single("\0");
     } else if (advanceIf(pattern, "r")) {
-      return Char.Single("\r");
+      return LeafChar.Single("\r");
     } else if (advanceIf(pattern, "n")) {
-      return Char.Single("\n");
+      return LeafChar.Single("\n");
     } else if (advanceIf(pattern, "f")) {
-      return Char.Single("\f");
+      return LeafChar.Single("\f");
     } else if (advanceIf(pattern, "b")) {
-      return Char.Single("\b");
+      return LeafChar.Single("\b");
     } else if (advanceIf(pattern, "v")) {
-      return Char.Single("\v");
+      return LeafChar.Single("\v");
     } else if (advanceIf(pattern, "t")) {
-      return Char.Single("\t");
+      return LeafChar.Single("\t");
     } else if (advanceIf(pattern, "\\")) {
-      return Char.Single("\\");
+      return LeafChar.Single("\\");
     } else if (advanceIf(pattern, "'")) {
-      return Char.Single("'");
+      return LeafChar.Single("'");
     } else if (advanceIf(pattern, '"')) {
-      return Char.Single('"');
+      return LeafChar.Single('"');
     } else if (advanceIf(pattern, "x")) {
       // 2 digit hex digits
       if (!pattern.hasMore) {
@@ -360,7 +373,7 @@ export class RegexParser {
       const hexVal = parseInt(hexSeq, 16);
       TSU.assert(!isNaN(hexVal), `Invalid hex sequence: '${hexSeq}'`);
       pattern.advance(2);
-      return Char.Single(hexVal);
+      return LeafChar.Single(hexVal);
     } else if (advanceIf(pattern, "u")) {
       // 4 digit hex digits for unicode
       if (pattern.index >= pattern.input.length - 3) {
@@ -372,11 +385,11 @@ export class RegexParser {
         throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
       }
       pattern.advance(4);
-      return Char.Single(ucodeVal);
+      return LeafChar.Single(ucodeVal);
     }
     // default
     const ch = pattern.currCh;
     pattern.advance();
-    return Char.Single(ch);
+    return LeafChar.Single(ch);
   }
 }

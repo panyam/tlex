@@ -43,11 +43,6 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, "aaaa", ...re), ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
   });
 
-  test("Test a|aa|aaa without priority", () => {
-    const re = "a|aa|aaa";
-    expectMatchStrings(execute({}, "aaaaa", re), ["a", 0], ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
-  });
-
   test("Test a*", () => {
     const re = "a*";
     expectMatchStrings(execute({}, "aaaaa", re), ["aaaaa", 0]);
@@ -77,6 +72,11 @@ describe("VM Tests", () => {
       ["b", 0],
       ["a", 0],
     );
+  });
+
+  test("Test a|aa|aaa without priority", () => {
+    const re = "a|aa|aaa";
+    expectMatchStrings(execute({}, "aaaaa", re), ["a", 0], ["a", 0], ["a", 0], ["a", 0], ["a", 0]);
   });
 
   test("Test a,b,c,d,e", () => {
@@ -111,16 +111,16 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, "abbbaaaba", re), ["abbbaaaba", 0]);
   });
 
+  test("Test One Comment", () => {
+    const re = [`/\\*.*?\\*/`, `[ \t\n\r]+`];
+    const input = `/**2\n*/ `;
+    expectMatchStrings(execute({}, input, ...re), ["/**2\n*/", 0], [" ", 1]);
+  });
   test("Test Comments", () => {
     const re = [`/\\*.*?\\*/`, `[ \t\n\r]+`];
+    const input = `/* c1 */ /** C2\n */  `;
     // const re = (`/\*.*\*/`, `\"(?<!\\\\)\"`, "//.*$");
-    expectMatchStrings(
-      execute({}, `/* c1 */ /** C2\n */  `, ...re),
-      ["/* c1 */", 0],
-      [" ", 1],
-      ["/** C2\n */", 0],
-      ["  ", 1],
-    );
+    expectMatchStrings(execute({}, input, ...re), ["/* c1 */", 0], [" ", 1], ["/** C2\n */", 0], ["  ", 1]);
   });
 
   test("Test Lines", () => {
@@ -162,7 +162,29 @@ describe("VM Tests", () => {
       ["\n\n\n", 2],
     );
   });
+});
 
+describe.skip("VM Tests", () => {
+  test("Test JS Comments+Regexes", () => {
+    const re = [
+      Builder.build(/\s+/m, { tag: "SPACES" }),
+      Builder.build(/\/\*.*?\*\//m, { tag: "MLComment" }),
+      Builder.build(/\/\/.*$/, { tag: "SLComment" }),
+      Builder.build(/\/(([^\/])+?(?<!\\))\//, { tag: "REGEX" }),
+    ];
+    expectMatchStrings(
+      execute(
+        { debug: "all" },
+        `//m
+        /*
+        *m
+        */
+        /SomeRegex/`,
+        ...re,
+      ),
+      ["   ", 0],
+    );
+  });
   /*
   test("Test invalid char", () => {
     const re = "[a-e]";

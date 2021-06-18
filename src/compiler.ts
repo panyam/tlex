@@ -31,14 +31,14 @@ export class Compiler {
     // Split across each of our expressions
     const out = new Prog();
     // only add the split instruction if we have more than one rule
-    const split: Instr = rules.length <= 1 ? new Instr(OpCode.Split) : out.add(OpCode.Split);
+    const split: Instr = rules.length <= 1 ? new Instr(OpCode.Split) : out.add(OpCode.Split, null);
     rules.forEach((rule, i) => {
       split.add(out.instrs.length);
       const ignoreCase = rule.expr.ignoreCase == null ? false : rule.expr.ignoreCase;
       const dotAll = rule.expr.dotAll == null ? true : rule.expr.dotAll;
       const multiline = rule.expr.multiline == null ? true : rule.expr.multiline;
       this.compileExpr(rule.expr, out, ignoreCase, dotAll, multiline);
-      out.add(OpCode.Match, rule.priority, rule.matchIndex >= 0 ? rule.matchIndex : i);
+      out.add(OpCode.Match, null).add(rule.priority, rule.matchIndex >= 0 ? rule.matchIndex : i);
     });
     return out;
   }
@@ -50,8 +50,8 @@ export class Compiler {
     const start = prog.length;
     const currOffset = prog.length;
     if (expr.groupIndex >= 0) {
-      if (this.emitPosition) prog.add(OpCode.Save, (1 + expr.groupIndex) * 2);
-      if (this.emitGroups) prog.add(OpCode.GroupStart, 1 + expr.groupIndex);
+      if (this.emitPosition) prog.add(OpCode.Save).add((1 + expr.groupIndex) * 2);
+      if (this.emitGroups) prog.add(OpCode.GroupStart).add(1 + expr.groupIndex);
     }
     if (expr.tag == RegexType.CHAR) {
       this.compileChar(expr as Char, prog, ignoreCase, dotAll, multiline);
@@ -84,8 +84,8 @@ export class Compiler {
       throw new Error("Regex Type not yet supported: " + expr.tag);
     }
     if (expr.groupIndex >= 0) {
-      if (this.emitGroups) prog.add(OpCode.GroupEnd, 1 + expr.groupIndex);
-      if (this.emitPosition) prog.add(OpCode.Save, (1 + expr.groupIndex) * 2 + 1);
+      if (this.emitGroups) prog.add(OpCode.GroupEnd).add(1 + expr.groupIndex);
+      if (this.emitPosition) prog.add(OpCode.Save).add((1 + expr.groupIndex) * 2 + 1);
     }
     if (this.listener && prog.length > currOffset) {
       this.listener(expr, prog, currOffset, prog.length - currOffset);
@@ -98,6 +98,9 @@ export class Compiler {
       // TODO - Should neg be ignored?
       prog.add(dotAll ? OpCode.Any : OpCode.AnyNonNL);
     } else {
+      const instr = prog.add(ignoreCase ? OpCode.CIChar : OpCode.Char);
+      instr.char = char;
+      /*
       // We have Neg or not, CI or not
       const instr = prog.add(
         ignoreCase ? (char.neg ? OpCode.NegCIChar : OpCode.CIChar) : char.neg ? OpCode.NegChar : OpCode.Char,
@@ -106,6 +109,7 @@ export class Compiler {
 
       // And now the arguments
       for (const arg of char.args) instr.add(arg);
+      */
     }
   }
 
@@ -242,7 +246,7 @@ export class Compiler {
     const l1 = split.offset;
     const l2 = prog.length;
     this.compileExpr(expr, prog, ignoreCase, dotAll, multiline);
-    prog.add(OpCode.Jump, l1);
+    prog.add(OpCode.Jump).add(l1);
     const l3 = prog.length;
     if (greedy) {
       split.add(l2, l3);
@@ -277,9 +281,9 @@ export class Compiler {
     // how should this work?
     // Ensure that assertion matches first before continuing with the expression
     this.compileExpr(la.expr, prog, ignoreCase, dotAll, multiline);
-    const begin = prog.add(OpCode.Begin, 0, la.negate ? 1 : 0); // negate if needed
+    const begin = prog.add(OpCode.Begin).add(0, la.negate ? 1 : 0); // negate if needed
     this.compileExpr(la.cond, prog, ignoreCase, dotAll, multiline);
-    const end = prog.add(OpCode.End, begin.offset);
+    const end = prog.add(OpCode.End).add(begin.offset);
     begin.add(end.offset);
   }
 
@@ -290,9 +294,9 @@ export class Compiler {
     // Ensure that assertion matches first before continuing with the expression
     this.compileExpr(lb.expr, prog, ignoreCase, dotAll, multiline);
     TSU.assert(lb.expr.groupIndex >= 0, "LookBack Assertion requires expression to have a group Index");
-    const begin = prog.add(OpCode.RBegin, lb.expr.groupIndex, lb.negate ? 1 : 0); // negate if needed
+    const begin = prog.add(OpCode.RBegin).add(lb.expr.groupIndex, lb.negate ? 1 : 0); // negate if needed
     this.compileExpr(lb.cond.reverse(), prog, ignoreCase, dotAll, multiline);
-    const end = prog.add(OpCode.End, begin.offset);
+    const end = prog.add(OpCode.End).add(begin.offset);
     begin.add(end.offset);
   }
 }

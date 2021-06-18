@@ -66,6 +66,14 @@ export abstract class Regex {
    */
   multiline: boolean | null = null;
 
+  setOptions(options: any): this {
+    if ("dotAll" in options) this.dotAll = options.dotAll;
+    if ("ignoreCase" in options) this.ignoreCase = options.ignoreCase;
+    if ("groupIndex" in options) this.groupIndex = options.groupIndex;
+    if ("multiline" in options) this.multiline = options.multiline;
+    return this;
+  }
+
   debugValue(): any {
     const out = {} as any;
     if (this.dotAll) out.dotAll = true;
@@ -368,87 +376,82 @@ export enum CharType {
   CharRange,
   PropertyEscape,
   CharClass,
-  CharGroup,
+  Union,
   Intersection,
-  Custom, // User defined matchers to be plugged here
 }
 
 /**
  * Broad class of "char matchers".
  */
-export class Char extends Regex {
+export abstract class Char extends Regex {
   readonly tag: RegexType = RegexType.CHAR;
-  readonly args: number[];
 
   // Type of opcode for this char match
-  protected constructor(public readonly op: CharType, public readonly neg = false, ...data: number[]) {
+  protected constructor(public readonly op: CharType, public readonly neg = false) {
     super();
-    this.args = data;
   }
+
+  match(ch: number): boolean {
+    const result = this.matchChar(ch);
+    return (result && !this.neg) || (this.neg && !result);
+    return result;
+  }
+
+  protected abstract matchChar(ch: number): boolean;
+
+  abstract compareTo(another: this): number;
 
   reverse(): Char {
     return this;
   }
 
+  debugValue(): any {
+    return this.toString + this.modifiers;
+  }
+}
+
+export class LeafChar extends Char {
+  protected constructor(public readonly op: CharType, public readonly neg = false, readonly args: number[] = []) {
+    super(op, neg);
+  }
+
   static Any(neg = false): Char {
-    return new Char(CharType.AnyChar, neg);
+    return new LeafChar(CharType.AnyChar, neg);
   }
 
-  static Custom(neg = false, ...args: number[]): Char {
-    return new Char(CharType.Custom, neg, ...args);
+  static Class(charClass: CharClassType, neg = false): LeafChar {
+    return new LeafChar(CharType.CharClass, neg, [charClass]);
   }
 
-  static Range(start: number, end: number, neg = false): Char {
-    return new Char(CharType.CharRange, neg, start, end);
-  }
-
-  static Class(charClass: CharClassType, neg = false): Char {
-    return new Char(CharType.CharClass, neg, charClass);
-  }
-
-  static Single(ch: string | number, neg = false): Char {
+  static Single(ch: string | number, neg = false): LeafChar {
     if (typeof ch === "string") {
       ch = ch.charCodeAt(0);
     }
-    return new Char(CharType.SingleChar, neg, ch);
+    return new LeafChar(CharType.SingleChar, neg, [ch]);
   }
 
-  static PropertyEscape(propNameOrId: string | number, propValueOrId: string | number, neg = false): Char {
+  static PropertyEscape(propNameOrId: string | number, propValueOrId: string | number, neg = false): LeafChar {
     if (typeof propNameOrId === "string") propNameOrId = PropertyEscapes.propertyNameFor(propNameOrId);
     if (typeof propValueOrId === "string") propValueOrId = PropertyEscapes.propertyValueFor(propValueOrId);
-    return new Char(CharType.PropertyEscape, neg, propNameOrId, propValueOrId);
+    return new LeafChar(CharType.PropertyEscape, neg, [propNameOrId, propValueOrId]);
   }
 
-  static Group(neg = false, ...chars: Char[]): Char {
-    const out = new Char(CharType.CharGroup, neg);
-    for (const ch of chars) {
-      if (ch.op == CharType.CharGroup) {
-        // Or should these just be flattened?
-        throw new SyntaxError("Char groups cannot be recursive");
-      }
-      out.args.push(ch.neg ? -ch.op : ch.op);
-      out.args.push(...ch.args);
+  matchChar(ch: number): boolean {
+    const args = this.args;
+    switch (this.op) {
+      case CharType.SingleChar:
+        return ch == this.args[0];
+      case CharType.CharClass:
+        return CharClassHelpers[args[0]].matches(ch, false);
+      case CharType.PropertyEscape:
+        throw new Error("Property Escape Matching - TBD");
+      default:
+        throw new Error("Custom Chars - TBD i: " + this.op);
     }
-    return out;
+    return false;
   }
 
-  static Intersect(neg = false, ...chars: Char[]): Char {
-    throw new Error("To be implemented");
-    /*
-    const out = new Char(CharType.Intersection, neg);
-    for (const ch of chars) {
-      if (ch.op == CharType.CharGroup) {
-        // Or should these just be flattened?
-        throw new SyntaxError("Char intersections cannot be recursive");
-      }
-      out.args.push(ch.neg ? -ch.op : ch.op);
-      out.args.push(...ch.args);
-    }
-    return out;
-   */
-  }
-
-  compareTo(another: Char): number {
+  compareTo(another: this): number {
     if (this.op != another.op) return this.op - another.op;
     for (let i = 0; i < this.args.length && i < another.args.length; i++) {
       if (this.args[i] != another.args[i]) return this.args[i] - another.args[i];
@@ -463,43 +466,75 @@ export class Char extends Regex {
       return stringRep(this.args[0]);
     } else if (this.op == CharType.CharClass) {
       return CharClassHelpers[this.args[0]].reString(this.neg);
-    } else if (this.op == CharType.CharRange) {
-      return `${stringRep(this.args[0])}-${stringRep(this.args[1])}`;
     } else if (this.op == CharType.PropertyEscape) {
       return this.neg ? "\\P{" : "\\p{" + "}";
       return `${PropertyEscapes.propertyNameString(this.args[0])}=${PropertyEscapes.propertyValueString(
         this.args[1],
       )}\}`;
-    } else if (this.op == CharType.CharGroup) {
-      const chars: Char[] = [];
-      const args = this.args;
-      for (let i = 0; i < args.length; ) {
-        const op = Math.abs(args[i]);
-        const neg = args[i] < 0;
-        if (op == CharType.SingleChar) {
-          chars.push(Char.Single(args[i + 1]));
-          i += 2;
-        } else if (op == CharType.CharClass) {
-          chars.push(Char.Class(args[i + 1]));
-          i += 2;
-        } else if (op == CharType.CharRange) {
-          chars.push(Char.Range(args[i + 1], args[i + 2]));
-          i += 3;
-        } else if (op == CharType.PropertyEscape) {
-          chars.push(Char.PropertyEscape(args[i + 1], args[i + 2], neg));
-          i += 3;
-        } else {
-          throw new Error("Unsupported op in CharGroup: " + op);
-        }
-      }
-      const out = chars.map((ch) => ch.debugValue()).join("");
-      return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
     }
     return "Custom " + this.args.join(" ");
   }
+}
 
-  debugValue(): any {
-    return this.toString + this.modifiers;
+export class CharGroup extends Char {
+  protected constructor(public readonly op: CharType, public readonly neg = false, readonly chars: Char[] = []) {
+    super(op, neg);
+  }
+
+  compareTo(another: CharGroup): number {
+    if (this.op != another.op) return this.op - another.op;
+    for (let i = 0; i < this.chars.length && i < another.chars.length; i++) {
+      const d = this.chars[i].compareTo(another.chars[i]);
+      if (d != 0) return d;
+    }
+    return this.chars.length - another.chars.length;
+  }
+
+  matchChar(ch: number): boolean {
+    const chars = this.chars;
+    switch (this.op) {
+      case CharType.CharRange:
+        return ch >= (chars[0] as LeafChar).args[0] && ch <= (chars[1] as LeafChar).args[0];
+      case CharType.Union: {
+        for (let i = 0; i < chars.length; i++) {
+          if (chars[i].match(ch)) return true;
+        }
+        return false;
+      }
+      case CharType.Intersection: {
+        for (let i = 0; i < chars.length; i++) {
+          if (!chars[i].match(ch)) return false;
+        }
+        return true;
+      }
+      default:
+        throw new Error("Custom CharGroup - TBD i: " + this.op);
+    }
+    return false;
+  }
+
+  protected evalREString(): string {
+    const out = this.chars.map((ch) => ch.debugValue()).join("");
+    if (this.op == CharType.CharRange) {
+      return `${this.chars[0].toString}-${this.chars[1].toString}`;
+    } else if (this.op == CharType.Union) {
+      return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
+    } else if (this.op == CharType.Intersection) {
+      return out.length > 1 ? (this.neg ? "[^" : "[") + out + "]" : out;
+    }
+    return "Custom " + this.chars.join(" ");
+  }
+
+  static Range(start: LeafChar, end: LeafChar, neg = false): CharGroup {
+    return new CharGroup(CharType.CharRange, neg, [start, end]);
+  }
+
+  static Union(neg = false, chars: Char[]): CharGroup {
+    return new CharGroup(CharType.Union, neg, chars);
+  }
+
+  static Intersection(neg = false, chars: Char[]): CharGroup {
+    return new CharGroup(CharType.Intersection, neg, chars);
   }
 }
 
