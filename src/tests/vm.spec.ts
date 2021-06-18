@@ -162,6 +162,36 @@ describe("VM Tests", () => {
       ["\n\n\n", 2],
     );
   });
+  test("LookAhead Test", () => {
+    const re = [Builder.build(/abc(?=de)/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `abcdef`, ...re), ["abc", 0]);
+  });
+  test("LookAhead Test", () => {
+    const re = [Builder.build(/abc(?!de)/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `abcef`, ...re), ["abc", 0]);
+  });
+  test("LookAhead Test 2", () => {
+    const re = [Builder.build(/[^e]*(?=e)/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `abcde`, ...re), ["abcd", 0]);
+  });
+  test("LookAhead Test 2", () => {
+    const re = [Builder.build(/.*(?=e)/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `abcde`, ...re), ["abcd", 0]);
+  });
+  test("LookAhead Test + EndOfLine", () => {
+    expectMatchStrings(execute({}, `x`, Builder.build(/.*$/, { tag: "SLComment" })), ["x", 0]);
+    // expectMatchStrings(execute({}, `x`, Builder.build(/.*(?=\n)/, { tag: "SLComment" })), ["x", 0]);
+    expectMatchStrings(execute({}, `x\n`, Builder.build(/.*(?=\n)/, { tag: "SLComment" })), ["x", 0]);
+    expectMatchStrings(execute({ debug: "all" }, `x\n`, Builder.build(/.*$/m, { tag: "SLComment" })), ["x", 0]);
+    // expectMatchStrings(execute({ debug: "all" }, `x\n`, Builder.build(/.*$/, { tag: "SLComment" })), ["x", 0]);
+  });
+  test("JS Single Line Comment", () => {
+    const re2 = [Builder.build(/\/\/.*(?=\n)/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `//x\n`, ...re2), ["//x", 0]);
+    const re = [Builder.build(/\/\/.*$/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `//abc`, ...re), ["//abc", 0]);
+    // expectMatchStrings(execute({ debug: "all" }, `//x\n`, ...re), ["//x", 0]);
+  });
 });
 
 describe.skip("VM Tests", () => {
@@ -175,14 +205,16 @@ describe.skip("VM Tests", () => {
     expectMatchStrings(
       execute(
         { debug: "all" },
-        `//m
+        `   //x
         /*
-        *m
+        *y
         */
         /SomeRegex/`,
         ...re,
       ),
       ["   ", 0],
+      ["//x", 1],
+      ["        ", 1],
     );
   });
   /*

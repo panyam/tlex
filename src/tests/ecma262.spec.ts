@@ -1486,7 +1486,7 @@ function testFileLink(x: string): string {
 
 describe("ECMA Tests - Unicode Char Tests", () => {
   test(testFileLink("character-class-escape-non-whitespace-u180e"), () => {
-    expectMatchIndexes(execute({ debug: "all" }, String.fromCharCode(0x180e), /\S+/), 0, 1);
+    expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\S+/), 0, 1);
     expectMatchIndexes(execute({}, String.fromCharCode(0x180e), /\s+/));
   });
   test.skip(testFileLink("character-class-escape-non-whitespace"), () => {
