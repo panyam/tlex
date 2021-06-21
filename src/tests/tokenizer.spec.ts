@@ -209,14 +209,13 @@ describe("Tokenizer Tests", () => {
     `,
     );
     expect(tokens).toEqual([
-        { tag: 'PCT_IDENT', value: 'resyntax', range: [ 7, 16 ] },
-        { tag: 'IDENT', value: 'flex', range: [ 17, 21 ] },
-        { tag: 'PCT_IDENT', value: 'define', range: [ 29, 36 ] },
-        { tag: 'IDENT', value: 'WS', range: [ 39, 41 ] },
-        { tag: 'REGEX', value: '[ \\t\\v\\n\\f\\r]', range: [ 53, 68 ] },
-        { tag: 'PCT_IDENT', value: 'skip', range: [ 94, 99 ] },
-        { tag: 'REGEX', value: '"\\/*"[.\\n]*?"*\\/"', range: [ 118, 137 ] }
-      ]
-    );
+      { tag: "PCT_IDENT", value: "resyntax", range: [7, 16] },
+      { tag: "IDENT", value: "flex", range: [17, 21] },
+      { tag: "PCT_IDENT", value: "define", range: [29, 36] },
+      { tag: "IDENT", value: "WS", range: [39, 41] },
+      { tag: "REGEX", value: "[ \\t\\v\\n\\f\\r]", range: [53, 68] },
+      { tag: "PCT_IDENT", value: "skip", range: [94, 99] },
+      { tag: "REGEX", value: '"\\/*"[.\\n]*?"*\\/"', range: [118, 137] },
+    ]);
   });
 });
