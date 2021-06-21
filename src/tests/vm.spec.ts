@@ -182,7 +182,7 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, `x`, Builder.build(/.*$/, { tag: "SLComment" })), ["x", 0]);
     // expectMatchStrings(execute({}, `x`, Builder.build(/.*(?=\n)/, { tag: "SLComment" })), ["x", 0]);
     expectMatchStrings(execute({}, `x\n`, Builder.build(/.*(?=\n)/, { tag: "SLComment" })), ["x", 0]);
-    expectMatchStrings(execute({ debug: "all" }, `x\n`, Builder.build(/.*$/m, { tag: "SLComment" })), ["x", 0]);
+    expectMatchStrings(execute({}, `x\n`, Builder.build(/.*$/m, { tag: "SLComment" })), ["x", 0]);
     // expectMatchStrings(execute({ debug: "all" }, `x\n`, Builder.build(/.*$/, { tag: "SLComment" })), ["x", 0]);
   });
   test("JS Single Line Comment", () => {
