@@ -210,6 +210,8 @@ export class RegexParser {
         if (isNaN(part1)) {
           if (p1.length > 0) {
             stack.push(new Var(p1));
+            // nothing more
+            return;
           } else {
             throw new SyntaxError(`Invalid quantifier: /${p1}/`);
           }

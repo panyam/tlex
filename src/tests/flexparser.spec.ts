@@ -140,4 +140,12 @@ describe("Regex Tests", () => {
   test("Test 2", () => {
     testRegex("([Ee][+-]?{D}+)", ["Cat", { groupIndex: 0 }, ["[Ee]", ["??", {}, "[+-]"], ["+?", {}, ["V:D", {}]]]]);
   });
+
+  test("Mixing Strings and Substitutions", () => {
+    testRegex('"hello"{adjective}"world"', [
+      "Cat",
+      {},
+      ["h", "e", "l", "l", "o", ["V:adjective", {}], "w", "o", "r", "l", "d"],
+    ]);
+  });
 });
