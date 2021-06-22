@@ -16,12 +16,7 @@ export class Token {
   value: any = null;
   groups: TSU.NumMap<number[]> = {};
   positions: TSU.NumMap<[number, number]> = {};
-  constructor(
-    public readonly tag: TokenType,
-    public readonly matchIndex: number,
-    public start: number,
-    public end: number,
-  ) {}
+  constructor(public tag: TokenType, public readonly matchIndex: number, public start: number, public end: number) {}
 
   isOneOf(...expected: any[]): boolean {
     for (const tok of expected) {
