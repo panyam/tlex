@@ -151,7 +151,7 @@ export class RegexParser {
         // raw string
         while (pattern.currCh != '"') {
           if (!pattern.hasMore) {
-            throw new SyntaxError("Unterminated comment");
+            throw new SyntaxError("Unterminated string");
           }
           stack.push(this.parseChar(pattern));
         }

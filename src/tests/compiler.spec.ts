@@ -375,6 +375,31 @@ describe("Regex Compile Tests", () => {
     );
   });
 
+  test("Test Vars Mixed with Strings in FlexRE", () => {
+    const prog = compile((name) => Builder.build("great").expr, Builder.fromFlexRE('"hello"{adjective}"world"'));
+    testRegexCompile(
+      prog,
+      Prog.with((p) => {
+        p.add(OpCode.Char, LeafChar.Single(104, false));
+        p.add(OpCode.Char, LeafChar.Single(101, false));
+        p.add(OpCode.Char, LeafChar.Single(108, false));
+        p.add(OpCode.Char, LeafChar.Single(108, false));
+        p.add(OpCode.Char, LeafChar.Single(111, false));
+        p.add(OpCode.Char, LeafChar.Single(103, false));
+        p.add(OpCode.Char, LeafChar.Single(114, false));
+        p.add(OpCode.Char, LeafChar.Single(101, false));
+        p.add(OpCode.Char, LeafChar.Single(97, false));
+        p.add(OpCode.Char, LeafChar.Single(116, false));
+        p.add(OpCode.Char, LeafChar.Single(119, false));
+        p.add(OpCode.Char, LeafChar.Single(111, false));
+        p.add(OpCode.Char, LeafChar.Single(114, false));
+        p.add(OpCode.Char, LeafChar.Single(108, false));
+        p.add(OpCode.Char, LeafChar.Single(100, false));
+        p.add(OpCode.Match, null, 10, 0);
+      }),
+    );
+  });
+
   test("Test Invalid Vars", () => {
     expect(() => compile(null, Builder.build("a{hello}c"))).toThrowError("Cannot find expression: hello");
   });
