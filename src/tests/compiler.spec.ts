@@ -404,6 +404,50 @@ describe("Regex Compile Tests", () => {
     expect(() => compile(null, Builder.build("a{hello}c"))).toThrowError("Cannot find expression: hello");
   });
 
+  test("Test JS SL Comment", () => {
+    const rejs1 = Builder.build(/\/\/.*(?=\n)/, { tag: "SLComment" });
+    const rejs2 = Builder.build(/\/\/.*$/, { tag: "SLComment" });
+    const reflex = Builder.fromFlexRE(`"//".*$`, { tag: "SLComment" });
+    testRegexCompile(
+      compile(null, rejs1),
+      Prog.with((p) => {
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Split, null, 3, 5);
+        p.add(OpCode.AnyNonNL, null);
+        p.add(OpCode.Jump, null, 2);
+        p.add(OpCode.Begin, null, 0, 0, 7);
+        p.add(OpCode.Char, LeafChar.Single(10, false));
+        p.add(OpCode.End, null, 5);
+        p.add(OpCode.Match, null, 10, 0);
+      }),
+    );
+    testRegexCompile(
+      compile(null, rejs2),
+      Prog.with((p) => {
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Split, null, 3, 5);
+        p.add(OpCode.AnyNonNL, null);
+        p.add(OpCode.Jump, null, 2);
+        p.add(OpCode.EndingChar, null);
+        p.add(OpCode.Match, null, 10, 0);
+      }),
+    );
+    testRegexCompile(
+      compile(null, reflex),
+      Prog.with((p) => {
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Char, LeafChar.Single(47, false));
+        p.add(OpCode.Split, null, 3, 5);
+        p.add(OpCode.AnyNonNL, null);
+        p.add(OpCode.Jump, null, 2);
+        p.add(OpCode.MLEndingChar, null);
+        p.add(OpCode.Match, null, 10, 0);
+      }),
+    );
+  });
+
   /*
   test("Test Priorities on JS Comments+Regex", () => {
     testRegexCompile(

@@ -583,7 +583,7 @@ export function InstrDebugValue(instr: Instr): string {
     case OpCode.EndingChar:
       return "$NL";
     case OpCode.MLEndingChar:
-      return "$|(?=[\n\r])";
+      return "$NL_MultiLine";
     case OpCode.Save:
       return `Save ${instr.args[0]}`;
     case OpCode.GroupStart:

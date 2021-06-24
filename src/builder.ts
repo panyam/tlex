@@ -35,6 +35,9 @@ export function fromFlexRE(re: string, config?: any): Rule {
   const pattern = re;
   const parser = new FlexREParser();
   const expr = parser.parse(new Tape(pattern));
+  // if not specified default to false
+  if (expr.dotAll == null) expr.dotAll = false;
+  if (expr.multiline == null) expr.multiline = false;
   const rule = new Rule(expr, config);
   rule.pattern = pattern;
   return rule;

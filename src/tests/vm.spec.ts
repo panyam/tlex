@@ -185,12 +185,24 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, `x\n`, Builder.build(/.*$/m, { tag: "SLComment" })), ["x", 0]);
     // expectMatchStrings(execute({ debug: "all" }, `x\n`, Builder.build(/.*$/, { tag: "SLComment" })), ["x", 0]);
   });
-  test("JS Single Line Comment", () => {
+  test("JS Single Line Comment with \\n lookahead", () => {
     const re2 = [Builder.build(/\/\/.*(?=\n)/, { tag: "SLComment" })];
     expectMatchStrings(execute({}, `//x\n`, ...re2), ["//x", 0]);
-    const re = [Builder.build(/\/\/.*$/, { tag: "SLComment" })];
-    expectMatchStrings(execute({}, `//abc`, ...re), ["//abc", 0]);
-    // expectMatchStrings(execute({ debug: "all" }, `//x\n`, ...re), ["//x", 0]);
+    // This should fail because we are not lookingahead for EOF
+    // expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
+  });
+  test("JS Single Line Comment with FlexRE", () => {
+    const re2 = [Builder.fromFlexRE(`"//".*$`, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
+    expectMatchStrings(execute({}, `//x\nabc`, ...re2), ["//x", 0]);
+  });
+  test("JS Single Line Comment with JS RE", () => {
+    const re2 = [Builder.fromJSRE(/\/\/.*$/, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
+    // This should fail becuase m flag is not set
+    // expectMatchStrings(execute({}, `//x\nabc`, ...re2), ["//x", 0]);
+    const rewithm = [Builder.fromJSRE(/\/\/.*$/m, { tag: "SLComment" })];
+    expectMatchStrings(execute({}, `//x\nabc`, ...rewithm), ["//x", 0]);
   });
 });
 

@@ -56,9 +56,11 @@ export class Compiler {
     if (expr.tag == RegexType.CHAR) {
       this.compileChar(expr as Char, prog, ignoreCase, dotAll, multiline);
     } else if (expr.tag == RegexType.START_OF_INPUT) {
-      prog.add(multiline ? OpCode.MLStartingChar : OpCode.StartingChar);
+      const ml = expr.multiline == null ? multiline : expr.multiline;
+      prog.add(ml ? OpCode.MLStartingChar : OpCode.StartingChar);
     } else if (expr.tag == RegexType.END_OF_INPUT) {
-      prog.add(multiline ? OpCode.MLEndingChar : OpCode.EndingChar);
+      const ml = expr.multiline == null ? multiline : expr.multiline;
+      prog.add(ml ? OpCode.MLEndingChar : OpCode.EndingChar);
     } else if (expr.tag == RegexType.START_OF_WORD) {
       prog.add(OpCode.StartOfWord);
     } else if (expr.tag == RegexType.END_OF_WORD) {

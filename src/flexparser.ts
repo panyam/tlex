@@ -53,9 +53,13 @@ export class RegexParser {
       if (advanceIf(pattern, ".")) {
         stack.push(LeafChar.Any());
       } else if (advanceIf(pattern, "^")) {
-        stack.push(new StartOfInput());
+        const x = new StartOfInput();
+        x.multiline = true;
+        stack.push(x);
       } else if (advanceIf(pattern, "$")) {
-        stack.push(new EndOfInput());
+        const x = new EndOfInput();
+        x.multiline = true;
+        stack.push(x);
       } else if (advanceIf(pattern, "|")) {
         // reduce everything "until now" and THEN apply
         const prev = this.reduceLeft(stack);
