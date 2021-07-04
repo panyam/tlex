@@ -204,6 +204,15 @@ describe("VM Tests", () => {
     const rewithm = [Builder.fromJSRE(/\/\/.*$/m, { tag: "SLComment" })];
     expectMatchStrings(execute({}, `//x\nabc`, ...rewithm), ["//x", 0]);
   });
+  test("Flex C Strings", () => {
+    const re2 = Builder.fromFlexRE(String.raw`["]([^"\\\n]|\\.|\\\n)*["]`, { tag: "MLComment" });
+    expectMatchStrings(execute({}, `"Hello World"`, re2), [`"Hello World"`, 0]);
+    expectMatchStrings(execute({}, `"Hello \\" World"`, re2), [`"Hello \\" World"`, 0]);
+  });
+  test("Backslash", () => {
+    const re = Builder.build(String.raw`\\`);
+    expectMatchStrings(execute({}, `\\`, re), [`\\`, 0]);
+  });
 });
 
 describe.skip("VM Tests", () => {
