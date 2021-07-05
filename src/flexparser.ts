@@ -16,11 +16,7 @@ import {
   Union,
 } from "./core";
 import { CharClassType } from "./charclasses";
-import { GroupCounter } from "./parser";
-
-function isSpace(ch: string): boolean {
-  return ch == " " || ch == "\t" || ch == "\n" || ch == "\r";
-}
+import { GroupCounter, isSpace } from "./utils";
 
 function advanceIf(tape: Tape, ch: string): boolean {
   const pos = tape.index;
