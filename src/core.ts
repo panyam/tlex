@@ -625,11 +625,6 @@ export interface RuleConfig {
   priority?: number;
 
   /**
-   * Whether the rule is greedy or not.
-   */
-  isGreedy?: boolean;
-
-  /**
    * A value set later on to identify the match index
    */
   matchIndex?: number;
@@ -662,11 +657,6 @@ export class Rule {
   priority: number;
 
   /**
-   * Whether the rule is greedy or not.
-   */
-  isGreedy: boolean;
-
-  /**
    * A value set later on to identify the match index
    */
   matchIndex: number;
@@ -681,7 +671,7 @@ export class Rule {
   /**
    * Source for this Regex before it is compiled.
    */
-  pattern: string | RegExp;
+  pattern: string | Regex;
 
   /**
    * Constructor
@@ -692,7 +682,6 @@ export class Rule {
     config = config || ({} as RuleConfig);
     this.tag = TSU.Misc.dictGet(config, "tag", null);
     this.priority = TSU.Misc.dictGet(config, "priority", 10);
-    this.isGreedy = TSU.Misc.dictGet(config, "isGreedy", true);
     this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
   }
 }
