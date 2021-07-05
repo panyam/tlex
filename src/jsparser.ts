@@ -18,13 +18,21 @@ import {
   Union,
 } from "./core";
 import { CharClassType } from "./charclasses";
-import { RegexParser as BaseRegexParser } from "./parser";
+import { GroupCounter } from "./utils";
 
-export class RegexParser extends BaseRegexParser {
+export class RegexParser {
   unicode: boolean;
+  counter: GroupCounter;
   constructor(public readonly pattern: string, config?: any) {
-    super(pattern, config);
+    this.counter = new GroupCounter();
     this.unicode = config?.unicode || false;
+  }
+
+  reduceLeft(stack: Regex[]): Regex {
+    const r = stack.length == 1 ? stack[0] : new Cat(...stack);
+    // remove all elements on stack
+    stack.splice(0);
+    return r;
   }
 
   /**
