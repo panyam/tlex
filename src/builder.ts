@@ -5,14 +5,20 @@ import { Tape } from "./tape";
 
 export function build(pattern: string | RegExp | Regex, config?: any): Rule {
   if (typeof pattern === "string") {
-    return fromRE(pattern, config);
+    const rule = new Rule(exprFromJSRE(pattern, config), config);
+    rule.pattern = pattern;
+    return rule;
   } else if (pattern.constructor.name == "RegExp") {
-    return fromJSRE(pattern as RegExp, config);
+    const rule = new Rule(exprFromJSRE(pattern as RegExp, config), config);
+    rule.pattern = (pattern as RegExp).source;
+    return rule;
   } else {
+    // Already compiled expression
     return new Rule(pattern as Regex, config);
   }
 }
 
+/*
 export function fromRE(pattern: string, config?: any): Rule {
   const expr = new JSREParser(pattern, config).parse();
   const rule = new Rule(expr, config);
@@ -21,34 +27,26 @@ export function fromRE(pattern: string, config?: any): Rule {
 }
 
 export function fromJSRE(re: RegExp, config?: any): Rule {
-  const pattern = re.source;
-  const expr = new JSREParser(pattern, config).parse();
+  const expr = exprFromJSRE(re);
   const rule = new Rule(expr, config);
-  rule.pattern = pattern;
-  expr.dotAll = re.dotAll;
-  expr.ignoreCase = re.ignoreCase;
-  expr.multiline = re.multiline;
+  rule.pattern = re.source;
   return rule;
 }
 
 export function fromFlexRE(re: string, config?: any): Rule {
-  const pattern = re;
-  const parser = new FlexREParser();
-  const expr = parser.parse(new Tape(pattern));
-  // if not specified default to false
-  if (expr.dotAll == null) expr.dotAll = false;
-  if (expr.multiline == null) expr.multiline = false;
+  const expr = exprFromFlexRE(re);
   const rule = new Rule(expr, config);
-  rule.pattern = pattern;
+  rule.pattern = re;
   return rule;
 }
+*/
 
 export function flatten(re: REPatternType | REPatternType[], index = 0, rules?: Rule[]): Rule[] {
   rules = rules || [];
   if (typeof re === "string") {
-    rules.push(fromRE(re, { tag: index }));
+    rules.push(build(re, { tag: index }));
   } else if (re.constructor == RegExp) {
-    rules.push(fromJSRE(re, { tag: index }));
+    rules.push(build(re, { tag: index }));
   } else if (re.constructor == Rule) {
     rules.push(re as Rule);
   } else if (re.constructor == Regex) {
@@ -60,4 +58,38 @@ export function flatten(re: REPatternType | REPatternType[], index = 0, rules?: 
     }
   }
   return rules;
+}
+
+export function exprFromFlexRE(pattern: string): Regex {
+  const parser = new FlexREParser();
+  const expr = parser.parse(new Tape(pattern));
+  // if not specified default to false
+  if (expr.dotAll == null) expr.dotAll = false;
+  if (expr.multiline == null) expr.multiline = false;
+  return expr;
+}
+
+export function exprFromJSRE(re: string | RegExp, config?: any): Regex {
+  config = config || {};
+  const isRegExp = typeof re !== "string";
+  const pattern = typeof re === "string" ? re : re.source;
+  if (isRegExp) config.unicode = (re as RegExp).unicode;
+  const expr = new JSREParser(pattern, config).parse();
+  if (typeof re !== "string") {
+    expr.dotAll = re.dotAll;
+    expr.ignoreCase = re.ignoreCase;
+    expr.multiline = re.multiline;
+  }
+  return expr;
+}
+
+export function jsRE(strings: TemplateStringsArray, ...keys: any[]): Regex {
+  // what we have is the raw value of this template and this can be parsed by our parser
+  const merged = String.raw(strings, ...keys);
+  return exprFromJSRE(merged);
+}
+
+export function flexRE(strings: TemplateStringsArray, ...keys: any[]): Regex {
+  const merged = String.raw(strings, ...keys);
+  return exprFromFlexRE(merged);
 }

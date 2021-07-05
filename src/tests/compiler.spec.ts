@@ -376,7 +376,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Vars Mixed with Strings in FlexRE", () => {
-    const prog = compile((name) => Builder.build("great").expr, Builder.fromFlexRE('"hello"{adjective}"world"'));
+    const prog = compile((name) => Builder.jsRE`great`, new Rule(Builder.flexRE`"hello"{adjective}"world"`));
     testRegexCompile(
       prog,
       Prog.with((p) => {
@@ -407,7 +407,7 @@ describe("Regex Compile Tests", () => {
   test("Test JS SL Comment", () => {
     const rejs1 = Builder.build(/\/\/.*(?=\n)/, { tag: "SLComment" });
     const rejs2 = Builder.build(/\/\/.*$/, { tag: "SLComment" });
-    const reflex = Builder.fromFlexRE(`"//".*$`, { tag: "SLComment" });
+    const reflex = new Rule(Builder.flexRE`"//".*$`, { tag: "SLComment" });
     testRegexCompile(
       compile(null, rejs1),
       Prog.with((p) => {

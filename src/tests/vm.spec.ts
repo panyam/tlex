@@ -192,20 +192,21 @@ describe("VM Tests", () => {
     // expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
   });
   test("JS Single Line Comment with FlexRE", () => {
-    const re2 = [Builder.fromFlexRE(`"//".*$`, { tag: "SLComment" })];
+    // const re2 = [Builder.fromFlexRE(`"//".*$`, { tag: "SLComment" })];
+    const re2 = [new Rule(Builder.flexRE`"//".*$`, { tag: "SLComment" })];
     expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
     expectMatchStrings(execute({}, `//x\nabc`, ...re2), ["//x", 0]);
   });
   test("JS Single Line Comment with JS RE", () => {
-    const re2 = [Builder.fromJSRE(/\/\/.*$/, { tag: "SLComment" })];
+    const re2 = [Builder.build(/\/\/.*$/, { tag: "SLComment" })];
     expectMatchStrings(execute({}, `//x`, ...re2), ["//x", 0]);
     // This should fail becuase m flag is not set
     // expectMatchStrings(execute({}, `//x\nabc`, ...re2), ["//x", 0]);
-    const rewithm = [Builder.fromJSRE(/\/\/.*$/m, { tag: "SLComment" })];
+    const rewithm = [Builder.build(/\/\/.*$/m, { tag: "SLComment" })];
     expectMatchStrings(execute({}, `//x\nabc`, ...rewithm), ["//x", 0]);
   });
   test("Flex C Strings", () => {
-    const re2 = Builder.fromFlexRE(String.raw`["]([^"\\\n]|\\.|\\\n)*["]`, { tag: "MLComment" });
+    const re2 = new Rule(Builder.flexRE`["]([^"\\\n]|\\.|\\\n)*["]`, { tag: "MLComment" });
     expectMatchStrings(execute({}, `"Hello World"`, re2), [`"Hello World"`, 0]);
     expectMatchStrings(execute({}, `"Hello \\" World"`, re2), [`"Hello \\" World"`, 0]);
   });

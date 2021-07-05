@@ -5,7 +5,7 @@ import * as Builder from "../builder";
 import { expectRegex } from "./utils";
 
 function testRegex(input: string, expected: any, debug = false, enforce = true, config?: any): Regex {
-  const found = Builder.fromFlexRE(input, config).expr;
+  const found = Builder.exprFromFlexRE(input);
   expectRegex(input, found, expected, debug, enforce);
   return found;
 }

@@ -331,12 +331,6 @@ export class RegexParser {
         return [LeafChar.Single("\v"), 2];
       case "t":
         return [LeafChar.Single("\t"), 2];
-      case "\\":
-        return [LeafChar.Single("\\"), 2];
-      case "'":
-        return [LeafChar.Single("'"), 2];
-      case '"':
-        return [LeafChar.Single('"'), 2];
       case "c":
         // ControlEscape:
         // https://262.ecma-international.org/5.1/#sec-15.10.2.10
@@ -367,6 +361,24 @@ export class RegexParser {
           throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
         }
         return [LeafChar.Single(ucodeVal), 6];
+      case "^": // List of special operators that need to be escaped
+      case "$":
+      case ".":
+      case "*":
+      case "+":
+      case "?":
+      case "\\":
+      case "'":
+      case '"':
+      case "(":
+      case ")":
+      case "[":
+      case "]":
+      case "{":
+      case "}":
+      case "|":
+      case "/":
+        return [LeafChar.Single(ch), 2];
       default:
         if (this.unicode) throw new SyntaxError("Invalid escape character: " + ch);
         return [LeafChar.Single(ch), 2];
