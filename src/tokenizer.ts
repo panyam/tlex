@@ -84,7 +84,7 @@ export class Tokenizer {
     return this.addRule(Builder.build(pattern, config), onMatch);
   }
 
-  protected addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
+  addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
     rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);
     this.onMatchHandlers.push(onMatch || null);
