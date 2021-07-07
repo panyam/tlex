@@ -36,7 +36,7 @@ export class RegexParser {
   }
 
   throwError(msg: string): void {
-    throw new SyntaxError(`Error in pattern '${this.pattern}': ${msg}`);
+    throw new SyntaxError(`Error in JS RE '${this.pattern}': ${msg}`);
   }
 
   /**

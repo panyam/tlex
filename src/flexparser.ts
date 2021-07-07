@@ -41,7 +41,7 @@ export class RegexParser {
   }
 
   throwError(pattern: Tape, msg: string): void {
-    this.throwError(pattern, `Error in pattern '${pattern.input}': ${msg}`);
+    this.throwError(pattern, `Error in Flex RE '${pattern.input}': ${msg}`);
   }
 
   parse(pattern: Tape, ignoreSpaces = false, obCount = 0): Regex {
