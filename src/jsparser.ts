@@ -35,6 +35,10 @@ export class RegexParser {
     return r;
   }
 
+  throwError(msg: string): void {
+    throw new SyntaxError(`Error in pattern '${this.pattern}': ${msg}`);
+  }
+
   /**
    * Creates a regex tree given a string
    */
@@ -57,7 +61,7 @@ export class RegexParser {
         }
         const refNum = parseInt(num);
         if (refNum > this.counter.current + 1) {
-          throw new SyntaxError("Invalid reference: " + refNum);
+          this.throwError("Invalid reference: " + refNum);
         }
         stack.push(new BackNumRef(refNum));
       } else if (currCh == "\\" && pattern[curr + 1] == "k" && pattern[curr + 2] == "<") {
@@ -65,10 +69,10 @@ export class RegexParser {
         curr += 3;
         let gtPos = curr;
         while (gtPos <= end && pattern[gtPos] != ">") gtPos++;
-        if (gtPos > end) throw new SyntaxError("Expected '>' found EOI");
+        if (gtPos > end) this.throwError("Expected '>' found EOI");
         const name = pattern.substring(curr, gtPos);
         if (name.trim() == "") {
-          throw new SyntaxError("Expected name");
+          this.throwError("Expected name");
         }
         stack.push(new BackNamedRef(name));
         curr = gtPos + 1;
@@ -79,7 +83,7 @@ export class RegexParser {
           if (pattern[clPos] == "\\") clPos++;
           clPos++;
         }
-        if (clPos > end) throw new SyntaxError("Expected ']' found EOI");
+        if (clPos > end) this.throwError("Expected ']' found EOI");
         stack.push(this.parseCharGroup(curr + 1, clPos - 1));
         curr = clPos + 1;
       } else if (currCh == "^") {
@@ -100,7 +104,7 @@ export class RegexParser {
       } else if (currCh == "(") {
         curr = this.parseGroup(stack, curr, end);
       } else if (currCh == ")" || currCh == "]" || currCh == "}") {
-        throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
+        this.throwError(`Unmatched ${currCh}.  Try using \\${currCh}`);
       } else if (pattern[curr] == "*" || pattern[curr] == "?" || pattern[curr] == "+" || pattern[curr] == "{") {
         curr = this.parseQuant(stack, curr, end);
       } else {
@@ -111,7 +115,7 @@ export class RegexParser {
       }
     }
     if (stack.length <= 0) {
-      // throw new SyntaxError(`Invalid Regex (${curr} - ${end}): ${pattern}`);
+      // this.throwError(`Invalid Regex (${curr} - ${end}): ${pattern}`);
     }
     if (stack.length == 1) return stack[0];
     return new Cat(...stack);
@@ -128,7 +132,7 @@ export class RegexParser {
       if (pattern[clPos] == "\\") clPos++;
       clPos++;
     }
-    if (clPos > end) throw new SyntaxError("Expected ')' found EOI");
+    if (clPos > end) this.throwError("Expected ')' found EOI");
 
     curr++;
     if (pattern[curr] == "?") {
@@ -162,7 +166,7 @@ export class RegexParser {
         if (after) {
           // reduce everything "until now" and THEN apply
           if (stack.length == 0) {
-            // throw new SyntaxError("LookAhead condition cannot be before empty rule");
+            // this.throwError("LookAhead condition cannot be before empty rule");
           }
           // const endIndex = stack.length - 1;
           // stack[endIndex] = new LookAhead(stack[endIndex], cond, neg);
@@ -228,15 +232,15 @@ export class RegexParser {
         } else if (i <= end) {
           const [endch, nchars] = this.parseChar(i, end);
           if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
-            throw new SyntaxError("Char range cannot start or end in a char class");
+            this.throwError("Char range cannot start or end in a char class");
           }
           if (endch.args[0] < currch.args[0]) {
-            throw new SyntaxError("End cannot be less than start");
+            this.throwError("End cannot be less than start");
           }
           out.push(CharGroup.Range(currch, endch));
           i += nchars;
         } else {
-          throw new SyntaxError("Unterminated char class");
+          this.throwError("Unterminated char class");
         }
       } else {
         out.push(currch);
@@ -262,7 +266,7 @@ export class RegexParser {
   parsePropertyEscape(index = 0, end = 0): [LeafChar, number] {
     const pattern = this.pattern;
     if (pattern[index] + 1 != "{") {
-      throw new SyntaxError("Invalid property escape");
+      this.throwError("Invalid property escape");
     }
     index += 2;
     let clEnd = index;
@@ -272,7 +276,7 @@ export class RegexParser {
       clEnd++;
     }
     if (clEnd > end) {
-      throw new SyntaxError("Invalid property escape");
+      this.throwError("Invalid property escape");
     }
     // see if this is a lone property escape
     const propStr = pattern.substring(index, clEnd);
@@ -280,7 +284,7 @@ export class RegexParser {
     let propValue = propStr;
     if (eqPos >= 0) {
       const parts = propStr.split("=");
-      if (parts.length != 2) throw new SyntaxError("Invalid property escape");
+      if (parts.length != 2) this.throwError("Invalid property escape");
       propName = parts[0].trim();
       propValue = parts[1].trim();
     }
@@ -293,7 +297,7 @@ export class RegexParser {
     // escape char
     index++;
     if (index > end) {
-      throw new SyntaxError("Encounted unexpected end of input after \\");
+      this.throwError("Encounted unexpected end of input after \\");
     }
     const ch = pattern[index];
     if ((this.unicode && ch == "p") || ch == "P") {
@@ -316,7 +320,7 @@ export class RegexParser {
         return [LeafChar.Class(CharClassType.SPACES, true), 2];
       case "0":
         if (pattern[index + 1] >= "0" && pattern[index + 1] <= "9" && this.unicode) {
-          throw new SyntaxError("Invalid decimal escape");
+          this.throwError("Invalid decimal escape");
         }
         return [LeafChar.Single("\0"), 2];
       case "r":
@@ -335,7 +339,7 @@ export class RegexParser {
         // ControlEscape:
         // https://262.ecma-international.org/5.1/#sec-15.10.2.10
         if (this.unicode || index >= end) {
-          throw new SyntaxError(`Invalid char sequence at ${index}, ${end}`);
+          this.throwError(`Invalid char sequence at ${index}, ${end}`);
         }
         const next = pattern.charCodeAt(index + 1) % 32;
         return [LeafChar.Single(next), 3];
@@ -343,7 +347,7 @@ export class RegexParser {
         // 2 digit hex digits
         index++;
         if (index >= end) {
-          throw new SyntaxError(`Invalid hex sequence at ${index}, ${end}`);
+          this.throwError(`Invalid hex sequence at ${index}, ${end}`);
         }
         const hexSeq = pattern.substring(index, index + 2);
         const hexVal = parseInt(hexSeq, 16);
@@ -353,12 +357,12 @@ export class RegexParser {
         index++;
         // 4 digit hex digits for unicode
         if (index > end - 3) {
-          throw new SyntaxError(`Invalid unicode sequence at ${index}`);
+          this.throwError(`Invalid unicode sequence at ${index}`);
         }
         const ucodeSeq = pattern.substring(index, index + 4);
         const ucodeVal = parseInt(ucodeSeq, 16);
         if (isNaN(ucodeVal)) {
-          throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
+          this.throwError(`Invalid unicode sequence: '${ucodeSeq}'`);
         }
         return [LeafChar.Single(ucodeVal), 6];
       case "^": // List of special operators that need to be escaped
@@ -380,7 +384,7 @@ export class RegexParser {
       case "/":
         return [LeafChar.Single(ch), 2];
       default:
-        if (this.unicode) throw new SyntaxError("Invalid escape character: " + ch);
+        if (this.unicode) this.throwError("Invalid escape character: " + ch);
         return [LeafChar.Single(ch), 2];
     }
   }
@@ -403,7 +407,7 @@ export class RegexParser {
       // find the next "}"
       const clPos = pattern.indexOf("}", curr + 1);
       if (clPos <= curr || clPos > end) {
-        throw new SyntaxError("Unexpected end of input while looking for '}'");
+        this.throwError("Unexpected end of input while looking for '}'");
       }
       const sub = pattern.substring(curr + 1, clPos).trim();
       const parts = sub.split(",").map((x) => parseInt(x.trim()));
@@ -414,7 +418,7 @@ export class RegexParser {
             stack.push(new Var(sub.trim()));
             return curr + 1;
           } else {
-            throw new SyntaxError(`Invalid quantifier: /${sub}/`);
+            this.throwError(`Invalid quantifier: /${sub}/`);
           }
         }
         minCount = maxCount = parts[0];
@@ -422,26 +426,26 @@ export class RegexParser {
         minCount = isNaN(parts[0]) ? 0 : parts[0];
         maxCount = isNaN(parts[1]) ? TSU.Constants.MAX_INT : parts[1];
         if (minCount > maxCount) {
-          throw new SyntaxError(`Invalid Quant /${sub}/: Min must be <= Max`);
+          this.throwError(`Invalid Quant /${sub}/: Min must be <= Max`);
         }
       } else if (parts.length > 2) {
-        throw new SyntaxError(`Invalid quantifier spec: "{${sub}}"`);
+        this.throwError(`Invalid quantifier spec: "{${sub}}"`);
       }
     } else {
       throw new Error("Here?");
     }
     // Quantifiers
     if (stack.length <= 0) {
-      throw new SyntaxError("Quantifier cannot appear before an expression");
+      this.throwError("Quantifier cannot appear before an expression");
     }
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
     const last = stack[stack.length - 1];
     if (last.tag == RegexType.QUANT && (lastCh == "*" || lastCh == "?" || lastCh == "+" || lastCh == "}")) {
-      throw new SyntaxError("Nothing to repeat");
+      this.throwError("Nothing to repeat");
     }
     if (this.unicode && (last.tag == RegexType.LOOK_AHEAD || last.tag == RegexType.LOOK_BACK)) {
-      throw new SyntaxError("Cannot have quantifier on assertion in unicode mode");
+      this.throwError("Cannot have quantifier on assertion in unicode mode");
     }
     const quant = (stack[stack.length - 1] = new Quant(last));
     quant.minCount = minCount;

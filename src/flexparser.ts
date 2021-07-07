@@ -40,6 +40,10 @@ export class RegexParser {
     return r;
   }
 
+  throwError(pattern: Tape, msg: string): void {
+    this.throwError(pattern, `Error in pattern '${pattern.input}': ${msg}`);
+  }
+
   parse(pattern: Tape, ignoreSpaces = false, obCount = 0): Regex {
     const stack: Regex[] = [];
 
@@ -73,7 +77,7 @@ export class RegexParser {
         // Read everything until a */
         while (pattern.currCh != "*" || pattern.nextCh != "/") {
           if (!pattern.hasMore) {
-            throw new SyntaxError("Unterminated comment");
+            this.throwError(pattern, "Unterminated comment");
           }
           pattern.advance();
         }
@@ -135,12 +139,12 @@ export class RegexParser {
         }
       } else if (currCh == ")") {
         if (obCount == 0) {
-          throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
+          this.throwError(pattern, `Unmatched ${currCh}.  Try using \\${currCh}`);
         }
         // stop here so we can recurse up
         break;
       } else if (currCh == "]" || currCh == "}") {
-        throw new SyntaxError(`Unmatched ${currCh}.  Try using \\${currCh}`);
+        this.throwError(pattern, `Unmatched ${currCh}.  Try using \\${currCh}`);
       } else if (advanceIf(pattern, "/")) {
         // LookAheads
         const prev = this.reduceLeft(stack);
@@ -151,7 +155,7 @@ export class RegexParser {
         // raw string
         while (pattern.currCh != '"') {
           if (!pattern.hasMore) {
-            throw new SyntaxError("Unterminated string");
+            this.throwError(pattern, "Unterminated string");
           }
           stack.push(this.parseChar(pattern));
         }
@@ -190,7 +194,7 @@ export class RegexParser {
         pattern.advance();
       }
       if (!pattern.hasMore) {
-        throw new SyntaxError("Invalid property escape");
+        this.throwError(pattern, "Invalid property escape");
       }
       // see if this is a lone property escape
       p1 = p1.trim();
@@ -204,7 +208,7 @@ export class RegexParser {
         minCount = isNaN(part1) ? 0 : part1;
         maxCount = isNaN(part2) ? TSU.Constants.MAX_INT : part2;
         if (minCount > maxCount) {
-          throw new SyntaxError(`Invalid Quant /${p1},${p2}/: Min must be <= Max`);
+          this.throwError(pattern, `Invalid Quant /${p1},${p2}/: Min must be <= Max`);
         }
       } else {
         if (isNaN(part1)) {
@@ -213,7 +217,7 @@ export class RegexParser {
             // nothing more
             return;
           } else {
-            throw new SyntaxError(`Invalid quantifier: /${p1}/`);
+            this.throwError(pattern, `Invalid quantifier: /${p1}/`);
           }
           minCount = maxCount = 1;
         } else {
@@ -221,11 +225,11 @@ export class RegexParser {
         }
       }
     } else {
-      throw new SyntaxError("Expected '{', '*', '?' or '+', Found: " + pattern.currCh);
+      this.throwError(pattern, "Expected '{', '*', '?' or '+', Found: " + pattern.currCh);
     }
     // Quantifiers
     if (stack.length <= 0) {
-      throw new SyntaxError("Quantifier cannot appear before an expression");
+      this.throwError(pattern, "Quantifier cannot appear before an expression");
     }
     // no optimizations - convert the last one into a Quantifier
     // and we will start to fill in the quantities and greediness
@@ -265,16 +269,16 @@ export class RegexParser {
           } else {
             const endch = this.parseChar(pattern);
             if (currch.op != CharType.SingleChar || endch.op != CharType.SingleChar) {
-              throw new SyntaxError("Char range cannot start or end in a char class");
+              this.throwError(pattern, "Char range cannot start or end in a char class");
             }
             if (endch.args[0] < currch.args[0]) {
-              throw new SyntaxError("End cannot be less than start");
+              this.throwError(pattern, "End cannot be less than start");
             }
             // currch.end = endch.start;
             out.push(CharGroup.Range(currch, endch));
           }
         } else {
-          throw new SyntaxError("Unterminated char class");
+          this.throwError(pattern, "Unterminated char class");
         }
       } else {
         out.push(currch);
@@ -314,7 +318,7 @@ export class RegexParser {
       pattern.advance();
     }
     if (!pattern.hasMore) {
-      throw new SyntaxError("Invalid property escape");
+      this.throwError(pattern, "Invalid property escape");
     }
     // see if this is a lone property escape
     propName = propName.trim();
@@ -332,7 +336,7 @@ export class RegexParser {
     TSU.assert(advanceIf(pattern, "\\"), "Expected '\\'");
     // escape char
     if (!pattern.hasMore) {
-      throw new SyntaxError("Encounted unexpected end of input after \\");
+      this.throwError(pattern, "Encounted unexpected end of input after \\");
     }
     if (advanceIf(pattern, "w")) {
       return LeafChar.Class(CharClassType.WORD_CHAR);
@@ -369,7 +373,7 @@ export class RegexParser {
     } else if (advanceIf(pattern, "x")) {
       // 2 digit hex digits
       if (!pattern.hasMore) {
-        throw new SyntaxError(`Invalid hex sequence at ${pattern.index}`);
+        this.throwError(pattern, `Invalid hex sequence at ${pattern.index}`);
       }
       const hexSeq = pattern.currCh + pattern.nextCh;
       const hexVal = parseInt(hexSeq, 16);
@@ -379,12 +383,12 @@ export class RegexParser {
     } else if (advanceIf(pattern, "u")) {
       // 4 digit hex digits for unicode
       if (pattern.index >= pattern.input.length - 3) {
-        throw new SyntaxError(`Invalid unicode sequence at ${pattern.index}`);
+        this.throwError(pattern, `Invalid unicode sequence at ${pattern.index}`);
       }
       const ucodeSeq = pattern.substring(pattern.index, pattern.index + 4);
       const ucodeVal = parseInt(ucodeSeq, 16);
       if (isNaN(ucodeVal)) {
-        throw new SyntaxError(`Invalid unicode sequence: '${ucodeSeq}'`);
+        this.throwError(pattern, `Invalid unicode sequence: '${ucodeSeq}'`);
       }
       pattern.advance(4);
       return LeafChar.Single(ucodeVal);
