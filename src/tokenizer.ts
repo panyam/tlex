@@ -80,14 +80,14 @@ export class Tokenizer {
     return this.allRules.find((r) => r.tag == value) || null;
   }
 
-  add(pattern: string | RegExp | Regex, config?: RuleConfig, onMatch?: RuleMatchHandler): this {
+  add(pattern: string | RegExp | Regex, config?: RuleConfig, onMatch: RuleMatchHandler | null = null): this {
     return this.addRule(Builder.build(pattern, config), onMatch);
   }
 
-  addRule(rule: Rule, onMatch?: RuleMatchHandler): this {
+  addRule(rule: Rule, onMatch: null | RuleMatchHandler = null): this {
     rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);
-    this.onMatchHandlers.push(onMatch || null);
+    this.onMatchHandlers.push(onMatch);
     this._vm = null;
     return this;
   }
