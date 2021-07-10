@@ -19,9 +19,7 @@ export class UnexpectedTokenError extends ParseError {
   constructor(foundToken: TSU.Nullable<Token>, ...expectedTokens: Token[]) {
     super(
       foundToken?.start || 0,
-      `Found Token: ${foundToken?.tag || "EOF"} (${foundToken?.value || ""}), Expected: ${expectedTokens
-        .map((t) => t.tag)
-        .join(", ")}`,
+      `Found Token: ${foundToken?.tag || "EOF"} (${foundToken?.value || ""}), Expected: ${expectedTokens.join(", ")}`,
     );
     this.foundToken = foundToken;
     this.expectedTokens = expectedTokens;
