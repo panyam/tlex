@@ -27,6 +27,6 @@ describe("VM Tests", () => {
     const re = /^[ \t]*>(.*)$/m;
     expectMatchStrings(execute({}, "> hello world", re), ["> hello world", 0]);
     expectMatchStrings(execute({}, " > hello world", re), [" > hello world", 0]);
-    expectMatchStrings(execute({}, " > hello\nworld", re), [" > hello world", 0]);
+    expectMatchStrings(execute({}, " > hello\nworld", re), [" > hello", 0]);
   });
 });
