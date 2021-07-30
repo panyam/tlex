@@ -24,8 +24,9 @@ describe("VM Tests", () => {
   });
 
   test("Test V4 Syntax Single Line Raw Literal", () => {
-    const re = "^[ \t]*>(.*)$";
+    const re = /^[ \t]*>(.*)$/m;
     expectMatchStrings(execute({}, "> hello world", re), ["> hello world", 0]);
     expectMatchStrings(execute({}, " > hello world", re), [" > hello world", 0]);
+    expectMatchStrings(execute({}, " > hello\nworld", re), [" > hello world", 0]);
   });
 });
