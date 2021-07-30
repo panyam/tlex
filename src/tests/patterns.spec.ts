@@ -22,4 +22,10 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, '"abcdefa"', '"(.*(?<!a))"'));
     expectMatchStrings(execute({}, '"abcdefab"', '"(.*(?<!a))"'), ['"abcdefab"', 0]);
   });
+
+  test("Test V4 Syntax Single Line Raw Literal", () => {
+    const re = "^[ \t]*>(.*)$";
+    expectMatchStrings(execute({}, "> hello world", re), ["> hello world", 0]);
+    expectMatchStrings(execute({}, " > hello world", re), [" > hello world", 0]);
+  });
 });
