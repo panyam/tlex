@@ -12,7 +12,7 @@ function expectMatchStrings(found: Token[], ...expected: [string, number][]): To
 }
 
 const JS_STRING = samples.SIMPLE_JS_STRING();
-const JS_REGEXP = samples.JS_REGEXP("native");
+const JS_REGEXP = /\/(.+?(?<!\\))\/([imus]*)/;
 const JS_REGEX_WITH_NEG_LB = samples.JS_REGEXP("with_lb");
 const JS_REGEX_WITHOUT_NEG_LB = samples.JS_REGEXP("without_lb");
 
