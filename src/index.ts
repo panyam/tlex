@@ -10,3 +10,4 @@ export * as JS from "./jsparser";
 export * as Flex from "./flexparser";
 export * as Builder from "./builder";
 export * as Misc from "./helpers";
+export * as Samples from "./samples";
