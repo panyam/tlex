@@ -1,3 +1,4 @@
+import * as TSU from "@panyam/tsutils";
 import { Regex } from "./core";
 import { flexRE } from "./builder";
 
@@ -7,6 +8,17 @@ export const DOUBLE_QUOTE_STRING = (): Regex => flexRE`[']([^'\\\n]|\\.|\\\n)*['
 export const SIMPLE_JS_STRING = (): string => '"(.*?(?<!\\\\))"';
 
 // Disabled as Safari will fail this one
-export const JS_REGEXP = (): RegExp => /\/(.+?(?<!\\))\/([imus]*)/;
-export const JS_REGEX_WITH_NEG_LB = (): string => String.raw`/(.+?(?<!\\))/([imus]*)`;
-export const JS_REGEX_WITHOUT_NEG_LB = (): string => String.raw`/([^'\\/]|\\.|\\/)*/([imus]*)`;
+export function JS_REGEXP(mode: "native" | "with_lb" | "without_lb" = "native") {
+  if (mode == "native") {
+    if (!TSU.Browser.IS_SAFARI()) {
+      return /\/(.+?(?<!\\))\/([imus]*)/;
+    } else {
+      return String.raw`/([^'\\/]|\\.|\\/)*/([imus]*)`;
+    }
+  } else if (mode == "without_lb") {
+    return String.raw`/([^'\\/]|\\.|\\/)*/([imus]*)`;
+  } else {
+    // without negative lb
+    return String.raw`/(.+?(?<!\\))/([imus]*)`;
+  }
+}
