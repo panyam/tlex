@@ -13,8 +13,8 @@ function expectMatchStrings(found: Token[], ...expected: [string, number][]): To
 
 const JS_STRING = samples.SIMPLE_JS_STRING;
 const JS_REGEXP = /\/(.+?(?<!\\))\/([imus]*)/;
-const JS_REGEX_WITH_NEG_LB = samples.JS_REGEX_WITH_LB;
-const JS_REGEX_WITHOUT_NEG_LB = samples.JS_REGEX;
+const JS_REGEX_WITH_NEG_LB = samples.JS_REGEX;
+const JS_REGEX_WITHOUT_NEG_LB = samples.JS_REGEX_WITHOUT_LB;
 
 describe("VM Tests", () => {
   test("Test STRING", () => {
