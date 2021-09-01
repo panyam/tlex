@@ -1,7 +1,6 @@
-import * as fs from "fs";
-import * as TSU from "@panyam/tsutils";
 import { Token } from "../tokenizer";
 import { execute } from "./utils";
+import * as samples from "../samples";
 
 function expectMatchStrings(found: Token[], ...expected: [string, number][]): Token[] {
   const f2 = found.map((f) => [f.value, f.matchIndex]);
@@ -9,9 +8,14 @@ function expectMatchStrings(found: Token[], ...expected: [string, number][]): To
   return found;
 }
 
+const JS_STRING = samples.SIMPLE_JS_STRING();
+const JS_REGEXP = samples.JS_REGEXP();
+const JS_REGEX_WITH_NEG_LB = samples.JS_REGEX_WITH_NEG_LB();
+const JS_REGEX_WITHOUT_NEG_LB = samples.JS_REGEX_WITHOUT_NEG_LB();
+
 describe("VM Tests", () => {
   test("Test STRING", () => {
-    const re = '"(.*?(?<!\\\\))"';
+    const re = JS_STRING;
     expectMatchStrings(execute({}, '"\\n"', re), ['"\\n"', 0]);
     expectMatchStrings(execute({}, '"\\""', re), ['"\\""', 0]);
     //  /"(.*(?<!abc))"/.exec('"asfzcxvadf"');
@@ -28,5 +32,30 @@ describe("VM Tests", () => {
     expectMatchStrings(execute({}, "> hello world", re), ["> hello world", 0]);
     expectMatchStrings(execute({}, " > hello world", re), [" > hello world", 0]);
     expectMatchStrings(execute({}, " > hello\nworld", re), [" > hello", 0]);
+  });
+
+  // Testing regexes for javascript regexes!
+  // With and without negative lookbacks as Safari does not support negative look-behind
+  test("Test JS Regexes", () => {
+    let pattern = "/hello/";
+    let expected: [string, number][] = [["/hello/", 0]];
+    expectMatchStrings(execute({}, pattern, JS_REGEXP), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITH_NEG_LB), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITHOUT_NEG_LB), ...expected);
+
+    pattern = "/hello/imu";
+    expected = [["/hello/imu", 0]];
+    expectMatchStrings(execute({}, pattern, JS_REGEXP), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITH_NEG_LB), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITHOUT_NEG_LB), ...expected);
+
+    pattern = "/a*.\\x\\//imu/abc/";
+    expected = [
+      ["/a*.\\x\\//imu", 0],
+      ["/abc/", 0],
+    ];
+    expectMatchStrings(execute({}, pattern, JS_REGEXP), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITH_NEG_LB), ...expected);
+    expectMatchStrings(execute({}, pattern, JS_REGEX_WITHOUT_NEG_LB), ...expected);
   });
 });
