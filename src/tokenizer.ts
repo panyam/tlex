@@ -161,7 +161,7 @@ export type NextTokenFunc = (tape: Tape, owner: any) => TSU.Nullable<Token>;
 export class TokenBuffer {
   buffer: Token[] = [];
 
-  constructor(public readonly nextToken: NextTokenFunc, public readonly owner: any) {}
+  constructor(public readonly nextToken: NextTokenFunc, public tokenizerContext: any) {}
 
   next(tape: Tape): TSU.Nullable<Token> {
     const out = this.peek(tape);
@@ -176,7 +176,7 @@ export class TokenBuffer {
    */
   peek(tape: Tape, nth = 0): TSU.Nullable<Token> {
     while (this.buffer.length <= nth) {
-      const tok = this.nextToken(tape, this.owner);
+      const tok = this.nextToken(tape, this.tokenizerContext);
       if (tok == null) return null;
       this.buffer.push(tok);
     }
