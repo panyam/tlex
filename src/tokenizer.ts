@@ -152,18 +152,16 @@ export class Tokenizer {
   }
 }
 
-export type NextTokenFunc = (tape: Tape) => TSU.Nullable<Token>;
+export type NextTokenFunc = (tape: Tape, owner: any) => TSU.Nullable<Token>;
+
 /**
  * A wrapper on a tokenizer for providing features like k-lookahead, token
  * insertion, rewinding, expectation enforcement etc.
  */
 export class TokenBuffer {
-  nextToken: NextTokenFunc;
   buffer: Token[] = [];
 
-  constructor(nextToken: NextTokenFunc) {
-    this.nextToken = nextToken;
-  }
+  constructor(public readonly nextToken: NextTokenFunc, public readonly owner: any) {}
 
   next(tape: Tape): TSU.Nullable<Token> {
     const out = this.peek(tape);
@@ -178,7 +176,7 @@ export class TokenBuffer {
    */
   peek(tape: Tape, nth = 0): TSU.Nullable<Token> {
     while (this.buffer.length <= nth) {
-      const tok = this.nextToken(tape);
+      const tok = this.nextToken(tape, this.owner);
       if (tok == null) return null;
       this.buffer.push(tok);
     }
