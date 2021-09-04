@@ -7,7 +7,7 @@ import { ParseError, UnexpectedTokenError } from "./errors";
 import * as Builder from "./builder";
 
 export type TokenType = number | string;
-export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any) => any;
+export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any, owner: any) => any;
 
 export class Token {
   private static idCounter = 0;
@@ -125,7 +125,7 @@ export class Tokenizer {
   }
 
   idCounter = 0;
-  next(tape: Tape): Token | null {
+  next(tape: Tape, owner: any): Token | null {
     const m = this.vm.match(tape);
     if (m == null) {
       if (tape.hasMore) {
@@ -142,10 +142,10 @@ export class Tokenizer {
       onMatch = this.matchHandlersByValue[rule.tag];
     }
     if (onMatch) {
-      token = onMatch(rule, tape, token);
+      token = onMatch(rule, tape, token, owner);
       if (token == null) {
         // null return to skip tokens
-        return this.next(tape);
+        return this.next(tape, owner);
       }
     }
     return token;

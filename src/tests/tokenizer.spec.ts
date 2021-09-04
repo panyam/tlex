@@ -1,6 +1,6 @@
 const util = require("util");
 import { InstrDebugValue } from "../vm";
-import { Tape, TapeHelper } from "../tape";
+import { Tape } from "../tape";
 import { Tokenizer, Token } from "../tokenizer";
 
 export enum TokenType {
@@ -109,7 +109,7 @@ function tokenize(input: string, debug = false): any[] {
     */
   }
   const tape = new Tape(input);
-  let next = t.next(tape);
+  let next = t.next(tape, null);
   while (next) {
     tokens.push(next);
     found.push({
@@ -117,7 +117,7 @@ function tokenize(input: string, debug = false): any[] {
       value: next.value,
       range: [next.start, next.end],
     });
-    next = t.next(tape);
+    next = t.next(tape, null);
   }
   if (debug) {
     console.log(
