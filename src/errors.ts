@@ -5,7 +5,7 @@ export class TokenizerError extends Error {
   readonly name: string = "TokenizerError";
 
   constructor(public offset: number, message: string) {
-    super(`Error at (${offset}): ${message}`);
+    super(`Tokenizer Error at (${offset}). ${message}`);
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
