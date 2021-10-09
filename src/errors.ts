@@ -1,27 +1,39 @@
 import * as TSU from "@panyam/tsutils";
 import { Token } from "./tokenizer";
 
-export class ParseError extends Error {
-  index: number;
-  readonly name: string = "ParseError";
+export class TokenizerError extends Error {
+  readonly name: string = "TokenizerError";
 
-  constructor(index: number, message: string) {
-    super(`Parse Error at (${index}): ${message}`);
-    this.index = index;
+  constructor(public offset: number, public message: string) {
+    super(`Error at (${offset}): ${message}`);
   }
 }
 
-export class UnexpectedTokenError extends ParseError {
-  foundToken: TSU.Nullable<Token>;
-  expectedTokens: Token[];
-  readonly name: string = "UnexpectedTokenError";
+export class UnexpectedCharacterError extends TokenizerError {
+  readonly name: string = "UnexpectedCharacterError";
 
-  constructor(foundToken: TSU.Nullable<Token>, ...expectedTokens: Token[]) {
+  constructor(public offset: number, public foundChar: string) {
+    super(offset, `Unexpected character ('${foundChar}')`);
+  }
+}
+
+export class UnexpectedLexemeError extends TokenizerError {
+  readonly name: string = "UnexpectedLexemeError";
+
+  constructor(public offset: number, public endOffset: number) {
+    super(offset, `Unexpected lexeme until ${endOffset}`);
+  }
+}
+
+export class UnexpectedTokenError extends TokenizerError {
+  readonly name: string = "UnexpectedTokenError";
+  expectedTokens: Token[];
+
+  constructor(public foundToken: TSU.Nullable<Token>, ...expectedTokens: Token[]) {
     super(
       foundToken?.start || 0,
       `Found Token: ${foundToken?.tag || "EOF"} (${foundToken?.value || ""}), Expected: ${expectedTokens.join(", ")}`,
     );
-    this.foundToken = foundToken;
     this.expectedTokens = expectedTokens;
   }
 }

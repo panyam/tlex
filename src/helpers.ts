@@ -1,7 +1,7 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape, TapeHelper } from "./tape";
 import { Token, TokenType } from "./tokenizer";
-import { ParseError } from "./errors";
+import { TokenizerError } from "./errors";
 
 /**
  * A simple tokenize that matches the input to a set of matchers one by one.
@@ -74,6 +74,6 @@ export class SimpleTokenizer {
     }
     // Fall through - error char found
     // throw new Error(`Line ${this.tape.currLine}, Col ${this.tape.currCol} - Invalid character: ${this.tape.currCh}`);
-    throw new ParseError(this.tape.index, `Invalid character: [${this.tape.currCh}]`);
+    throw new TokenizerError(this.tape.index, `Invalid character: [${this.tape.currCh}]`);
   }
 }

@@ -411,6 +411,7 @@ export class VM {
   match(tape: Tape): Match | null {
     // this.gen = 0; this.genForOffset = {};
     if (this.end < this.start) return null;
+    const startIndex = tape.index;
     this.startMatching(tape);
     let bestMatch: TSU.Nullable<Match> = null;
     while (this.currThreads.length > 0) {

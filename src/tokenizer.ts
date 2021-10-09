@@ -3,7 +3,7 @@ import { Regex, Union, Rule, RuleConfig } from "./core";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
-import { ParseError, UnexpectedTokenError } from "./errors";
+import { TokenizerError, UnexpectedTokenError, UnexpectedCharacterError, UnexpectedLexemeError } from "./errors";
 import * as Builder from "./builder";
 
 export type TokenType = number | string;
@@ -126,13 +126,18 @@ export class Tokenizer {
 
   idCounter = 0;
   next(tape: Tape, owner: any): Token | null {
+    if (!tape.hasMore) {
+      return null;
+    }
+    const startIndex = tape.index;
+    const startChar = tape.currCh;
     const m = this.vm.match(tape);
     if (m == null) {
-      if (tape.hasMore) {
-        throw new Error(`Invalid character found at offset (${tape.index}): '${tape.currCh}'`);
+      if (tape.index == startIndex + 1) {
+        throw new UnexpectedCharacterError(startIndex, startChar);
+      } else {
+        throw new UnexpectedLexemeError(startIndex, tape.index);
       }
-      // we have an EOF
-      return null;
     }
     const rule = this.allRules[m.matchIndex];
     let token = toToken(rule.tag, m, tape);
@@ -144,7 +149,7 @@ export class Tokenizer {
     if (onMatch) {
       token = onMatch(rule, tape, token, owner);
       if (token == null) {
-        // null return to skip tokens
+        // null is returned by onMatch to skip tokens
         return this.next(tape, owner);
       }
     }
@@ -206,7 +211,7 @@ export class TokenBuffer {
         return null;
       }
     } else if (ensure) {
-      throw new ParseError(-1, "Unexpected end of input.");
+      throw new TokenizerError(-1, "Unexpected end of input.");
     }
     return token;
   }

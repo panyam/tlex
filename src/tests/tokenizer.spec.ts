@@ -2,6 +2,7 @@ const util = require("util");
 import { InstrDebugValue } from "../vm";
 import { Tape } from "../tape";
 import { Tokenizer, Token } from "../tokenizer";
+import { UnexpectedCharacterError } from "../errors";
 
 export enum TokenType {
   STRING = "STRING",
@@ -217,5 +218,33 @@ describe("Tokenizer Tests", () => {
       { tag: "PCT_IDENT", value: "skip", range: [94, 99] },
       { tag: "REGEX", value: '"\\/*"[.\\n]*?"*\\/"', range: [118, 137] },
     ]);
+  });
+});
+
+describe("Tokenizer Error Tests", () => {
+  test("Testing Invalid Char", () => {
+    try {
+      const tokens = tokenize("a -> #");
+      expect(tokens).toEqual([]);
+    } catch (err: any) {
+      if (err.name != "UnexpectedCharacterError") {
+        throw err;
+      }
+      expect(err.offset).toEqual(5);
+      expect(err.foundChar).toEqual("#");
+    }
+  });
+
+  test("Testing Unterminated String", () => {
+    try {
+      const tokens = tokenize('a -> "Hello...');
+      expect(tokens).toEqual([]);
+    } catch (err: any) {
+      if (err.name != "UnexpectedLexemeError") {
+        throw err;
+      }
+      expect(err.offset).toEqual(5);
+      expect(err.endOffset).toEqual(14);
+    }
   });
 });
