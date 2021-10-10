@@ -3,7 +3,7 @@ import { Regex, Union, Rule, RuleConfig } from "./core";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
 import { Tape } from "./tape";
-import { TokenizerError, UnexpectedTokenError, UnexpectedCharacterError, UnexpectedLexemeError } from "./errors";
+import { TokenizerError, UnexpectedTokenError } from "./errors";
 import * as Builder from "./builder";
 
 export type TokenType = number | string;
@@ -134,9 +134,9 @@ export class Tokenizer {
     const m = this.vm.match(tape);
     if (m == null) {
       if (tape.index == startIndex + 1) {
-        throw new UnexpectedCharacterError(startIndex, startChar);
+        throw new TokenizerError(startIndex, 1, "UnexpectedCharacter", startChar);
       } else {
-        throw new UnexpectedLexemeError(startIndex, tape.index);
+        throw new TokenizerError(startIndex, tape.index - startIndex, "UnexpectedLexeme");
       }
     }
     const rule = this.allRules[m.matchIndex];
@@ -211,7 +211,7 @@ export class TokenBuffer {
         return null;
       }
     } else if (ensure) {
-      throw new TokenizerError(-1, "Unexpected end of input.");
+      throw new TokenizerError(-1, 0, "UnexpectedEndOfInput");
     }
     return token;
   }

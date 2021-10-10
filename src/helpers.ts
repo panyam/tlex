@@ -74,6 +74,6 @@ export class SimpleTokenizer {
     }
     // Fall through - error char found
     // throw new Error(`Line ${this.tape.currLine}, Col ${this.tape.currCol} - Invalid character: ${this.tape.currCh}`);
-    throw new TokenizerError(this.tape.index, `Invalid character: [${this.tape.currCh}]`);
+    throw new TokenizerError(this.tape.index, 1, "InvalidCharacter", this.tape.currCh);
   }
 }

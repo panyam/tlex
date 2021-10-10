@@ -2,7 +2,7 @@ const util = require("util");
 import { InstrDebugValue } from "../vm";
 import { Tape } from "../tape";
 import { Tokenizer, Token } from "../tokenizer";
-import { UnexpectedCharacterError } from "../errors";
+import { TokenizerError } from "../errors";
 
 export enum TokenType {
   STRING = "STRING",
@@ -227,11 +227,11 @@ describe("Tokenizer Error Tests", () => {
       const tokens = tokenize("a -> #");
       expect(tokens).toEqual([]);
     } catch (err: any) {
-      if (err.name != "UnexpectedCharacterError") {
+      if (err.name != "TokenizerError") {
         throw err;
       }
       expect(err.offset).toEqual(5);
-      expect(err.foundChar).toEqual("#");
+      expect(err.value).toEqual("#");
     }
   });
 
@@ -240,11 +240,11 @@ describe("Tokenizer Error Tests", () => {
       const tokens = tokenize('a -> "Hello...');
       expect(tokens).toEqual([]);
     } catch (err: any) {
-      if (err.name != "UnexpectedLexemeError") {
+      if (err.name != "TokenizerError") {
         throw err;
       }
       expect(err.offset).toEqual(5);
-      expect(err.endOffset).toEqual(14);
+      expect(err.length).toEqual(9);
     }
   });
 });
