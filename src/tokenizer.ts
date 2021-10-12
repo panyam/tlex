@@ -134,9 +134,14 @@ export class Tokenizer {
     const m = this.vm.match(tape);
     if (m == null) {
       if (tape.index == startIndex + 1) {
-        throw new TokenizerError(startIndex, 1, "UnexpectedCharacter", startChar);
+        throw new TokenizerError(`Unexpected Character: ${startChar}`, startIndex, 1, "UnexpectedCharacter", startChar);
       } else {
-        throw new TokenizerError(startIndex, tape.index - startIndex, "UnexpectedLexeme");
+        throw new TokenizerError(
+          `Unexpected Symbol: ${tape.substring(startIndex, tape.index)}`,
+          startIndex,
+          tape.index - startIndex,
+          "UnexpectedLexeme",
+        );
       }
     }
     const rule = this.allRules[m.matchIndex];
@@ -211,7 +216,7 @@ export class TokenBuffer {
         return null;
       }
     } else if (ensure) {
-      throw new TokenizerError(-1, 0, "UnexpectedEndOfInput");
+      throw new TokenizerError("Unexpected end of input", -1, 0, "UnexpectedEndOfInput");
     }
     return token;
   }

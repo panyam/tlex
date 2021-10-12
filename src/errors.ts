@@ -4,8 +4,14 @@ import { Token } from "./tokenizer";
 export class TokenizerError extends Error {
   readonly name: string = "TokenizerError";
 
-  constructor(public offset: number, public length: number, public type: string, public value: any = null) {
-    super(`Tokenizer Error (${offset}-${offset + length}): ${type}`);
+  constructor(
+    message: string,
+    public offset: number,
+    public length: number,
+    public type: string,
+    public value: any = null,
+  ) {
+    super(message);
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
