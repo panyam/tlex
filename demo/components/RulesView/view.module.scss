@@ -1,0 +1,35 @@
+
+.rootView {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+}
+
+.headingView {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  height: 30px;
+}
+
+.inputTextArea {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  bottom: 30px;
+  top: 30px;
+  resize: none;
+}
+
+.optionsArea {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  height: 30px;
+  resize: none;
+  text-align: center;
+}
