@@ -16,7 +16,16 @@ export const builtinLexers = [
     name: "JSON",
     label: "JSON",
     selected: true,
-    grammar: `
+    rules: `
+      %token OPEN_BRACE   "{"
+      %token CLOSE_BRACE  "}"
+      %token OPEN_SQ      "["
+      %token CLOSE_SQ     "]"
+      %token COMMA        ","
+      %token COLON        ":"
+      %token NULL         "null"
+      %token TRUE         "true"
+      %token FALSE        "false"
       %token NUMBER /-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?/
       %token STRING /".*?(?<!\\\\)"/
       %skip /[ \\t\\n\\f\\r]+/

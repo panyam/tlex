@@ -74,6 +74,9 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
           "tokenizer": tokenizer,
         });
       }
+      if (this.inputTextareaRef.current != null) {
+        this.inputTextareaRef.current.value = info.rules;
+      }
     }
   }
 
