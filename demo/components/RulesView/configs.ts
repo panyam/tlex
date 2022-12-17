@@ -5,7 +5,7 @@ export const builtinLexers = [
     name: "C11",
     label: "C11",
     rules: C11,
-    sampleInput: `
+    sampleInput: String.raw`
       int main(int argc, char *argv[]) {
         printf("Hello world\n");
         return 0;

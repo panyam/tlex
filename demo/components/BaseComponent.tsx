@@ -14,4 +14,11 @@ export default class BaseComponent<T=any> extends React.Component<T> {
 
   eventHubChanged() {
   }
+
+  updateState(updatedFields: any) {
+    this.setState((ps: any) => ({
+      ...ps,
+      ...updatedFields,
+    }));
+  }
 }

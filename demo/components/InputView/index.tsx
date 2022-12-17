@@ -4,6 +4,7 @@ import * as events from "../events"
 import BaseComponent from "../BaseComponent";
 import * as TSU from "@panyam/tsutils";
 import * as TLEX from "tlex";
+import { timeIt, stripLinePrefixSpaces } from "../utils";
 
 export default class InputView extends BaseComponent<{ styles?: any, }> {
   state: any;
@@ -47,10 +48,10 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
 
   componentDidMount() {
     this.eventHub.on(events.LANGUAGE_CHANGED, (evt: TSU.Events.TEvent) => {
-      console.log("Here: ", evt);
       this.tokenizer = evt.payload.tokenizer;
       if (this.inputTextareaRef.current != null) {
-        this.inputTextareaRef.current.value = evt.payload.lang.sampleInput;
+        const lines = evt.payload.lang.sampleInput.split("\n");
+        this.inputTextareaRef.current.value = stripLinePrefixSpaces(lines).join("\n");
         this.tokenize();
       }
     });
@@ -66,14 +67,29 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
   }
 
   tokenize() {
-    const tokens = [] as TLEX.Token[];
-    const tape = new TLEX.Tape(this.inputText);
-    let next = this.tokenizer!.next(tape, null);
-    while (next) {
-      tokens.push(next);
-      next = this.tokenizer!.next(tape, null);
-    }
-    console.log("Tokens: ", tokens);
+    const tokens = timeIt("Tokenized in: ", () => {
+      const tokens = [] as TLEX.Token[];
+      const tape = new TLEX.Tape(this.inputText);
+      let next = this.tokenizer!.next(tape, null);
+      while (next) {
+        tokens.push(next);
+        try {
+         next = this.tokenizer!.next(tape, null);
+        } catch (err: any) {
+          console.log("Error: ", err);
+          tokens.push({
+            "tag": "ERROR", 
+            "start": err.offset,
+            "end": err.offset + err.length,
+            "value": err.message,
+          } as TLEX.Token);
+          break;
+        }
+      }
+      console.log("Tokens: ", tokens);
+      return tokens;
+    });
+    this.eventHub.emit(events.INPUT_TOKENIZED, this, {tokens: tokens});
     return tokens;
   }
 }

@@ -4,11 +4,12 @@ import BaseComponent from "../BaseComponent";
 import * as events from "../events"
 import { builtinLexers } from "./configs";
 import * as DSL from "../dsl";
+import { timeIt, stripLinePrefixSpaces  } from "../utils";
 
 export default class RulesView extends BaseComponent<{ styles?: any, }> {
   state: any;
   langSelectRef = React.createRef<HTMLSelectElement>();
-  inputTextareaRef = React.createRef<HTMLTextAreaElement>();
+  rulesTextareaRef = React.createRef<HTMLTextAreaElement>();
   selectElementRef = React.createRef<HTMLSelectElement>();
 
   constructor(props: any, context: any) {
@@ -38,7 +39,7 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
           <span>Enter Rules</span>
           <span>{state.modified ? "(modified)" : ""}</span>
         </div>
-        <textarea ref={this.inputTextareaRef}
+        <textarea ref={this.rulesTextareaRef}
                   onKeyDown={this.onInputChanged.bind(this)}
                   className={styles.inputTextArea} />
         <div className={styles.optionsArea}>
@@ -61,6 +62,9 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
     if (this.langSelectRef.current != null) {
       const lang = this.langSelectRef.current.value;
       const info = builtinLexers.find(x => x.name == lang);
+      if (this.rulesTextareaRef.current != null) {
+        this.rulesTextareaRef.current.value = stripLinePrefixSpaces(info!.rules.split("\n")).join("\n");
+      }
       console.log("Event: ", evt);
       console.log("Lang: ", info);
       this.setState((ps) => ({
@@ -73,9 +77,6 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
           "lang": info,
           "tokenizer": tokenizer,
         });
-      }
-      if (this.inputTextareaRef.current != null) {
-        this.inputTextareaRef.current.value = info.rules;
       }
     }
   }
@@ -91,9 +92,9 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
   }
 
   compile() {
-    if (this.inputTextareaRef.current == null) return null;
-    const lines = this.inputTextareaRef.current.value;
-    const tokenizer = DSL.TokenizerFromDSL(lines, {});
+    if (this.rulesTextareaRef.current == null) return null;
+    const lines = this.rulesTextareaRef.current.value;
+    const tokenizer = timeIt("Tokenizer Creation Time: ", () => DSL.TokenizerFromDSL(lines, {}));
     this.setState((ps) => ({
       ...ps,
       modifed: false,
