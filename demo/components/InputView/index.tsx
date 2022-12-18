@@ -51,7 +51,7 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
       this.tokenizer = evt.payload.tokenizer;
       if (this.inputTextareaRef.current != null) {
         const lines = evt.payload.lang.sampleInput.split("\n");
-        this.inputTextareaRef.current.value = stripLinePrefixSpaces(lines).join("\n");
+        this.inputTextareaRef.current.value = stripLinePrefixSpaces(lines).join("\n").trim();
         this.tokenize();
       }
     });

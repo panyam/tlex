@@ -63,7 +63,7 @@ export default class RulesView extends BaseComponent<{ styles?: any, }> {
       const lang = this.langSelectRef.current.value;
       const info = builtinLexers.find(x => x.name == lang);
       if (this.rulesTextareaRef.current != null) {
-        this.rulesTextareaRef.current.value = stripLinePrefixSpaces(info!.rules.split("\n")).join("\n");
+        this.rulesTextareaRef.current.value = stripLinePrefixSpaces(info!.rules.split("\n")).join("\n").trim();
       }
       console.log("Event: ", evt);
       console.log("Lang: ", info);

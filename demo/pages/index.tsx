@@ -19,7 +19,7 @@ export default function Home() {
         </header>
         <div className={styles.center_div}>
           <div className={styles.rulesDiv}>
-            <RulesView/>
+            <RulesView />
           </div>
           <div className={styles.inputDiv}>
             <InputView />
@@ -31,5 +31,5 @@ export default function Home() {
       </main>
       <footer className={styles.footer}></footer>
     </div>
-  )
+  );
 }
