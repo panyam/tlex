@@ -1,9 +1,7 @@
 import * as TSU from "@panyam/tsutils";
-const util = require("util");
-import fs from "fs";
 import { Tape } from "../tape";
 import { compile, execute, runMatchTest } from "./utils";
-import { Token } from "../tokenizer";
+import { Token } from "../token";
 import { Prog, VM } from "../vm";
 import * as Builder from "../builder";
 

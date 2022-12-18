@@ -1,8 +1,8 @@
 const util = require("util");
 import { InstrDebugValue } from "../vm";
 import { Tape } from "../tape";
-import { Tokenizer, Token } from "../tokenizer";
-import { TokenizerError } from "../errors";
+import { Tokenizer } from "../tokenizer";
+import { Token } from "../token";
 
 export enum TokenType {
   STRING = "STRING",

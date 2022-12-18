@@ -1,5 +1,5 @@
 import * as TSU from "@panyam/tsutils";
-import { Token } from "./tokenizer";
+import { Token } from "./token";
 
 export class TokenizerError extends Error {
   readonly name: string = "TokenizerError";

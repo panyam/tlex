@@ -5,10 +5,10 @@ import * as TSU from "@panyam/tsutils";
 import { Tape } from "../tape";
 import { REPatternType, Regex, Rule } from "../core";
 import * as Builder from "../builder";
-import { RegexParser } from "../jsparser";
 import { Thread, Prog, InstrDebugValue, Match, VM } from "../vm";
 import { Compiler } from "../compiler";
-import { Tokenizer, toToken, Token } from "../tokenizer";
+import { toToken } from "../tokenizer";
+import { Token } from "../token";
 
 // export function parse(input: string, config?: any): Regex { return new RegexParser(input, config).parse(); }
 

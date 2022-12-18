@@ -1,8 +1,6 @@
-import * as fs from "fs";
-import * as TSU from "@panyam/tsutils";
 import { Rule } from "../core";
 import * as Builder from "../builder";
-import { Token } from "../tokenizer";
+import { Token } from "../token";
 import { execute } from "./utils";
 
 function expectMatchStrings(found: Token[], ...expected: [string, number][]): Token[] {

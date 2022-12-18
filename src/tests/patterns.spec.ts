@@ -1,7 +1,7 @@
 /**
  * // @jest-environment jsdom
  */
-import { Token } from "../tokenizer";
+import { Token } from "../token";
 import { execute } from "./utils";
 import * as samples from "../samples";
 

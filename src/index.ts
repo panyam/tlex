@@ -4,6 +4,7 @@ export * from "./charclasses";
 export * from "./propertyescapes";
 export * from "./errors";
 export * from "./tape";
+export * from "./token";
 export * from "./tokenizer";
 export * from "./vm";
 export * as JS from "./jsparser";
