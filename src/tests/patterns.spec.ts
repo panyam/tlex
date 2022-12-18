@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * // @jest-environment jsdom
  */
 import { Token } from "../tokenizer";
 import { execute } from "./utils";
