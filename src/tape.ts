@@ -4,6 +4,7 @@ export interface TapeInterface {
   canAdvance(delta: number): boolean;
   readonly hasMore: boolean;
   readonly currCh: string;
+  readonly nextCh: string;
   readonly currChCode: number;
   readonly currChCodeLower: number;
   readonly currChCodeUpper: number;
@@ -12,6 +13,7 @@ export interface TapeInterface {
   charCodeAt(index: number): number;
   charCodeAtLower(index: number): number;
   charCodeAtUpper(index: number): number;
+  substring(startIndex: number, endIndex: number): string;
 }
 
 /**
@@ -90,7 +92,7 @@ export class Tape implements TapeInterface {
   }
 
   charAt(index: number): string {
-    if (index >= 0 && index < this.input.length) return "";
+    if (index < 0 || index >= this.input.length) return "";
     return this.input[index];
   }
 

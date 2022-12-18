@@ -1,6 +1,5 @@
 import * as TSU from "@panyam/tsutils";
-import { Tape } from "./tape";
-import { CharClassHelpers } from "./charclasses";
+import { TapeInterface as Tape } from "./tape";
 import { Char, CharType } from "./core";
 
 function isNewLineChar(ch: string): boolean {
@@ -396,12 +395,14 @@ export class VM {
 
   protected nextCh(tape: Tape): string {
     const next = tape.index + (this.forward ? 1 : -1);
-    if (next < 0 || next >= tape.input.length) return "";
-    return tape.input[next];
+    return tape.charAt(next);
+    // if (next < 0 || next >= tape.input.length) return "";
+    // return tape.input[next];
   }
 
   protected prevCh(tape: Tape): string {
-    return tape.input[tape.index - (this.forward ? 1 : -1)];
+    return tape.charAt(tape.index - (this.forward ? 1 : -1));
+    // return tape.input[tape.index - (this.forward ? 1 : -1)];
   }
 
   /**
@@ -411,7 +412,6 @@ export class VM {
   match(tape: Tape): Match | null {
     // this.gen = 0; this.genForOffset = {};
     if (this.end < this.start) return null;
-    const startIndex = tape.index;
     this.startMatching(tape);
     let bestMatch: TSU.Nullable<Match> = null;
     while (this.currThreads.length > 0) {

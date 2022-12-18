@@ -1,5 +1,5 @@
 import * as TSU from "@panyam/tsutils";
-import { Tape } from "./tape";
+import { TapeInterface as Tape } from "./tape";
 import { TokenizerError, UnexpectedTokenError } from "./errors";
 
 export type TokenType = number | string;

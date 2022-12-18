@@ -1,5 +1,5 @@
 import * as TSU from "@panyam/tsutils";
-import { Tape } from "./tape";
+import { TapeInterface as Tape } from "./tape";
 import {
   LookAhead,
   Quant,
@@ -25,7 +25,7 @@ function advanceIf(tape: Tape, ch: string): boolean {
       tape.index = pos;
       return false;
     }
-    tape.advance();
+    tape.advance(1);
   }
   return true;
 }
@@ -41,7 +41,8 @@ export class RegexParser {
   }
 
   throwError(pattern: Tape, msg: string): void {
-    this.throwError(pattern, `Error in Flex RE '${pattern.input}': ${msg}`);
+    throw new Error(msg);
+    // this.throwError(pattern, `Error in Flex RE '${pattern.input}': ${msg}`);
   }
 
   parse(pattern: Tape, ignoreSpaces = false, obCount = 0): Regex {
@@ -72,14 +73,14 @@ export class RegexParser {
         this.parseQuant(pattern, stack);
       } else if (ignoreSpaces && isSpace(currCh)) {
         // do nothing
-        pattern.advance();
+        pattern.advance(1);
       } else if (ignoreSpaces && advanceIf(pattern, "/*")) {
         // Read everything until a */
         while (pattern.currCh != "*" || pattern.nextCh != "/") {
           if (!pattern.hasMore) {
             this.throwError(pattern, "Unterminated comment");
           }
-          pattern.advance();
+          pattern.advance(1);
         }
         pattern.advance(2);
         // now do nothing
@@ -92,7 +93,7 @@ export class RegexParser {
       } else if (advanceIf(pattern, "(")) {
         if (advanceIf(pattern, "?")) {
           if (advanceIf(pattern, "#")) {
-            while (pattern.hasMore && pattern.currCh != ")") pattern.advance();
+            while (pattern.hasMore && pattern.currCh != ")") pattern.advance(1);
             TSU.assert(advanceIf(pattern, ")"), "Expected ')'");
           } else {
             // pattern of the form (?r-s:pattern)
@@ -110,7 +111,7 @@ export class RegexParser {
               } else if (pattern.currCh == "-") {
                 neg = true;
               }
-              pattern.advance();
+              pattern.advance(1);
             }
             TSU.assert(advanceIf(pattern, ":"), "Expected ':'");
             const groupIndex = this.counter.next();
@@ -159,7 +160,7 @@ export class RegexParser {
           }
           stack.push(this.parseChar(pattern));
         }
-        pattern.advance();
+        pattern.advance(1);
       } else {
         // plain old alphabets
         stack.push(this.parseChar(pattern));
@@ -191,7 +192,7 @@ export class RegexParser {
           if (!foundComma) p1 += pattern.currCh;
           else p2 += pattern.currCh;
         }
-        pattern.advance();
+        pattern.advance(1);
       }
       if (!pattern.hasMore) {
         this.throwError(pattern, "Invalid property escape");
@@ -200,7 +201,7 @@ export class RegexParser {
       p1 = p1.trim();
       p2 = p2.trim();
       // advance over the "}"
-      pattern.advance();
+      pattern.advance(1);
 
       const part1 = parseInt(p1);
       const part2 = parseInt(p2);
@@ -299,7 +300,7 @@ export class RegexParser {
   parseSingleChar(pattern: Tape): LeafChar {
     // single char
     const ch = pattern.currCh;
-    pattern.advance();
+    pattern.advance(1);
     return LeafChar.Single(ch);
   }
 
@@ -315,7 +316,7 @@ export class RegexParser {
         if (!foundEq) propName += pattern.currCh;
         else propValue += pattern.currCh;
       }
-      pattern.advance();
+      pattern.advance(1);
     }
     if (!pattern.hasMore) {
       this.throwError(pattern, "Invalid property escape");
@@ -328,7 +329,7 @@ export class RegexParser {
       propName = "General_Category";
     }
     // advance over the "}"
-    pattern.advance();
+    pattern.advance(1);
     return LeafChar.PropertyEscape(propName, propValue);
   }
 
@@ -382,7 +383,8 @@ export class RegexParser {
       return LeafChar.Single(hexVal);
     } else if (advanceIf(pattern, "u")) {
       // 4 digit hex digits for unicode
-      if (pattern.index >= pattern.input.length - 3) {
+      if (!pattern.canAdvance(3)) {
+        // index >= pattern.input.length - 3) {
         this.throwError(pattern, `Invalid unicode sequence at ${pattern.index}`);
       }
       const ucodeSeq = pattern.substring(pattern.index, pattern.index + 4);
@@ -395,7 +397,7 @@ export class RegexParser {
     }
     // default
     const ch = pattern.currCh;
-    pattern.advance();
+    pattern.advance(1);
     return LeafChar.Single(ch);
   }
 }

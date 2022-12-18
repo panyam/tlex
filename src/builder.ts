@@ -62,11 +62,16 @@ export function flatten(re: REPatternType | REPatternType[], index = 0, rules?: 
 
 export function exprFromFlexRE(pattern: string): Regex {
   const parser = new FlexREParser();
-  const expr = parser.parse(new Tape(pattern));
-  // if not specified default to false
-  if (expr.dotAll == null) expr.dotAll = false;
-  if (expr.multiline == null) expr.multiline = false;
-  return expr;
+  try {
+    const expr = parser.parse(new Tape(pattern));
+    // if not specified default to false
+    if (expr.dotAll == null) expr.dotAll = false;
+    if (expr.multiline == null) expr.multiline = false;
+    return expr;
+  } catch (error) {
+    console.log("Error in FLEX RE: ", pattern);
+    throw error;
+  }
 }
 
 export function exprFromJSRE(re: string | RegExp, config?: any): Regex {

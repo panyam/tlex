@@ -2,7 +2,7 @@ import * as TSU from "@panyam/tsutils";
 import { Regex, Union, Rule, RuleConfig } from "./core";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
-import { Tape } from "./tape";
+import { TapeInterface as Tape } from "./tape";
 import { TokenizerError } from "./errors";
 import * as Builder from "./builder";
 import { Token, TokenType } from "./token";
