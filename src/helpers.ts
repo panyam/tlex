@@ -1,6 +1,6 @@
 import * as TSU from "@panyam/tsutils";
 import { Tape, TapeHelper } from "./tape";
-import { Token, TokenType } from "./tokenizer";
+import { Token, TokenType } from "./token";
 import { TokenizerError } from "./errors";
 
 /**
