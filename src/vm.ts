@@ -48,13 +48,33 @@ export enum OpCode {
   EndOfWord,
   GroupStart,
   GroupEnd,
+
+  // Stops the thread if state does not match
+  EnsureState,
 }
 
 export class Prog {
   instrs: Instr[] = [];
+  stateMapping: Map<string, number>;
+
+  constructor(public readonly startCondition = "INITIAL", public readonly scIsInclusive = true) {
+    this.stateMapping = new Map<string, number>();
+    this.registerState("INITIAL");
+    this.registerState(startCondition);
+  }
 
   get length(): number {
     return this.instrs.length;
+  }
+
+  /**
+   * Adds a state to our program and returns the state's index.
+   */
+  registerState(state: string): number {
+    if (!this.stateMapping.has(state)) {
+      this.stateMapping.set(state, this.stateMapping.size);
+    }
+    return this.stateMapping.get(state) || -1;
   }
 
   add(opcode: any, char: null | Char = null, ...args: number[]): Instr {
@@ -172,6 +192,8 @@ export class VM {
   protected currThreads: Thread[] = [];
   protected nextThreads: Thread[] = [];
   protected startPos = 0; // Where the match is beginning from - this will be set to tape.index when match is called
+  // Initial state is always 0
+  protected currState = 0;
 
   protected gen = 0;
   // Records which "generation" of the match a particular
@@ -371,6 +393,15 @@ export class VM {
             // TODO - Consider using a DFA for this case so we can mitigate
             // pathological cases with an exponential blowup on a success
             this.addThread(this.jumpTo(thread, end + 1), list, tape, delta);
+          }
+        }
+        break;
+      case OpCode.EnsureState:
+        const states = instr.args;
+        for (const state of states) {
+          if (this.currState == state) {
+            this.addThread(this.jumpBy(thread, 1), list, tape, delta);
+            break;
           }
         }
         break;
@@ -601,6 +632,8 @@ export function InstrDebugValue(instr: Instr): string {
       return `RBegin ${instr.args.join(" ")}`;
     case OpCode.End:
       return `End ${instr.args.join(" ")}`;
+    case OpCode.EnsureState:
+      return `EnsureState ${instr.args.join(" ")}`;
     default:
       throw new Error("Invalid Opcode: " + instr.opcode);
   }

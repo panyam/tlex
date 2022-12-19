@@ -28,6 +28,7 @@ export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
 }
 
 export class Tokenizer {
+  protected _prog: Prog | null = null;
   protected _vm: VM | null = null;
   // Stores named rules
   // Rules are a "regex", whether literal or not
@@ -69,6 +70,7 @@ export class Tokenizer {
     rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);
     this.onMatchHandlers.push(onMatch);
+    this._prog = null;
     this._vm = null;
     return this;
   }
@@ -81,28 +83,19 @@ export class Tokenizer {
     return this;
   }
 
-  compile(): Prog {
-    const sortedRules = this.sortRules();
-    const prog = this.compiler.compile(sortedRules);
-    this._vm = new VM(prog);
-    return prog;
-  }
-
-  sortRules(): Rule[] {
-    // Sort rules so high priority ones appear first
-    const sortedRules: Rule[] = this.allRules.map((rule) => rule);
-    sortedRules.sort((r1, r2) => {
-      if (r1.priority != r2.priority) return r2.priority - r1.priority;
-      return r1.matchIndex - r2.matchIndex;
-    });
-    return sortedRules;
+  get prog(): Prog {
+    if (this._prog == null) {
+      const sortedRules = this.sortRules();
+      this._prog = this.compiler.compile(sortedRules);
+    }
+    return this._prog;
   }
 
   get vm(): VM {
     if (this._vm == null) {
-      this.compile();
+      this._vm = new VM(this.prog);
     }
-    return this._vm!;
+    return this._vm;
   }
 
   idCounter = 0;
@@ -140,5 +133,15 @@ export class Tokenizer {
       }
     }
     return token;
+  }
+
+  protected sortRules(): Rule[] {
+    // Sort rules so high priority ones appear first
+    const sortedRules: Rule[] = this.allRules.map((rule) => rule);
+    sortedRules.sort((r1, r2) => {
+      if (r1.priority != r2.priority) return r2.priority - r1.priority;
+      return r1.matchIndex - r2.matchIndex;
+    });
+    return sortedRules;
   }
 }

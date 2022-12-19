@@ -225,7 +225,7 @@ describe("Regex Compile Tests", () => {
     );
   });
 
-  test("Test Back Named Groups", () => {
+  test.skip("Test Back Named Groups", () => {
     const prog = compile((name) => Builder.build("abcde").expr, Builder.build("\\k<Hello  >"));
     testRegexCompile(
       prog,

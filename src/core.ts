@@ -628,6 +628,11 @@ export interface RuleConfig {
    * A value set later on to identify the match index
    */
   matchIndex?: number;
+
+  /**
+   * States in which this rule is active.
+   */
+  activeStates?: Set<string>;
 }
 
 /**
@@ -674,6 +679,11 @@ export class Rule {
   pattern: string | Regex;
 
   /**
+   * States in which this rule is active.
+   */
+  activeStates: Set<string> | null;
+
+  /**
    * Constructor
    *
    * @param pattern   - The pattern to match for the rule.
@@ -683,5 +693,22 @@ export class Rule {
     this.tag = TSU.Misc.dictGet(config, "tag", null);
     this.priority = TSU.Misc.dictGet(config, "priority", 10);
     this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
+    this.activeStates = config.activeStates || null;
+  }
+
+  /**
+   * Returns if a particular state can activate this rule.
+   */
+  stateCanActivate(state: string) {
+    return (
+      this.activeStates == null ||
+      this.activeStates.size == 0 ||
+      this.activeStates.has("*") ||
+      this.activeStates.has(state)
+    );
+  }
+
+  get needsSpecificStates(): boolean {
+    return this.activeStates != null && this.activeStates.size > 0 && !this.activeStates.has("*");
   }
 }

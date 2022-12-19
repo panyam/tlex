@@ -87,7 +87,7 @@ function tokenize(input: string, debug = false): any[] {
   const t = newTokenizer();
   if (debug) {
     const t2 = newTokenizer();
-    console.log("Prog: \n", `${t2.compile().debugValue(InstrDebugValue).join("\n")}`, "\n\nInput: ", input);
+    console.log("Prog: \n", `${t2.prog.debugValue(InstrDebugValue).join("\n")}`, "\n\nInput: ", input);
     console.log(
       "\n\nFound: ",
       util.inspect(found, {

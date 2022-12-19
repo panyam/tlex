@@ -37,6 +37,13 @@ export class Compiler {
       const ignoreCase = rule.expr.ignoreCase == null ? false : rule.expr.ignoreCase;
       const dotAll = rule.expr.dotAll == null ? true : rule.expr.dotAll;
       const multiline = rule.expr.multiline == null ? true : rule.expr.multiline;
+      if (rule.needsSpecificStates && rule.activeStates != null) {
+        const ensureInstr = out.add(OpCode.EnsureState, null);
+        rule.activeStates.forEach((state) => {
+          const ind = out.registerState(state);
+          ensureInstr.add(ind);
+        });
+      }
       this.compileExpr(rule.expr, out, ignoreCase, dotAll, multiline);
       out.add(OpCode.Match, null).add(rule.priority, rule.matchIndex >= 0 ? rule.matchIndex : i);
     });
@@ -124,11 +131,15 @@ export class Compiler {
   compileBackNumRef(ne: BackNumRef, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     // TODO - This may need a resolution at "runtime" so the instruction
     // should reflect as such?
+    // See compiler.spec.ts - "Test Back Named Groups"
+    throw new Error("BackNumRef Not Implemented");
   }
 
   compileBackNamedRef(ne: BackNamedRef, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     // TODO - This may need a resolution at "runtime" so the instruction
     // should reflect as such?
+    // See compiler.spec.ts - "Test Back Named Groups"
+    throw new Error("BackNameRef Not Implemented");
   }
 
   compileVar(v: Var, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
