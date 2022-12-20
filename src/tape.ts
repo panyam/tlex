@@ -1,6 +1,5 @@
 export abstract class TapeInterface {
   index = 0;
-  abstract readonly hasMore: boolean;
   abstract charAt(index: number): string;
   abstract hasIndex(index: number): boolean;
   abstract substring(startIndex: number, endIndex: number): string;
@@ -9,7 +8,7 @@ export abstract class TapeInterface {
 
   advance(delta = 1): boolean {
     const next = this.forward ? this.index + delta : this.index - delta;
-    // if !this.hasIndex(next)) return false;
+    // if (!this.hasIndex(next)) return false;
     this.index = next;
     return true;
   }
@@ -17,6 +16,12 @@ export abstract class TapeInterface {
   canAdvance(delta = 1): boolean {
     const next = this.forward ? this.index + delta : this.index - delta;
     return this.hasIndex(next);
+  }
+
+  get hasMore(): boolean {
+    const next = this.forward ? this.index : this.index - 1;
+    return this.hasIndex(next);
+    // return this.forward ? this.index < this.input.length : this.index > 0;
   }
 
   get currCh(): string {
@@ -87,10 +92,6 @@ export class Tape extends TapeInterface {
   substring(startIndex: number, endIndex: number): string {
     return this._rawInput.substring(startIndex, endIndex);
     // return this.input.slice(startIndex, endIndex).join("");
-  }
-
-  get hasMore(): boolean {
-    return this.forward ? this.index < this.input.length : this.index > 0;
   }
 
   hasIndex(index: number): boolean {
