@@ -1,19 +1,67 @@
-export interface TapeInterface {
-  index: number;
-  advance(delta: number): boolean;
-  canAdvance(delta: number): boolean;
-  readonly hasMore: boolean;
-  readonly currCh: string;
-  readonly nextCh: string;
-  readonly currChCode: number;
-  readonly currChCodeLower: number;
-  readonly currChCodeUpper: number;
+export abstract class TapeInterface {
+  index = 0;
+  abstract readonly hasMore: boolean;
+  abstract charAt(index: number): string;
+  abstract hasIndex(index: number): boolean;
+  abstract substring(startIndex: number, endIndex: number): string;
 
-  charAt(index: number): string;
-  charCodeAt(index: number): number;
-  charCodeAtLower(index: number): number;
-  charCodeAtUpper(index: number): number;
-  substring(startIndex: number, endIndex: number): string;
+  constructor(public forward = true) {}
+
+  advance(delta = 1): boolean {
+    const next = this.forward ? this.index + delta : this.index - delta;
+    // if !this.hasIndex(next)) return false;
+    this.index = next;
+    return true;
+  }
+
+  canAdvance(delta = 1): boolean {
+    const next = this.forward ? this.index + delta : this.index - delta;
+    return this.hasIndex(next);
+  }
+
+  get currCh(): string {
+    return this.charAt(this.index);
+  }
+
+  get prevCh(): string {
+    return this.charAt(this.index - (this.forward ? 1 : -1));
+  }
+
+  get nextCh(): string {
+    const next = this.index + (this.forward ? 1 : -1);
+    return this.charAt(next);
+  }
+
+  get currChCode(): number {
+    if (!this.hasMore) return -1;
+    return this.currCh.charCodeAt(0);
+    // return this.input.charCodeAt(this.index);
+  }
+
+  get currChCodeLower(): number {
+    if (!this.hasMore) return -1;
+    return this.currCh.toLowerCase().charCodeAt(0);
+  }
+
+  get currChCodeUpper(): number {
+    if (!this.hasMore) return -1;
+    return this.currCh.toUpperCase().charCodeAt(0);
+  }
+
+  charCodeAt(index: number): number {
+    if (!this.hasIndex(index)) return -1;
+    return this.charAt(index).charCodeAt(0);
+  }
+
+  charCodeAtLower(index: number): number {
+    if (!this.hasIndex(index)) return -1;
+    return this.charAt(index).toLowerCase().charCodeAt(0);
+  }
+
+  charCodeAtUpper(index: number): number {
+    if (!this.hasIndex(index)) return -1;
+    return this.charAt(index).toUpperCase().charCodeAt(0);
+  }
 }
 
 /**
@@ -21,12 +69,12 @@ export interface TapeInterface {
  * forwarding and prefix checking that is fed into the different tokenizers
  * used by the scannerless parsers.
  */
-export class Tape implements TapeInterface {
-  index = 0;
+export class Tape extends TapeInterface {
   protected _rawInput: string;
   readonly input: string[];
 
   constructor(input: string, public forward = true) {
+    super(forward);
     this._rawInput = input;
     this.input = [...input];
   }
@@ -41,74 +89,17 @@ export class Tape implements TapeInterface {
     // return this.input.slice(startIndex, endIndex).join("");
   }
 
-  advance(delta = 1): boolean {
-    const next = this.forward ? this.index + delta : this.index - delta;
-    this.index = next;
-    // if (next < 0) return false;
-    // if (next >= this.input.length) return false;
-    return true;
-  }
-
-  canAdvance(delta = 1): boolean {
-    const next = this.forward ? this.index + delta : this.index - delta;
-    if (next < 0) return false;
-    if (next >= this.input.length) return false;
-    return true;
-  }
-
   get hasMore(): boolean {
     return this.forward ? this.index < this.input.length : this.index > 0;
   }
 
-  get prevCh(): string {
-    return this.input[this.index - (this.forward ? 1 : -1)];
-  }
-
-  get nextCh(): string {
-    const next = this.index + (this.forward ? 1 : -1);
-    if (next < 0 || next >= this.input.length) return "";
-    return this.input[next];
-  }
-
-  get currCh(): string {
-    if (!this.hasMore) return "";
-    return this.input[this.index];
-  }
-
-  get currChCode(): number {
-    if (!this.hasMore) return -1;
-    return this.input[this.index].charCodeAt(0);
-    // return this.input.charCodeAt(this.index);
-  }
-
-  get currChCodeLower(): number {
-    if (!this.hasMore) return -1;
-    return this.input[this.index].toLowerCase().charCodeAt(0);
-  }
-
-  get currChCodeUpper(): number {
-    if (!this.hasMore) return -1;
-    return this.input[this.index].toUpperCase().charCodeAt(0);
+  hasIndex(index: number): boolean {
+    return index >= 0 && index < this.input.length;
   }
 
   charAt(index: number): string {
     if (index < 0 || index >= this.input.length) return "";
     return this.input[index];
-  }
-
-  charCodeAt(index: number): number {
-    if (index >= 0 && index < this.input.length) return -1;
-    return this.input[this.index].charCodeAt(index);
-  }
-
-  charCodeAtLower(index: number): number {
-    if (index >= 0 && index < this.input.length) -1;
-    return this.input[this.index].toLowerCase().charCodeAt(index);
-  }
-
-  charCodeAtUpper(index: number): number {
-    if (index >= 0 && index < this.input.length) return -1;
-    return this.input[this.index].toUpperCase().charCodeAt(index);
   }
 }
 
