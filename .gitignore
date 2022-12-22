@@ -1,5 +1,6 @@
 yarn.lock
 *.d.ts
+apidocs
 app.js
 *.js.map
 src/**/*.js

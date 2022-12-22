@@ -19,6 +19,11 @@ import { OpCode, Prog, Instr } from "./vm";
 
 type RegexResolver = (name: string) => Regex;
 type CompilerListener = (expr: Regex, prog: Prog, start: number, length: number) => void;
+
+/**
+ * The regex Compiler compiles a parsed regular expression tree into bytecode that is
+ * executed by the VM.
+ */
 export class Compiler {
   emitGroups = false;
   emitPosition = true;
@@ -53,7 +58,7 @@ export class Compiler {
   /**
    * Compile a given expression into a set of instructions.
    */
-  compileExpr(expr: Regex, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): number {
+  protected compileExpr(expr: Regex, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): number {
     const start = prog.length;
     const currOffset = prog.length;
     if (expr.groupIndex >= 0) {
@@ -102,7 +107,7 @@ export class Compiler {
     return prog.length - start;
   }
 
-  compileChar(char: Char, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileChar(char: Char, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     if (char.op == CharType.AnyChar) {
       // TODO - Should neg be ignored?
       prog.add(dotAll ? OpCode.Any : OpCode.AnyNonNL);
@@ -122,27 +127,39 @@ export class Compiler {
     }
   }
 
-  compileCat(cat: Cat, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileCat(cat: Cat, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     for (const child of cat.children) {
       this.compileExpr(child, prog, ignoreCase, dotAll, multiline);
     }
   }
 
-  compileBackNumRef(ne: BackNumRef, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileBackNumRef(
+    ne: BackNumRef,
+    prog: Prog,
+    ignoreCase: boolean,
+    dotAll: boolean,
+    multiline: boolean,
+  ): void {
     // TODO - This may need a resolution at "runtime" so the instruction
     // should reflect as such?
     // See compiler.spec.ts - "Test Back Named Groups"
     throw new Error("BackNumRef Not Implemented");
   }
 
-  compileBackNamedRef(ne: BackNamedRef, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileBackNamedRef(
+    ne: BackNamedRef,
+    prog: Prog,
+    ignoreCase: boolean,
+    dotAll: boolean,
+    multiline: boolean,
+  ): void {
     // TODO - This may need a resolution at "runtime" so the instruction
     // should reflect as such?
     // See compiler.spec.ts - "Test Back Named Groups"
     throw new Error("BackNameRef Not Implemented");
   }
 
-  compileVar(v: Var, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileVar(v: Var, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     const name = v.name.trim();
     const expr = this.regexResolver ? this.regexResolver(name) : null;
     if (expr == null) {
@@ -151,7 +168,7 @@ export class Compiler {
     this.compileExpr(expr, prog, ignoreCase, dotAll, multiline);
   }
 
-  compileUnion(union: Union, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileUnion(union: Union, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     const split = prog.add(OpCode.Split);
     const jumps: Instr[] = [];
 
@@ -174,6 +191,7 @@ export class Compiler {
    *  Problem with this is that it can have unbounded sizes on regexes.
    *
    * Option 2 - Experimental
+   *
    *  Problem is here is we must allow for duplicate threads for an offset in a given
    *  generation - possibly causing an exponential blowup.
    *
@@ -198,7 +216,7 @@ export class Compiler {
    *
    * In the above if A == 0 then insert a Split L11 before L0 above
    */
-  compileQuant(quant: Quant, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileQuant(quant: Quant, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     // optimize the special cases of *, ? and +
     if (quant.minCount == 0 && quant.maxCount == TSU.Constants.MAX_INT) {
       // *
@@ -228,7 +246,7 @@ export class Compiler {
     }
   }
 
-  compileAtleast1(
+  protected compileAtleast1(
     expr: Regex,
     prog: Prog,
     greedy = true,
@@ -247,7 +265,7 @@ export class Compiler {
     }
   }
 
-  compileAtleast0(
+  protected compileAtleast0(
     expr: Regex,
     prog: Prog,
     greedy: boolean,
@@ -268,7 +286,7 @@ export class Compiler {
     }
   }
 
-  compileOptional(
+  protected compileOptional(
     expr: Regex,
     prog: Prog,
     greedy: boolean,
@@ -290,7 +308,13 @@ export class Compiler {
   /**
    * Compiles lookahead assertions
    */
-  compileLookAhead(la: LookAhead, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileLookAhead(
+    la: LookAhead,
+    prog: Prog,
+    ignoreCase: boolean,
+    dotAll: boolean,
+    multiline: boolean,
+  ): void {
     // how should this work?
     // Ensure that assertion matches first before continuing with the expression
     this.compileExpr(la.expr, prog, ignoreCase, dotAll, multiline);
@@ -303,7 +327,7 @@ export class Compiler {
   /**
    * Compiles lookback assertions
    */
-  compileLookBack(lb: LookBack, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
+  protected compileLookBack(lb: LookBack, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     // Ensure that assertion matches first before continuing with the expression
     this.compileExpr(lb.expr, prog, ignoreCase, dotAll, multiline);
     TSU.assert(lb.expr.groupIndex >= 0, "LookBack Assertion requires expression to have a group Index");

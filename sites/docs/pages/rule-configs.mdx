@@ -5,17 +5,15 @@ By default when rules are added to the tokenizer they are matched in the order i
 For example in the following config:
 
 ```ts
-tokenizer = new TLEX.Tokenizer();
-
-tokenizer.add("hello")
-         .add("h.*o");
+tokenizer = new TLEX.Tokenizer()
+              .add("hello")
+              .add("h.*o");
 ```
 
 The following would match "hello" instead of the entire string even the latter is valid and a longer match:
 
 ```
 tokenizer.tokenizeAll("hellohello");
-
 // Returns ["hello", "hello"] instead of ["hellohello"]
 ```
 
