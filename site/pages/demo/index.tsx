@@ -1,8 +1,8 @@
 import Head from "next/head";
-import styles from "./index.module.scss";
-import RulesView from "../components/RulesView";
-import ResultsView from "../components/ResultsView";
-import InputView from "../components/InputView";
+import styles from "./view.module.scss";
+import RulesView from "../../components/RulesView";
+import ResultsView from "../../components/ResultsView";
+import InputView from "../../components/InputView";
 
 export default function Home() {
   return (

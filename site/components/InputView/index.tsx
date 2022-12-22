@@ -68,24 +68,8 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
 
   tokenize() {
     const tokens = timeIt("Tokenized in: ", () => {
-      const tokens = [] as TLEX.Token[];
       const tape = new TLEX.Tape(this.inputText);
-      let next = this.tokenizer!.next(tape, null);
-      while (next) {
-        tokens.push(next);
-        try {
-         next = this.tokenizer!.next(tape, null);
-        } catch (err: any) {
-          console.log("Error: ", err);
-          tokens.push({
-            "tag": "ERROR", 
-            "start": err.offset,
-            "end": err.offset + err.length,
-            "value": err.message,
-          } as TLEX.Token);
-          break;
-        }
-      }
+      const tokens = this.tokenizer.tokenize(tape);
       console.log("Tokens: ", tokens);
       return tokens;
     });

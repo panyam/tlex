@@ -1,13 +1,9 @@
 import * as TSU from "@panyam/tsutils";
 import { TapeInterface as Tape } from "./tape";
-import { Char, CharType } from "./core";
+import { Char } from "./core";
 
 function isNewLineChar(ch: string): boolean {
   return ch == "\r" || ch == "\n" || ch == "\u2028" || ch == "\u2029";
-}
-
-function isSpaceChar(ch: string): boolean {
-  return ch == " " || ch == "\t";
 }
 
 export class Match {
@@ -228,7 +224,10 @@ export class VM {
   }
 
   jumpTo(thread: Thread, newOffset: number): Thread {
-    // TODO - Why create new thread here?
+    // TODO - Why create new thread here - investigate if we can
+    // return the same thread with the offset updated?
+    // if we really want a "history" we could jsut keep prev offsets
+    // in a list so we can keep a trace
     const out = new Thread(newOffset, this.gen);
     out.id = thread.id;
     out.parentId = thread.parentId;

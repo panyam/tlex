@@ -27,7 +27,7 @@ export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
   return out;
 }
 
-export class Tokenizer {
+export class BaseTokenizer {
   protected _prog: Prog | null = null;
   protected _vm: VM | null = null;
   // Stores named rules
@@ -98,6 +98,18 @@ export class Tokenizer {
     return this._vm;
   }
 
+  protected sortRules(): Rule[] {
+    // Sort rules so high priority ones appear first
+    const sortedRules: Rule[] = this.allRules.map((rule) => rule);
+    sortedRules.sort((r1, r2) => {
+      if (r1.priority != r2.priority) return r2.priority - r1.priority;
+      return r1.matchIndex - r2.matchIndex;
+    });
+    return sortedRules;
+  }
+}
+
+export class Tokenizer extends BaseTokenizer {
   idCounter = 0;
   next(tape: Tape, owner: any): Token | null {
     if (!tape.hasMore) {
@@ -135,13 +147,24 @@ export class Tokenizer {
     return token;
   }
 
-  protected sortRules(): Rule[] {
-    // Sort rules so high priority ones appear first
-    const sortedRules: Rule[] = this.allRules.map((rule) => rule);
-    sortedRules.sort((r1, r2) => {
-      if (r1.priority != r2.priority) return r2.priority - r1.priority;
-      return r1.matchIndex - r2.matchIndex;
-    });
-    return sortedRules;
+  tokenize(tape: Tape, owner: any = null): Token[] {
+    const tokens = [] as Token[];
+    let next = this.next(tape, owner);
+    while (next) {
+      tokens.push(next);
+      try {
+        next = this.next(tape, owner);
+      } catch (err: any) {
+        console.log("Error: ", err);
+        tokens.push({
+          tag: "ERROR",
+          start: err.offset,
+          end: err.offset + err.length,
+          value: err.message,
+        } as Token);
+        break;
+      }
+    }
+    return tokens;
   }
 }

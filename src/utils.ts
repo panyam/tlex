@@ -11,3 +11,5 @@ export class GroupCounter {
 export function isSpace(ch: string): boolean {
   return ch == " " || ch == "\t" || ch == "\n" || ch == "\r";
 }
+
+// function isSpaceChar(ch: string): boolean { return ch == " " || ch == "\t"; }
