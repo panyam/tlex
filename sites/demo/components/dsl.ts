@@ -160,53 +160,73 @@ export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any
 }
 
 function InputTokenizer(): TLEX.Tokenizer {
-    const lexer = new TLEX.Tokenizer();
-    lexer.add(/->/, { tag: TokenType.ARROW });
-    lexer.add(/\[/, { tag: TokenType.OPEN_SQ });
-    lexer.add(/\]/, { tag: TokenType.CLOSE_SQ });
-    lexer.add(/\(/, { tag: TokenType.OPEN_PAREN });
-    lexer.add(/\)/, { tag: TokenType.CLOSE_PAREN });
-    lexer.add(/\{/, { tag: TokenType.OPEN_BRACE });
-    lexer.add(/\}/, { tag: TokenType.CLOSE_BRACE });
-    lexer.add(/\*/, { tag: TokenType.STAR });
-    lexer.add(/\+/, { tag: TokenType.PLUS });
-    lexer.add(/\?/, { tag: TokenType.QMARK });
-    lexer.add(/;/, { tag: TokenType.SEMI_COLON });
-    lexer.add(/:/, { tag: TokenType.COLON });
-    lexer.add(/\|/, { tag: TokenType.PIPE });
-    lexer.add(/\s+/m, { tag: TokenType.SPACES }, () => null);
-    lexer.add(/\/\*.*?\*\//s, { tag: TokenType.COMMENT }, () => null);
-    lexer.add(/\/\/.*$/m, { tag: TokenType.COMMENT }, () => null);
-    lexer.add(TLEX.Samples.DOUBLE_QUOTE_STRING, { tag: TokenType.STRING }, (rule, tape, token) => {
+  const lexer = new TLEX.Tokenizer();
+  lexer.add(/->/, { tag: TokenType.ARROW });
+  lexer.add(/\[/, { tag: TokenType.OPEN_SQ });
+  lexer.add(/\]/, { tag: TokenType.CLOSE_SQ });
+  lexer.add(/\(/, { tag: TokenType.OPEN_PAREN });
+  lexer.add(/\)/, { tag: TokenType.CLOSE_PAREN });
+  lexer.add(/\{/, { tag: TokenType.OPEN_BRACE });
+  lexer.add(/\}/, { tag: TokenType.CLOSE_BRACE });
+  lexer.add(/\*/, { tag: TokenType.STAR });
+  lexer.add(/\+/, { tag: TokenType.PLUS });
+  lexer.add(/\?/, { tag: TokenType.QMARK });
+  lexer.add(/;/, { tag: TokenType.SEMI_COLON });
+  lexer.add(/:/, { tag: TokenType.COLON });
+  lexer.add(/\|/, { tag: TokenType.PIPE });
+  lexer.add(/\s+/m, { tag: TokenType.SPACES }, () => null);
+  lexer.add(/\/\*.*?\*\//s, { tag: TokenType.COMMENT }, () => null);
+  lexer.add(/\/\/.*$/m, { tag: TokenType.COMMENT }, () => null);
+  lexer.add(
+    TLEX.Samples.DOUBLE_QUOTE_STRING,
+    { tag: TokenType.STRING },
+    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
       token.value = tape.substring(token.start + 1, token.end - 1);
       return token;
-    });
-    lexer.add(TLEX.Samples.SINGLE_QUOTE_STRING, { tag: TokenType.STRING }, (rule, tape, token) => {
+    },
+  );
+  lexer.add(
+    TLEX.Samples.SINGLE_QUOTE_STRING,
+    { tag: TokenType.STRING },
+    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
       token.value = tape.substring(token.start + 1, token.end - 1);
       return token;
-    });
-    lexer.add(TLEX.Samples.JS_REGEX, { tag: TokenType.REGEX }, (rule, tape, token) => {
+    },
+  );
+  lexer.add(
+    TLEX.Samples.JS_REGEX,
+    { tag: TokenType.REGEX },
+    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
       const pattern = tape.substring(token.positions[1][0], token.positions[1][1]);
       const flags = tape.substring(token.positions[3][0], token.positions[3][1]);
       token.value = [pattern, flags];
       return token;
-    });
-    lexer.add(/\d+/, { tag: TokenType.NUMBER }, (rule, tape, token) => {
-      token.value = parseInt(tape.substring(token.start, token.end));
-      return token;
-    });
-    lexer.add(/%([\w][\w\d_]*)/, { tag: TokenType.PCT_IDENT }, (rule, tape, token) => {
+    },
+  );
+  lexer.add(/\d+/, { tag: TokenType.NUMBER }, (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
+    token.value = parseInt(tape.substring(token.start, token.end));
+    return token;
+  });
+  lexer.add(
+    /%([\w][\w\d_]*)/,
+    { tag: TokenType.PCT_IDENT },
+    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
       token.value = tape.substring(token.start + 1, token.end);
       return token;
-    });
-    lexer.add(/\$\d+/, { tag: TokenType.DOLLAR_NUM }, (rule, tape, token) => {
-      token.value = parseInt(tape.substring(token.start + 1, token.end));
-      return token;
-    });
-    lexer.add(/\$([\w][\w\d_]*)/, { tag: TokenType.DOLLAR_IDENT }, (rule, tape, token) => {
+    },
+  );
+  lexer.add(/\$\d+/, { tag: TokenType.DOLLAR_NUM }, (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
+    token.value = parseInt(tape.substring(token.start + 1, token.end));
+    return token;
+  });
+  lexer.add(
+    /\$([\w][\w\d_]*)/,
+    { tag: TokenType.DOLLAR_IDENT },
+    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
       token.value = tape.substring(token.start + 1, token.end);
       return token;
-    });
-    lexer.add(/[\w][\w\d_]*/, { tag: TokenType.IDENT });
-    return lexer;
-  }
+    },
+  );
+  lexer.add(/[\w][\w\d_]*/, { tag: TokenType.IDENT });
+  return lexer;
+}

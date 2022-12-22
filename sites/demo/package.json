@@ -20,5 +20,9 @@
     "sass": "^1.56.2",
     "tlex": "file:..",
     "typescript": "4.9.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.54",
+    "mdx-bundler": "^9.0.1"
   }
 }

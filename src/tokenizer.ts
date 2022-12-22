@@ -2,12 +2,12 @@ import * as TSU from "@panyam/tsutils";
 import { Regex, Union, Rule, RuleConfig } from "./core";
 import { Prog, Match, VM } from "./vm";
 import { Compiler } from "./compiler";
-import { TapeInterface as Tape } from "./tape";
+import { TapeInterface as Tape, Tape as DefaultTape } from "./tape";
 import { TokenizerError } from "./errors";
 import * as Builder from "./builder";
 import { Token, TokenType } from "./token";
 
-export type RuleMatchHandler = (rule: Rule, tape: Tape, token: any, owner: any) => any;
+export type RuleMatchHandler = (rule: Rule, tape: Tape, token: Token, owner: any) => any;
 
 export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
   const out = new Token(tag, m.matchIndex, m.start, m.end);
@@ -147,8 +147,11 @@ export class Tokenizer extends BaseTokenizer {
     return token;
   }
 
-  tokenize(tape: Tape, owner: any = null): Token[] {
+  tokenize(tape: string | Tape, owner: any = null): Token[] {
     const tokens = [] as Token[];
+    if (typeof tape === "string") {
+      tape = new DefaultTape(tape);
+    }
     let next = this.next(tape, owner);
     while (next) {
       tokens.push(next);

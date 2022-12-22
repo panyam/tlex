@@ -630,6 +630,11 @@ export interface RuleConfig {
   matchIndex?: number;
 
   /**
+   * Whether to skip this rule or not.
+   */
+  skip?: boolean;
+
+  /**
    * States in which this rule is active.
    */
   activeStates?: Set<string>;
@@ -690,9 +695,18 @@ export class Rule {
    */
   constructor(public expr: Regex, config?: RuleConfig) {
     config = config || ({} as RuleConfig);
-    this.tag = TSU.Misc.dictGet(config, "tag", null);
-    this.priority = TSU.Misc.dictGet(config, "priority", 10);
-    this.matchIndex = TSU.Misc.dictGet(config, "matchIndex", -1);
+    this.tag = config.tag || null;
+    if (config.priority == 0) {
+      this.priority = 0;
+    } else {
+      this.priority = config.priority || 10;
+    }
+    if (config.matchIndex == 0) {
+      this.matchIndex = 0;
+    } else {
+      this.matchIndex = config.matchIndex || -1;
+    }
+    this.skip = config.skip || false;
     this.activeStates = config.activeStates || null;
   }
 

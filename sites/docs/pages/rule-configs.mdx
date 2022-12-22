@@ -1,0 +1,30 @@
+# Configuring Rules
+
+By default when rules are added to the tokenizer they are matched in the order in which they are specified.
+
+For example in the following config:
+
+```ts
+tokenizer = new TLEX.Tokenizer();
+
+tokenizer.add("hello")
+         .add("h.*o");
+```
+
+The following would match "hello" instead of the entire string even the latter is valid and a longer match:
+
+```
+tokenizer.tokenizeAll("hellohello");
+
+// Returns ["hello", "hello"] instead of ["hellohello"]
+```
+
+How rules are matched can be configured by the second parameter to the add method.  The add method takes 3 parameters:
+
+* `pattern`: A regex or string representing the regex for the rule.
+* `config`: A RuleConfig object
+* `onMatch`: A callback to be invokved then the rule has matched.  This gives the option 
+\param a
+\param b
+\param c
+
