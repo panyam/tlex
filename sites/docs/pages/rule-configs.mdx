@@ -1,14 +1,18 @@
+import SnipCode from "../components/SnipCode";
+
 # Configuring Rules
 
 By default when rules are added to the tokenizer they are matched in the order in which they are specified.
 
 For example in the following config:
 
-```ts
+<SnipCode languaage="ts">
+{`
 tokenizer = new TLEX.Tokenizer()
-              .add("hello")
-              .add("h.*o");
-```
+                .add("hello")
+                .add("h.*o");
+`}
+</SnipCode>
 
 The following would match "hello" instead of the entire string even the latter is valid and a longer match:
 
