@@ -32,7 +32,8 @@ const SyntaxHighlighter = (props) => {
   const code = children;
   let lines = stripLinePrefixSpaces(children.split("\n"))
   if (props.indent) {
-    lines = lines.map(l => "  " + l);
+    console.log("Indent: ", props.indent);
+    lines = lines.map((l) => "  " + l);
   }
   const cleanedCode = lines.join("\n").trim() + "\n";
   const styles = props.styles || defaultStyles;
@@ -68,17 +69,44 @@ const SyntaxHighlighter = (props) => {
 
 export default SyntaxHighlighter;
 
-/*
-interface PropType {
-  language?: string;
-  showOutput?: boolean;
-  showLineNumbers?: boolean;
-  children?: any[];
+/**
+ * Compiles a code snippet to gets its output by doing the following:
+ *
+ * 1. First checks if the snippet and its outputs have been cached, if so then returns
+ *    the output as is.
+ * 2. If not cached then compilation begins as follows
+ * 3. Identifies the folder in the file system where this snippet (and its metadata)
+ *    do (or should) reside.
+ * 4. A basic way of identifying a snippet is either by using the snippet's page + name
+ *    as its key or page + index as its key.  Typically it is expected snippets are fixed
+ *    in a page so even though we could move things around, they eventually get fixed.
+ *    Without loss of generality we can enforce each snippet to have a key provided by
+ *    the user that is unique within the page.
+ * 5. If the local dir for the snippet doesnt exist (eg <snippetsdir>/<pageslug>/<snippetid>
+ *    it is created.  If the dir exists and the snippet hash has not changed we return
+ *    last results.
+ * 6. Here the snippet is copied to an "input" file and stored in the snippets dir as
+ *    the source and ts-node on the file is run.  All output captured from this run
+ *    is saved as the output (with other metadata perhaps like last compiled etc).
+ * 7. The saved output is returned to be rendered.
+ * 8. We could even make this compilation/check/cache step part of another service
+ *    that runs outside the mdx processor if need be.
+ *
+ * How do we handle package dependencies?
+ *
+ * A snippet can be passed a "dependencies" object which is all packages that need to be
+ * installed for running that snippet.  Instead of passing dependencies to each snippet
+ * this could be a named list somewhere so that same named dependency list can be shared
+ * by multiple snippets.
+ *
+ * Having to pass dependencies can be a pain so we need a way to declarative apply to
+ * all snippets by default, overrideable at per snippet level, per page (all snippets
+ * in page) level.
+ *
+ * When the compiler backend sees a dependency list for a snippet, it sees if another
+ * "environment" (just a temp folder where dependencies are installed and compiled) exists
+ * with the exact same dependencies.  If it does then the source is copied there and
+ * compiled otherwise a new env is cfreated with just these dependencies.
+ */
+function compileSnippet(code: string, index: number) {
 }
-
-export default class SnipCode extends React.Component<PropType> {
-  render() {
-    return <>{this.props.children}</>;
-  }
-}
-*/
