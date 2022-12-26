@@ -29,26 +29,48 @@ export function stripLinePrefixSpaces(lines: string[]): string[] {
 // Built with https://www.peterlunch.com/blog/prism-react-render-nextjs
 const SyntaxHighlighter = (props) => {
   const children = props.children;
-  const code = children;
-  let lines = stripLinePrefixSpaces(children.split("\n"))
-  if (props.indent) {
-    console.log("Indent: ", props.indent);
+  let indent = 0;
+  let language = "";
+  let code = "";
+  let styles = defaultStyles;
+  let title = "Source"
+  let outputTitle = "Output";
+  let theme = defaultTheme;
+  if (typeof(children) === "string") {
+  // we are passed as a <SnipCode> node
+    indent = props.indent || 1;
+    language = props.language || "ts";
+    code = children;
+    styles = props.styles || defaultStyles;
+    title = props.title || title;
+    outputTitle = props.outputTitle || outputTitle;
+    theme = props.theme || defaultTheme;
+  } else {
+    // passed as a code node in MDX
+    const cprops = children.props;
+    code = cprops.children;
+    language = cprops.className?.replace("language-", "").trim();
+    console.log("CP: ", cprops);
+  }
+  let lines = stripLinePrefixSpaces(code.split("\n"))
+  if (indent) {
+    console.log("Indent: ", indent);
     lines = lines.map((l) => "  " + l);
   }
   const cleanedCode = lines.join("\n").trim() + "\n";
-  const styles = props.styles || defaultStyles;
 
-  console.log("Code: ", code);
-  console.log("Cleaned Code: ", cleanedCode);
+  // console.log("Code: ", code);
+  // console.log("Cleaned Code: ", cleanedCode);
+  console.log("Props: ", props);
 
   return (
     <>
-      <h3 className={styles.sourceTitleSpan}>{props.title || "Source"}</h3>
+      <h3 className={styles.sourceTitleSpan}>{title}</h3>
       <Highlight
         {...defaultProps}
         code={cleanedCode}
-        language={props.language || "ts"}
-        theme={props.theme || defaultTheme}>
+        language={language}
+        theme={theme}>
         {({ className, style, tokens, getLineProps, getTokenProps }) => (
           <pre className={className} style={{ ...style }}>
             {tokens.slice(0, -1).map((line, i) => (
@@ -61,7 +83,7 @@ const SyntaxHighlighter = (props) => {
           </pre>
         )}
       </Highlight>
-      <h3 className={styles.outputTitleSpan}>{props.outputTitle || "Output"}</h3>
+      <h3 className={styles.outputTitleSpan}>{outputTitle}</h3>
       <div>output goes here</div>
     </>
   );

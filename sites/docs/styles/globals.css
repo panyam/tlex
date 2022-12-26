@@ -8,11 +8,31 @@ body {
 
 a {
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline transparent;
+  transition: 0.25s ease-in-out;
 }
 
 * {
   box-sizing: border-box;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+.max-width-container {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 10px;
+}
+
+.max-width-container.main {
+  padding: 50px 30px;
+}
+
+p {
+  line-height: 1.6;
 }
 
 @media (prefers-color-scheme: dark) {

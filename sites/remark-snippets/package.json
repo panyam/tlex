@@ -4,7 +4,6 @@
   "description": "A snippet plugin for MDX where snippets are executed and their outputs caputred allowing for upto date documentation pages.",
   "main": "index.js",
   "exports": "./index.js",
-  "type": "module",
   "engines": {
     "node": ">=14"
   },
@@ -23,7 +22,10 @@
   "author": "Sriram Panyam",
   "license": "ISC",
   "dependencies": {
+    "@mapbox/rehype-prism": "^0.8.0",
     "@types/mdast": "^3.0.10",
+    "acorn-jsx": "^5.3.2",
+    "next-mdx-enhanced": "^5.0.0",
     "unified": "^10.1.2",
     "unist-util-visit": "^4.1.1"
   },

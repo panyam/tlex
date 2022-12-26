@@ -1,11 +1,18 @@
 {
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "compilerOptions": {
     "declaration": true,
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "esnext",
+    "moduleResolution": "node",
     "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
     "target": "es2018"
-  }
+  },
+  "include": [
+    "./index.ts"
+  ]
 }

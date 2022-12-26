@@ -1,5 +1,47 @@
+@import "./default_vars.scss";
+@import "./Header.module.scss";
+@import "./menu.module.scss";
+@import "./search.module.scss";
+
 .container {
   padding: 0 2rem;
+}
+
+.mainContainer {
+  padding: 15px 30px;
+  padding-top: 45px;
+}
+
+.articleList {
+  margin-top: 55px;
+}
+
+.desc {
+  color: #3b3b3b;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.postItem {
+  margin-bottom: 40px;
+}
+
+.img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 50%;
+}
+.button {
+  display: block;
+  max-width: 300px;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0 auto;
+  padding: 10px;
+  border: none;
+  background-color: #3b3b3b;
+  color: #fff;
 }
 
 .main {
