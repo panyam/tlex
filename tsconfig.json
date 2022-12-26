@@ -2,7 +2,8 @@
   "exclude": [
     "node_modules",
     "lib",
-    "./src/**/*.spec.ts"
+    "./src/**/*.spec.ts",
+    "./sites/**/*.spec.ts"
   ],
   "compilerOptions": {
     "allowJs": false,
