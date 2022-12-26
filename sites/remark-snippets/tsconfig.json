@@ -4,8 +4,10 @@
     "dist"
   ],
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "module": "esnext",
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "noEmit": true,
     "skipLibCheck": true,

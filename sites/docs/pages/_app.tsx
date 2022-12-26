@@ -6,7 +6,7 @@ import SnipCode from "../components/SnipCode";
 
 
 const MDXComponents = {
-  pre: (props) => <SnipCode {...props} />,
+  // pre: (props) => <SnipCode {...props} />,
 };
 
 export default function App({ Component, pageProps }: AppProps) {

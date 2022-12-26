@@ -1,8 +1,8 @@
----
-title: React Navigation Tutorial
-publishedOn: January, 6th. 2022
-excerpt: React Navigation is a number one tool to learn in React Native. You would always use them; these are some of the best practices in using React Navigation
----
+export const meta = {
+  "title": "React Navigation Tutorial",
+  "publishedOn": "January, 6th. 2022",
+  "excerpt": "React Navigation is a number one tool to learn in React Native. You would always use them; these are some of the best practices in using React Navigation",
+}
 
 # Getting Started
 
@@ -44,3 +44,10 @@ tokens = tokenizer.tokenize("90     hello     100");
 console.log(tokens.map((t: TLEX.Token) => t.value));
 // [ "90", "     ", "hello", "     ", "100" ]
 ```
+
+export const getStaticProps = async () => {
+  return {
+    props: {
+    },
+  };
+}

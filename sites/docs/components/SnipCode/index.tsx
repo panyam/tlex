@@ -36,6 +36,7 @@ const SyntaxHighlighter = (props) => {
   let title = "Source"
   let outputTitle = "Output";
   let theme = defaultTheme;
+  let hideOutput = false;
   if (typeof(children) === "string") {
   // we are passed as a <SnipCode> node
     indent = props.indent || 1;
@@ -45,23 +46,29 @@ const SyntaxHighlighter = (props) => {
     title = props.title || title;
     outputTitle = props.outputTitle || outputTitle;
     theme = props.theme || defaultTheme;
+    hideOutput = props.hideOutput || false;
   } else {
     // passed as a code node in MDX
+    console.log("Props: ", props);
     const cprops = children.props;
     code = cprops.children;
     language = cprops.className?.replace("language-", "").trim();
-    console.log("CP: ", cprops);
+    // console.log("CP: ", cprops);
   }
   let lines = stripLinePrefixSpaces(code.split("\n"))
   if (indent) {
+    let prefix = "";
+    for (let i = 0;i < indent;i++) {
+      prefix += "  ";
+    }
     console.log("Indent: ", indent);
-    lines = lines.map((l) => "  " + l);
+    lines = lines.map((l) => prefix + l);
   }
   const cleanedCode = lines.join("\n").trim() + "\n";
 
   // console.log("Code: ", code);
   // console.log("Cleaned Code: ", cleanedCode);
-  console.log("Props: ", props);
+  // console.log("Props: ", props);
 
   return (
     <>
@@ -83,8 +90,6 @@ const SyntaxHighlighter = (props) => {
           </pre>
         )}
       </Highlight>
-      <h3 className={styles.outputTitleSpan}>{outputTitle}</h3>
-      <div>output goes here</div>
     </>
   );
 };
