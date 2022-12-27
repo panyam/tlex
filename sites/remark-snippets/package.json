@@ -27,6 +27,8 @@
     "@types/mdast": "^3.0.10",
     "acorn-jsx": "^5.3.2",
     "next-mdx-enhanced": "^5.0.0",
+    "nice-grpc": "^2.0.1",
+    "snippetsvc": "^0.0.3",
     "unified": "^10.1.2",
     "unist-util-visit": "^4.1.1"
   },
