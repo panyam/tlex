@@ -1,15 +1,21 @@
 import SnipCode from "../components/SnipCode";
 
+export const meta = {
+  "snipenv": "v1",
+}
+
 # Configuring Rules
 
 By default when rules are added to the tokenizer they are matched in the order in which they are specified.
 
 For example in the following config:
 
-<SnipCode languaage="ts" indent={1} children={`
+<SnipCode language="ts" children={`
+  import * as TLEX from "tlex";
   const tokenizer = new TLEX.Tokenizer()
                   .add("hello")
                   .add("h.*o");
+  console.log(tokenizer.tokenize("hellohello"));
 `}/>
 
 The following would match "hello" instead of the entire string even the latter is valid and a longer match:
@@ -17,7 +23,7 @@ The following would match "hello" instead of the entire string even the latter i
 <h3>Testing</h3>
 
 ```ts a=b
-tokenizer.tokenizeAll("hellohello");
+tokenizer.tokenize("hellohello");
 // Returns ["hello", "hello"] instead of ["hellohello"]
 ```
 
