@@ -10,7 +10,7 @@ By default when rules are added to the tokenizer they are matched in the order i
 
 For example in the following config:
 
-<SnipCode language="ts" children={`
+<SnipCode id = "1" language="ts" children={`
   import * as TLEX from "tlex";
   const tokenizer = new TLEX.Tokenizer()
                   .add("hello")
@@ -22,10 +22,10 @@ The following would match "hello" instead of the entire string even the latter i
 
 <h3>Testing</h3>
 
-```ts a=b
-tokenizer.tokenize("hellohello");
-// Returns ["hello", "hello"] instead of ["hellohello"]
-```
+<SnipCode id = "2" prev = "1" children = {`
+  tokenizer.tokenize("hellohello");
+  // Returns ["hello", "hello"] instead of ["hellohello"]
+`} />
 
 How rules are matched can be configured by the second parameter to the add method.  The add method takes 3 parameters:
 

@@ -36,7 +36,12 @@ const withMDX = nextMDX({
 
     // remarkPlugins: [remarkFrontmatter],
     // rehypePlugins: [rehypeHighlight],
-    remarkPlugins: [remarkFrontmatter, remarkSnippets],
+    remarkPlugins: [
+      remarkFrontmatter,
+      [remarkSnippets, {
+        "foo": "bar",
+      }],
+    ],
     rehypePlugins: [rehypeHighlight],
 
     // If you use `MDXProvider`, uncomment the following line.

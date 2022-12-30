@@ -15,6 +15,7 @@
     "target": "es2018"
   },
   "include": [
-    "./index.ts"
+    "./index.ts",
+    "./utils.ts"
   ]
 }

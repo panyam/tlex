@@ -3,14 +3,18 @@
   "version": "0.0.1",
   "description": "A snippet plugin for MDX where snippets are executed and their outputs caputred allowing for upto date documentation pages.",
   "main": "index.js",
-  "exports": "./index.js",
+  "exports": [
+    "./index.js"
+  ],
   "type": "module",
   "engines": {
     "node": ">=14"
   },
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "utils.js",
+    "utils.d.ts"
   ],
   "scripts": {
     "prepack": "tsc --noEmit false",
