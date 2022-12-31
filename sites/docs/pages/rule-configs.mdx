@@ -9,7 +9,7 @@ By default when rules are added to the tokenizer they are matched in the order i
 
 For example in the following config:
 
-```ts snippet=1
+```ts
   import * as TLEX from "tlex";
   const tokenizer = new TLEX.Tokenizer()
                   .add("hello")
@@ -19,7 +19,7 @@ For example in the following config:
 
 The following would match "hello" instead of the entire string even the latter is valid and a longer match:
 
-```ts snippet="2"
+```ts
   console.log("Another hello world")
 ```
 
