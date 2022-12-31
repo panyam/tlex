@@ -1,4 +1,3 @@
-import SnipCode from "../components/SnipCode";
 
 export const meta = {
   "snipenv": "v1",
@@ -10,22 +9,21 @@ By default when rules are added to the tokenizer they are matched in the order i
 
 For example in the following config:
 
-<SnipCode id = "1" language="ts" children={`
+```ts snippet=1
   import * as TLEX from "tlex";
   const tokenizer = new TLEX.Tokenizer()
                   .add("hello")
                   .add("h.*o");
   console.log(tokenizer.tokenize("hellohello"));
-`}/>
+```
 
 The following would match "hello" instead of the entire string even the latter is valid and a longer match:
 
-<h3>Testing</h3>
+```ts snippet="2"
+  console.log("Another hello world")
+```
 
-<SnipCode id = "2" prev = "1" children = {`
-  tokenizer.tokenize("hellohello");
-  // Returns ["hello", "hello"] instead of ["hellohello"]
-`} />
+<h3>Testing</h3>
 
 How rules are matched can be configured by the second parameter to the add method.  The add method takes 3 parameters:
 

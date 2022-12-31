@@ -39,7 +39,27 @@ const withMDX = nextMDX({
     remarkPlugins: [
       remarkFrontmatter,
       [remarkSnippets, {
-        "foo": "bar",
+        /**
+         * Address of the snippet service to be invokved to run our snippets.
+         */
+        snippetsvc: {
+          addr: "localhost:7000", // default
+        },
+        /**
+         * Different environments that can be used so they dont have to
+         * be defined in the mdx files.  These environments can be overridden
+         * in specific mdx files and new ones can also be created.
+         */
+        envinfo: {
+          default: "default",
+          envs: [{
+            name: "default",
+            packages: [{
+              "tlex": "*",
+            }],
+          }],
+        },
+        foo: "bar",
       }],
     ],
     rehypePlugins: [rehypeHighlight],

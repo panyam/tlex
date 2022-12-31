@@ -8,10 +8,10 @@
   "compilerOptions": {
     "allowJs": false,
     "declaration": true,
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "downlevelIteration": true,
     "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
     "experimentalDecorators": true,
     "module": "ES2020",
     "noFallthroughCasesInSwitch": true,
