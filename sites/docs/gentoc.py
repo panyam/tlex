@@ -23,26 +23,30 @@ def collectFrom(path, rootdir=None):
 
         file = entry["file"]
         title = entry.get("title", file)     ## Read front matter
-        link = entry.get("link", "")
+        link = entry.get("link", None)
+        print("Entry: ", entry, link)
         entrypath = os.path.join(path, file)
         if os.path.isdir(entrypath):
             # recurse
             item = {
-              isDir: True,
-              "title": title,
-              children: collectFrom(entrypath, rootdir)
+                isDir: True,
+                "title": title,
+                children: collectFrom(entrypath, rootdir)
             }
         else:
+            print("Link: ", link)
             item = {
                 "title": title,
                 "isDir": False,
-                "link": link if link else stripped(entrypath),
+                "link": link if link is not None else stripped(entrypath),
             }
+            print("FL: ", link if link is not None else stripped(entrypath), item)
         out.append(item)
     return out
 
 def writeTOC(path, outfile):
     toc = collectFrom(path)
+    print("TOC: ", toc)
     contents = f"""export default JSON.parse('{json.dumps(toc)}')"""
     contents2 = f"""export default {json.dumps(toc)}"""
     open (outfile, "w").write(contents2)

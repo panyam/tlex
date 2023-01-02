@@ -13,13 +13,15 @@ export default class TOC extends React.Component<{
 
   render() {
     console.log("Props: ", toc)
+    let dirCount = 0;
+    let itemCount = 0;
     function createMenu(item: any) {
       if (item.isDir) {
-          return <div className={styles.dirHolder}>
+          return <div key={`dirDiv_${dirCount++}`} className={styles.dirHolder}>
             { item.children.map(createMenu) }
           </div>
       } else {
-        return <h3 className={styles.itemTitle}><a href={item.link}>{item.title}</a></h3>
+        return <h3 key={`dirDiv_${itemCount++}`} className={styles.itemTitle}><a href={item.link}>{item.title}</a></h3>
       }
     }
 
