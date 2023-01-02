@@ -73,6 +73,16 @@ const finalConfig = withMDX({
   reactStrictMode: true,
   swcMinify: true,
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
+   webpack: (config, { isServer }) => {
+        if (!isServer) {
+            // don't resolve 'fs' module on the client to prevent this error on build --> Error: Can't resolve 'fs'
+            config.resolve.fallback = {
+                fs: false
+            }
+        }
+
+        return config;
+    },
 });
 
 // If you have other Next.js configurations, you can pass them as the parameter:

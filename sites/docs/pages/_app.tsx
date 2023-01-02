@@ -6,11 +6,19 @@ import Snippet from "../components/Snippet";
 import { readdir, readFile, writeFile } from 'fs/promises';
 
 
-
-const MDXComponents = {
-  // pre: Snippet,
-};
-
 export default function App({ Component, pageProps }: AppProps) {
-  return <MDXProvider components = {MDXComponents}><Layout><Component {...pageProps} /></Layout></MDXProvider>;
+  console.log("PP: ", pageProps)
+  return <MDXProvider><Layout><Component {...pageProps} /></Layout></MDXProvider>;
+}
+
+import { findAllPosts } from "../components/utils"
+App.getStaticProps = async (context: any) => {
+  console.log("In get props")
+  const posts = await findAllPosts();
+  console.log("Info: ", posts)
+  return {
+    props: {
+      toc: await findAllPosts()
+    },
+  };
 }

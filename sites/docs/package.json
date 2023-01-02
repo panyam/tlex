@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run toc && next dev",
+    "toc": "python -c \"import gentoc  ; gentoc.writeTOC('./pages', 'components/toc.ts')\"",
     "build": "next build",
     "start": "next start",
     "test": "jest --coverage --runInBand",
