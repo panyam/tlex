@@ -20,22 +20,30 @@ import {
 import { CharClassType } from "./charclasses";
 import { GroupCounter } from "./utils";
 
+/**
+ * A RegexParser for parsing regex strings in JS RegExp format.
+ * This class will seldom have to be used directly.  Instead use one of the methods in {@link Builder}
+ */
 export class RegexParser {
-  unicode: boolean;
-  counter: GroupCounter;
-  constructor(public readonly pattern: string, config?: any) {
+  protected unicode: boolean;
+  protected counter: GroupCounter;
+  /**
+   * @param pattern The pattern string being parsed.
+   * @param config  Configs for the regex to include whether parsing is unicode or plain ASCII.
+   */
+  constructor(public readonly pattern: string, config?: { unicode?: boolean }) {
     this.counter = new GroupCounter();
     this.unicode = config?.unicode || false;
   }
 
-  reduceLeft(stack: Regex[]): Regex {
+  protected reduceLeft(stack: Regex[]): Regex {
     const r = stack.length == 1 ? stack[0] : new Cat(...stack);
     // remove all elements on stack
     stack.splice(0);
     return r;
   }
 
-  throwError(msg: string): void {
+  protected throwError(msg: string): void {
     throw new SyntaxError(`Error in JS RE '${this.pattern}': ${msg}`);
   }
 
@@ -121,7 +129,7 @@ export class RegexParser {
     return new Cat(...stack);
   }
 
-  parseGroup(stack: Regex[], curr: number, end: number): number {
+  protected parseGroup(stack: Regex[], curr: number, end: number): number {
     // we have a grouping or an assertion
     let clPos = curr + 1;
     let depth = 0;
@@ -208,7 +216,7 @@ export class RegexParser {
     return clPos + 1;
   }
 
-  parseCharGroup(curr: number, end: number): Char {
+  protected parseCharGroup(curr: number, end: number): Char {
     const out: Char[] = [];
     // first see which characters are in this (until the end)
     let i = curr;
@@ -249,7 +257,7 @@ export class RegexParser {
     return CharGroup.Union(neg, out);
   }
 
-  parseChar(index = 0, end = 0): [LeafChar, number] {
+  protected parseChar(index = 0, end = 0): [LeafChar, number] {
     if (this.pattern[index] == "\\") {
       return this.parseEscapeChar(index, end);
     } else {
@@ -257,13 +265,13 @@ export class RegexParser {
     }
   }
 
-  parseSingleChar(index = 0, end = 0): [LeafChar, number] {
+  protected parseSingleChar(index = 0, end = 0): [LeafChar, number] {
     // single char
     const ch = this.pattern.charCodeAt(index);
     return [LeafChar.Single(ch), 1];
   }
 
-  parsePropertyEscape(index = 0, end = 0): [LeafChar, number] {
+  protected parsePropertyEscape(index = 0, end = 0): [LeafChar, number] {
     const pattern = this.pattern;
     if (pattern[index] + 1 != "{") {
       this.throwError("Invalid property escape");
@@ -291,7 +299,7 @@ export class RegexParser {
     return [LeafChar.PropertyEscape(propName, propValue), 2 + clEnd + 1 - index];
   }
 
-  parseEscapeChar(index = 0, end = 0): [LeafChar, number] {
+  protected parseEscapeChar(index = 0, end = 0): [LeafChar, number] {
     const pattern = this.pattern;
     TSU.assert(pattern[index] == "\\", "Expected '\\'");
     // escape char
@@ -389,7 +397,7 @@ export class RegexParser {
     }
   }
 
-  parseQuant(stack: Regex[], curr: number, end: number): number {
+  protected parseQuant(stack: Regex[], curr: number, end: number): number {
     const pattern = this.pattern;
     const lastCh = pattern[curr - 1];
     let minCount = 1,

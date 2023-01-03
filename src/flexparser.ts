@@ -30,20 +30,12 @@ function advanceIf(tape: Tape, ch: string): boolean {
   return true;
 }
 
+/**
+ * A RegexParser for parsing regex strings in Flex RE format.
+ * This class will seldom have to be used directly.  Instead use one of the methods in {@link Builder}
+ */
 export class RegexParser {
-  counter: GroupCounter = new GroupCounter();
-
-  reduceLeft(stack: Regex[]): Regex {
-    const r = stack.length == 1 ? stack[0] : new Cat(...stack);
-    // remove all elements on stack
-    stack.splice(0);
-    return r;
-  }
-
-  throwError(pattern: Tape, msg: string): void {
-    throw new Error(msg);
-    // this.throwError(pattern, `Error in Flex RE '${pattern.input}': ${msg}`);
-  }
+  protected counter: GroupCounter = new GroupCounter();
 
   parse(pattern: Tape, ignoreSpaces = false, obCount = 0): Regex {
     const stack: Regex[] = [];
@@ -170,7 +162,7 @@ export class RegexParser {
     return new Cat(...stack);
   }
 
-  parseQuant(pattern: Tape, stack: Regex[]): void {
+  protected parseQuant(pattern: Tape, stack: Regex[]): void {
     let minCount = 1,
       maxCount = 1;
     if (advanceIf(pattern, "*")) {
@@ -252,7 +244,7 @@ export class RegexParser {
     }
   }
 
-  parseCharGroup(pattern: Tape): Char {
+  protected parseCharGroup(pattern: Tape): Char {
     const out: Char[] = [];
     TSU.assert(advanceIf(pattern, "["), "Expected '['");
     // first see which characters are in this (until the end)
@@ -289,7 +281,7 @@ export class RegexParser {
     return CharGroup.Union(neg, out);
   }
 
-  parseChar(pattern: Tape): LeafChar {
+  protected parseChar(pattern: Tape): LeafChar {
     if (pattern.currCh == "\\") {
       return this.parseEscapeChar(pattern);
     } else {
@@ -297,14 +289,14 @@ export class RegexParser {
     }
   }
 
-  parseSingleChar(pattern: Tape): LeafChar {
+  protected parseSingleChar(pattern: Tape): LeafChar {
     // single char
     const ch = pattern.currCh;
     pattern.advance(1);
     return LeafChar.Single(ch);
   }
 
-  parsePropertyEscape(pattern: Tape): LeafChar {
+  protected parsePropertyEscape(pattern: Tape): LeafChar {
     TSU.assert(advanceIf(pattern, "\\{"), "Invalid property escape");
     pattern.advance(2);
     let foundEq = false;
@@ -333,7 +325,7 @@ export class RegexParser {
     return LeafChar.PropertyEscape(propName, propValue);
   }
 
-  parseEscapeChar(pattern: Tape): LeafChar {
+  protected parseEscapeChar(pattern: Tape): LeafChar {
     TSU.assert(advanceIf(pattern, "\\"), "Expected '\\'");
     // escape char
     if (!pattern.hasMore) {
@@ -399,5 +391,17 @@ export class RegexParser {
     const ch = pattern.currCh;
     pattern.advance(1);
     return LeafChar.Single(ch);
+  }
+
+  protected reduceLeft(stack: Regex[]): Regex {
+    const r = stack.length == 1 ? stack[0] : new Cat(...stack);
+    // remove all elements on stack
+    stack.splice(0);
+    return r;
+  }
+
+  protected throwError(pattern: Tape, msg: string): void {
+    throw new Error(msg);
+    // this.throwError(pattern, `Error in Flex RE '${pattern.input}': ${msg}`);
   }
 }
