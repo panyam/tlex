@@ -31,7 +31,7 @@
   "scripts": {
     "clean": "rm -Rf lib && jest --clearCache && rm -rf static/lib",
     "build": "npm run  clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
-    "docs": "npx typedoc src/index.ts --name 'TLEX' --out './apidocs'",
+    "docs": "npx typedoc src/index.ts --name 'TLEX' --out './sites/docs'",
     "test": "jest --coverage --runInBand",
     "start": "webpack-dev-server --mode=development",
     "lint": "eslint './src' --quiet --ext .ts --resolve-plugins-relative-to .",

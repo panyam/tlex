@@ -62,10 +62,28 @@ export class BaseTokenizer {
     return this.allRules.find((r) => r.tag == value) || null;
   }
 
+  /**
+   * Helper method over the addRule method that converts the pattern to its normalized expression form
+   * and adds a rule to the tokenizer.
+   *
+   * @param pattern     A raw string or a JS RegExp, or parsed Regex expression
+   *                    (either from JS or Flex RE syntax).
+   * @param config      Rule configs to control priority and other aspects of rules to be used during
+   *                    the match stage.
+   * @param onMatch     A callback method called when the rule is matched.
+   */
   add(pattern: string | RegExp | Regex, config?: RuleConfig, onMatch: RuleMatchHandler | null = null): this {
     return this.addRule(Builder.build(pattern, config), onMatch);
   }
 
+  /**
+   * Helper method over the addRule method that converts the pattern to its normalized expression form
+   * and adds a rule to the tokenizer.
+   *
+   * @param rule        A normalized Rule object that contains both the pattern as well as rule configs
+   *                    to be used during the match and afterwards (if successfully matched).
+   * @param onMatch     A callback method called when the rule is matched.
+   */
   addRule(rule: Rule, onMatch: null | RuleMatchHandler = null): this {
     rule.matchIndex = this.allRules.length;
     this.allRules.push(rule);

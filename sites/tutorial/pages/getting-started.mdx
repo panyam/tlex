@@ -6,7 +6,7 @@ export const meta = {
 
 # Getting Started
 
-## Intallation
+## Installation
 
 ```ts
 npm install --save tlex
@@ -15,7 +15,7 @@ npm install --save tlex
 ## Basic Usage
 
 
-```ts hello="world"
+```ts snippet=s1
 import * as TLEX from "tlex";
 
 /**
@@ -48,6 +48,7 @@ console.log(tokens.map((t: TLEX.Token) => t.value));
 export const getStaticProps = async () => {
   return {
     props: {
+      t: "hello",
     },
   };
 }

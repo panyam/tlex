@@ -1,0 +1,40 @@
+export const meta = {
+  "title": "Configuring rules",
+  "publishedOn": "January, 6th. 2022",
+  "excerpt": "Setup instructions on getting started with TLEX",
+  "snipenv": "v1",
+}
+
+# A simple example
+
+By default when rules are added to the tokenizer they are matched in the order in which they are specified.
+
+For example in the following config:
+
+```ts snippet=1 silent=true
+  import * as TLEX from "tlex";
+  const tokenizer = new TLEX.Tokenizer()
+                  .add("hello")
+                  .add("world")
+                  .add(/\s+/)
+                  .add(/h.*o/);
+```
+
+matching:
+
+```ts snippet=2 prev=1 silent=true
+  console.log(tokenizer.tokenize("hello hello"));
+```
+
+would yield the following tokens:
+
+```snipout src=2
+```
+
+Notice the matchIndex - denoting the rule that matched.  Both (non-space) tokens have a matchIndex of 0 (instead of the longer 3 corresponding to "h.*o").
+
+# Configuring rules
+
+The add method on the tokenizer takes the following parameters:
+
+

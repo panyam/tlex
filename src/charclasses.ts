@@ -12,7 +12,13 @@ const uA = "A".charCodeAt(0);
 const uZ = "Z".charCodeAt(0);
 const USCORE = "_".charCodeAt(0);
 
-abstract class CharClassHelper {
+/**
+ * An abstract class to be implemented for enabling different types of char classes.
+ * Char classes are a form of "short codes" to identify characters.  eg SPACES, DIGITS etc.
+ * Char classes are only shortcuts.  One can get away without using them and instead explicitly
+ * construct the underlying state machine or regex (eg DIGIT could be replaced with [0-9]).
+ */
+export abstract class CharClassHelper {
   matches(charCode: number, neg: boolean): boolean {
     const res = this.match(charCode);
     return neg ? !res : res;
@@ -21,10 +27,13 @@ abstract class CharClassHelper {
   abstract reString(neg: boolean): string;
 }
 
-// Spaces - \s => [ \b\c\u00a0\t\r\n\u2028\u2029<BOM><USP>]
-// BOM = \uFEFF
-// USP = Other unicode space separator
 const spaceChars = " \f\n\r\t\v\u00a0\u1680\u2028\u2029\u202f\u205f\u3000\ufeff";
+
+/**
+ * Spaces - \s => [ \b\c\u00a0\t\r\n\u2028\u2029<BOM><USP>]
+ * BOM = \uFEFF
+ * USP = Other unicode space separator
+ */
 export class Spaces extends CharClassHelper {
   match(charCode: number): boolean {
     // if (charCode == 0x180e) return true;
@@ -40,7 +49,9 @@ export class Spaces extends CharClassHelper {
   }
 }
 
-// Digits - \d => 0-9
+/**
+ * Char class for denoting a digit - [0-9].
+ */
 export class Digit extends CharClassHelper {
   match(charCode: number): boolean {
     return charCode >= ZERO && charCode <= NINE;
@@ -51,7 +62,9 @@ export class Digit extends CharClassHelper {
   }
 }
 
-//  Char Class - "\w"
+/**
+ * Char class for denoting "\\w" - ie any WordChar
+ */
 export class WordChar extends CharClassHelper {
   match(charCode: number): boolean {
     return (

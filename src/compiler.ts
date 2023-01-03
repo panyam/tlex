@@ -17,8 +17,8 @@ import {
 } from "./core";
 import { OpCode, Prog, Instr } from "./vm";
 
-type RegexResolver = (name: string) => Regex;
-type CompilerListener = (expr: Regex, prog: Prog, start: number, length: number) => void;
+export type RegexResolver = (name: string) => Regex;
+export type CompilerListener = (expr: Regex, prog: Prog, start: number, length: number) => void;
 
 /**
  * The regex Compiler compiles a parsed regular expression tree into bytecode that is
@@ -185,36 +185,8 @@ export class Compiler {
   }
 
   /**
-   * Compiles a repetition (with quantifiers) into its instructions.
-   *
-   * Option 1 (currently used) - convert x{a,b} to xxxxxx (a) times followed by x? b - a times
-   *  Problem with this is that it can have unbounded sizes on regexes.
-   *
-   * Option 2 - Experimental
-   *
-   *  Problem is here is we must allow for duplicate threads for an offset in a given
-   *  generation - possibly causing an exponential blowup.
-   *
-   * For Regex{A,B} do something like:
-   * L0: AcquireReg     # acquire new register at L0 and set value to 0
-   * L1: CodeFor expr   # Emit code for expr
-   * L2: ...
-   * L5: ... Code for Regex ends here
-   * L6: IncReg L0    # Increment value of register at L0
-   *
-   * # If value of register at L0 is < A jump to L1
-   * L7: JumpIfLt L0, A, L1
-   *
-   * # If value of register at L0 is >= B jump to LX (after split)
-   * L8: JumpIfGt L0, B - 1, L10
-   *
-   * # Else split and repeat as we are between A and B
-   * # Ofcourse swap L1 and L?? if match is not greedy
-   * L9: Split L1, L10
-   *
-   * L10: ReleaseReg L0 # Release register - no longer used
-   *
-   * In the above if A == 0 then insert a Split L11 before L0 above
+   * Compiles a repetition (with quantifiers) into its instructions.  This explicitly expands
+   * a rule of the form x\{a,b\} to xx... (a) times followed by x? (b - a) times
    */
   protected compileQuant(quant: Quant, prog: Prog, ignoreCase: boolean, dotAll: boolean, multiline: boolean): void {
     // optimize the special cases of *, ? and +
