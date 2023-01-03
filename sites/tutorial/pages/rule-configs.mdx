@@ -89,15 +89,15 @@ Explicit handler returning null can be used to skip particular tokens.  Alternat
 ```ts snippet=useSkip silent=true
 import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
 const tokenizer = new Tokenizer()
-                .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                  token.value = parseInt(token.value);
-                  return token;
-                })
-                .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                  token.value = token.value.toUpperCase();
-                  return token;
-                })
-                .add(/\s+/, {skip: true});
+    .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+      token.value = parseInt(token.value);
+      return token;
+    })
+    .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+      token.value = token.value.toUpperCase();
+      return token;
+    })
+    .add(/\s+/, {skip: true});
 console.log(tokenizer.tokenize("123  hello  world"));
 ```
 
@@ -113,20 +113,17 @@ Tokens can also be given custom tags so that they can referred by more meaningfu
 ```ts snippet=s5 silent=true
 import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
 const tokenizer = new Tokenizer()
-                .add(/\d+/, {tag: "NUMBER"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                  console.log("Found Token: ", token);
-                  token.value = parseInt(token.value);
-                  return token;
-                })
-                .add(/\w+/, {tag: "WORD"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                  console.log("Found a word: ", token);
-                  token.value = token.value.toUpperCase();
-                  return token;
-                })
-                .add(/\s+/, {skip: true});
+    .add(/\d+/, {tag: "NUMBER"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+      token.value = parseInt(token.value);
+      return token;
+    })
+    .add(/\w+/, {tag: "WORD"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+      token.value = token.value.toUpperCase();
+      return token;
+    })
+    .add(/\s+/, {skip: true});
 const tokens = tokenizer.tokenize("123  hello  world");
-console.log("=".repeat(80))
-console.log("All Tokens: ", tokens);
+console.log("Tokens: ", tokens);
 ```
 
 Running the tokenizer above would execute the actions:
