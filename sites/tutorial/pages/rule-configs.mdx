@@ -5,7 +5,9 @@ export const meta = {
   "snipenv": "v1",
 }
 
-# A simple example
+# Configuring Rules
+
+## A simple example
 
 By default when rules are added to the tokenizer they are matched in the order in which they are specified.
 
@@ -33,29 +35,28 @@ would yield the following tokens:
 
 Notice the matchIndex - denoting the rule that matched.  Both (non-space) tokens have a matchIndex of 0 (instead of the longer 3 corresponding to "h.*o").
 
-# Actions
+## Actions
 
 Actions can be attached to each token via the add method:
 
 ```ts snippet=s3 silent=true
-  import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
-  const tokenizer = new Tokenizer()
-                  .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                    console.log("Found Token: ", token);
-                    token.value = parseInt(token.value);
-                    return token;
-                  })
-                  .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                    console.log("Found a word: ", token);
-                    token.value = token.value.toUpperCase();
-                    return token;
-                  })
-                  .add(/\s+/ , (rule: Rule, tape: Tape, token: Token, owner: any) => {
-                    console.log("Found a space: ", token);
-                    return null;
-                  })
-                  .add(/h.*o/);
-  const tokens = tokenizer.tokenize("123  hello  world");
+import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
+const tokenizer = new Tokenizer()
+                .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  console.log("Found Token: ", token);
+                  token.value = parseInt(token.value);
+                  return token;
+                })
+                .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  console.log("Found a word: ", token);
+                  token.value = token.value.toUpperCase();
+                  return token;
+                })
+                .add(/\s+/ , (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  console.log("Found a space: ", token);
+                  return null;
+                });
+const tokens = tokenizer.tokenize("123  hello  world");
 ```
 
 Running the tokenizer above would execute the actions:
@@ -79,4 +80,56 @@ With the tokenizer executing the actions we can print the resulting tokens:
 producing:
 
 ```snipout src=s4
+```
+
+## Skipping Tokens
+
+Explicit handler returning null can be used to skip particular tokens.  Alternatively the "skip" parameter can be used:
+
+```ts snippet=useSkip silent=true
+import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
+const tokenizer = new Tokenizer()
+                .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  token.value = parseInt(token.value);
+                  return token;
+                })
+                .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  token.value = token.value.toUpperCase();
+                  return token;
+                })
+                .add(/\s+/, {skip: true});
+console.log(tokenizer.tokenize("123  hello  world"));
+```
+
+resulting in:
+
+```snipout src=useSkip
+```
+
+## Tagging Tokens
+
+Tokens can also be given custom tags so that they can referred by more meaningful labels instead of by their rules.
+
+```ts snippet=s5 silent=true
+import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
+const tokenizer = new Tokenizer()
+                .add(/\d+/, {tag: "NUMBER"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  console.log("Found Token: ", token);
+                  token.value = parseInt(token.value);
+                  return token;
+                })
+                .add(/\w+/, {tag: "WORD"}, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                  console.log("Found a word: ", token);
+                  token.value = token.value.toUpperCase();
+                  return token;
+                })
+                .add(/\s+/, {skip: true});
+const tokens = tokenizer.tokenize("123  hello  world");
+console.log("=".repeat(80))
+console.log("All Tokens: ", tokens);
+```
+
+Running the tokenizer above would execute the actions:
+
+```snipout src=s5
 ```

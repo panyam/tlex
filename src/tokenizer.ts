@@ -172,6 +172,8 @@ export class Tokenizer extends BaseTokenizer {
         // null is returned by onMatch to skip tokens
         return this.next(tape, owner);
       }
+    } else if (rule.skip) {
+      return this.next(tape, owner);
     }
     return token;
   }
