@@ -1,6 +1,6 @@
 {
   "name": "tlex",
-  "version": "0.0.71",
+  "version": "0.0.72",
   "author": "Sriram Panyam",
   "description": "A lexical analyser and generator for typescript.",
   "homepage": "https://github.com/panyam/tlex#readme",
