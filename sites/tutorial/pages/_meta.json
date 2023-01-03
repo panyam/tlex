@@ -1,5 +1,6 @@
 [
   { "title": "Introduction", "link": "/", "file": "index" },
-  "getting-started",
-  "rule-configs"
+  { "title": "Getting started", "file": "getting-started" },
+  "rule-configs",
+  "error-handling"
 ]

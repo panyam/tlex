@@ -33,8 +33,50 @@ would yield the following tokens:
 
 Notice the matchIndex - denoting the rule that matched.  Both (non-space) tokens have a matchIndex of 0 (instead of the longer 3 corresponding to "h.*o").
 
-# Configuring rules
+# Actions
 
-The add method on the tokenizer takes the following parameters:
+Actions can be attached to each token via the add method:
 
+```ts snippet=s3 silent=true
+  import { Tokenizer, Rule, TapeInterface as Tape, Token } from "tlex";
+  const tokenizer = new Tokenizer()
+                  .add(/\d+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                    console.log("Found Token: ", token);
+                    token.value = parseInt(token.value);
+                    return token;
+                  })
+                  .add(/\w+/, (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                    console.log("Found a word: ", token);
+                    token.value = token.value.toUpperCase();
+                    return token;
+                  })
+                  .add(/\s+/ , (rule: Rule, tape: Tape, token: Token, owner: any) => {
+                    console.log("Found a space: ", token);
+                    return null;
+                  })
+                  .add(/h.*o/);
+  const tokens = tokenizer.tokenize("123  hello  world");
+```
 
+Running the tokenizer above would execute the actions:
+
+```snipout src=s3
+```
+
+In this example, the match handlers is a RuleMatchHandler.  These handler can be used to:
+
+* Modify token values
+* Filter out unwanted tokens
+* Change the semantics of tokens (eg convert a integer string into an integer value).
+* Change tokenizer states
+
+With the tokenizer executing the actions we can print the resulting tokens:
+
+```ts snippet=s4 prev=s3 silent=true
+  console.log("All Tokens: ", tokens);
+```
+
+producing:
+
+```snipout src=s4
+```

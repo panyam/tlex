@@ -1,1 +1,1 @@
-export default [{"title": "Introduction", "isDir": false, "link": "/"}, {"title": "getting-started", "isDir": false, "link": "/getting-started"}, {"title": "rule-configs", "isDir": false, "link": "/rule-configs"}]
+export default [{"title": "Introduction", "isDir": false, "link": "/"}, {"title": "Getting started", "isDir": false, "link": "/getting-started"}, {"title": "rule-configs", "isDir": false, "link": "/rule-configs"}, {"title": "error-handling", "isDir": false, "link": "/error-handling"}]

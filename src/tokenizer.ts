@@ -72,7 +72,15 @@ export class BaseTokenizer {
    *                    the match stage.
    * @param onMatch     A callback method called when the rule is matched.
    */
-  add(pattern: string | RegExp | Regex, config?: RuleConfig, onMatch: RuleMatchHandler | null = null): this {
+  add(
+    pattern: string | RegExp | Regex,
+    config?: RuleConfig | RuleMatchHandler | null,
+    onMatch: RuleMatchHandler | null = null,
+  ): this {
+    if (typeof config === "function") {
+      onMatch = config;
+      config = null;
+    }
     return this.addRule(Builder.build(pattern, config), onMatch);
   }
 
@@ -127,6 +135,9 @@ export class BaseTokenizer {
   }
 }
 
+/**
+ * A batch tokenizer.
+ */
 export class Tokenizer extends BaseTokenizer {
   idCounter = 0;
   next(tape: Tape, owner: any): Token | null {
