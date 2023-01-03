@@ -1,6 +1,7 @@
 yarn.lock
+remark-mdx-code-meta
 *.d.ts
-apidocs
+sites/docs
 app.js
 *.js.map
 src/**/*.js
