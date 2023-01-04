@@ -8,6 +8,7 @@ import * as Builder from "./builder";
 import { Token, TokenType } from "./token";
 
 export type RuleMatchHandler = (rule: Rule, tape: Tape, token: Token, owner: any) => any;
+export type TokenizerErrorHandler = (error: Error, tape: Tape, startIndex: number) => Error | null
 
 export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
   const out = new Token(tag, m.matchIndex, m.start, m.end);
@@ -30,6 +31,18 @@ export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
 export class BaseTokenizer {
   protected _prog: Prog | null = null;
   protected _vm: VM | null = null;
+
+  /**
+   * Error handler called when an invalid character or lexeme is encountered.
+   * If this method returns back an error then the tokenization stops otherwise
+   * (if a null is returned) then tokenization continues.
+   *
+   * @param error       The error currently caught and being handled.
+   * @param tape        The tape currently being tokenized.
+   * @param startIndex  The start index when the tokenization began resulting in the error.
+   */
+  onError: TokenizerErrorHandler | null = null;
+
   // Stores named rules
   // Rules are a "regex", whether literal or not
   allRules: Rule[] = [];
@@ -148,15 +161,26 @@ export class Tokenizer extends BaseTokenizer {
     const startChar = tape.currCh;
     const m = this.vm.match(tape);
     if (m == null) {
+      // no match so we have an error
+      let err: Error | null = null;
       if (tape.index == startIndex + 1) {
-        throw new TokenizerError(`Unexpected Character: ${startChar}`, startIndex, 1, "UnexpectedCharacter", startChar);
+        err = new TokenizerError(`Unexpected Character: ${startChar}`, startIndex, 1, "UnexpectedCharacter", startChar);
       } else {
-        throw new TokenizerError(
+        err = new TokenizerError(
           `Unexpected Symbol: ${tape.substring(startIndex, tape.index)}`,
           startIndex,
           tape.index - startIndex,
           "UnexpectedLexeme",
         );
+      }
+      if (this.onError) {
+        err = this.onError(err, tape, startIndex);
+      }
+      if (err != null) {
+        throw err;
+      } else {
+        // err has been ocnsumed so we can restart tokenizer at the current position
+        return this.next(tape, owner);
       }
     }
     const rule = this.allRules[m.matchIndex];
@@ -189,7 +213,6 @@ export class Tokenizer extends BaseTokenizer {
       try {
         next = this.next(tape, owner);
       } catch (err: any) {
-        console.log("Error: ", err);
         tokens.push({
           tag: "ERROR",
           start: err.offset,
