@@ -8,7 +8,7 @@ import * as Builder from "./builder";
 import { Token, TokenType } from "./token";
 
 export type RuleMatchHandler = (rule: Rule, tape: Tape, token: Token, owner: any) => any;
-export type TokenizerErrorHandler = (error: Error, tape: Tape, startIndex: number) => Error | null
+export type TokenizerErrorHandler = (error: Error, tape: Tape, startIndex: number) => Error | null;
 
 export function toToken(tag: TokenType, m: Match, tape: Tape | null): Token {
   const out = new Token(tag, m.matchIndex, m.start, m.end);
