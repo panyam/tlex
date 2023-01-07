@@ -27,7 +27,8 @@ export function stripLinePrefixSpaces(lines: string[]): string[] {
 }
 
 // Built with https://www.peterlunch.com/blog/prism-react-render-nextjs
-const SyntaxHighlighter = ({children}) => {
+const SyntaxHighlighter = (props: any) => {
+  const children = props.children;
   const code = children.props.children;
   console.log("Type of code: ", code)
   const language = children.props.className?.replace(/.*language-/, "").trim()

@@ -30,6 +30,8 @@
   ],
   "scripts": {
     "clean": "rm -Rf lib && jest --clearCache && rm -rf static/lib",
+    "buildsites": "cd sites/demo && npm run build && cd sites/tutorial && npm run build",
+    "buildall": "npm run buildsites && npm run build",
     "build": "npm run  clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
     "docs": "npx typedoc src/index.ts --name 'TLEX' --out './sites/docs'",
     "test": "jest --coverage --runInBand",

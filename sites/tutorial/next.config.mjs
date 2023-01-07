@@ -73,6 +73,9 @@ const finalConfig = withMDX({
   basePath: "/tutorial",
   reactStrictMode: true,
   swcMinify: true,
+  trailingSlash: true,
+  productionBrowserSourceMaps: true,
+  distDir: "build",
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
    webpack: (config, { isServer }) => {
         if (!isServer) {

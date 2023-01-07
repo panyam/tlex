@@ -1,9 +1,9 @@
 import Head from 'next/head';
 
-const Meta = ({ title }) => {
+const Meta = (props: any) => {
   return (
     <Head>
-      <title>{title}</title>
+      <title>{props.title}</title>
       <meta
         name='keywords'
         content='react native, blog, John Doe, tutorial, react navigation'

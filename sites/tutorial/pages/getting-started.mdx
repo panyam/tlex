@@ -44,11 +44,3 @@ tokens = tokenizer.tokenize("90     hello     100");
 console.log(tokens.map((t: TLEX.Token) => t.value));
 // [ "90", "     ", "hello", "     ", "100" ]
 ```
-
-export const getStaticProps = async () => {
-  return {
-    props: {
-      t: "hello",
-    },
-  };
-}

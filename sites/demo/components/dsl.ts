@@ -1,5 +1,4 @@
 import * as TLEX from "tlex";
-import * as TSU from "@panyam/tsutils";
 
 const str2regex = (s: string | number): string => {
   if (typeof s === "number") return "" + s;
