@@ -70,6 +70,7 @@ const withMDX = nextMDX({
 });
 const finalConfig = withMDX({
   // Append the default value with md extensions
+  basePath: "/tutorial",
   reactStrictMode: true,
   swcMinify: true,
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
