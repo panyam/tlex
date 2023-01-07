@@ -132,4 +132,3 @@ export const LEXER = String.raw`
   %token '|'                "|"
   %token '?'                "?"
 `;
-

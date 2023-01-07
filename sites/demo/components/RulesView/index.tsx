@@ -69,7 +69,7 @@ export default class RulesView extends BaseComponent<{ styles?: any }> {
   onLangChanged(evt?: React.ChangeEvent) {
     if (this.langSelectRef.current != null) {
       const lang = this.langSelectRef.current.value;
-      const info = builtinLexers.find(x => x.name == lang);
+      const info = builtinLexers.find((x) => x.name == lang);
       if (this.rulesTextareaRef.current != null) {
         this.rulesTextareaRef.current.value = stripLinePrefixSpaces(info!.rules.split("\n")).join("\n").trim();
       }
@@ -82,8 +82,8 @@ export default class RulesView extends BaseComponent<{ styles?: any }> {
       if (info != null) {
         const tokenizer = this.compile();
         this.eventHub.emit(events.LANGUAGE_CHANGED, this, {
-          "lang": info,
-          "tokenizer": tokenizer,
+          lang: info,
+          tokenizer: tokenizer,
         });
       }
     }
@@ -91,7 +91,7 @@ export default class RulesView extends BaseComponent<{ styles?: any }> {
 
   onInputChanged(evt: React.KeyboardEvent) {
     if (!this.state.modified) {
-      console.log("Evt: ", evt.nativeEvent)
+      console.log("Evt: ", evt.nativeEvent);
       this.setState((ps) => ({
         ...ps,
         modifed: true,

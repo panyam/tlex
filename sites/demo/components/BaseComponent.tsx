@@ -1,7 +1,7 @@
-import * as React from "react"
+import * as React from "react";
 import * as TSU from "@panyam/tsutils";
 
-export default class BaseComponent<T=any> extends React.Component<T> {
+export default class BaseComponent<T = any> extends React.Component<T> {
   static readonly eventHub = new TSU.Events.EventHub();
   constructor(props: T, context: any) {
     super(props, context);
@@ -13,6 +13,7 @@ export default class BaseComponent<T=any> extends React.Component<T> {
   }
 
   eventHubChanged() {
+    //
   }
 
   updateState(updatedFields: any) {

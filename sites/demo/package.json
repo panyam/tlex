@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cleanbuilddirs": "rm -Rf build ../dist/demo ../dist/static",
+    "copytodist": "mkdir -p ../dist/demo ; cp -r build/* ../dist/demo/",
+    "build": "npm run cleanbuilddirs; next build ; npm run copytodist ",
+    "debugbuild": "npm run cleanbuilddirs; next build --debug --profile --no-mangling ;  npm run copytodist ",
+    "export": "npm run build && next export"
   },
   "dependencies": {
     "@types/node": "18.11.15",
@@ -18,7 +22,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sass": "^1.56.2",
-    "tlex": "file:..",
+    "tlex": "^0.0.73",
     "typescript": "4.9.4"
   },
   "devDependencies": {

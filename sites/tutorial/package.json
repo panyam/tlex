@@ -5,10 +5,14 @@
   "scripts": {
     "dev": "npm run toc && next dev",
     "toc": "python gentoc.py ./pages components/TableOfContents/toc.ts /tutorial",
-    "build": "next build",
     "start": "next start",
     "test": "jest --coverage --runInBand",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cleanbuilddirs": "rm -Rf build ../dist/demo ../dist/static",
+    "copytodist": "mkdir -p ../dist/tutorial ; cp -r build/* ../dist/tutorial/",
+    "build": "npm run toc && npm run cleanbuilddirs; next build ; npm run copytodist ",
+    "debugbuild": "npm run cleanbuilddirs; next build --debug --profile --no-mangling ;  npm run copytodist ",
+    "export": "npm run build && next export"
   },
   "dependencies": {
     "@mdx-js/loader": "^2.0.0-rc.2",

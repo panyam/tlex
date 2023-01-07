@@ -1,4 +1,15 @@
-import * as TLEX from "tlex";
+import {
+  Samples,
+  RuleMatchHandler,
+  UnexpectedTokenError,
+  Builder,
+  Tape as DefaultTape,
+  TapeInterface as Tape,
+  TokenBuffer,
+  Token,
+  Rule,
+  Tokenizer,
+} from "tlex";
 
 const str2regex = (s: string | number): string => {
   if (typeof s === "number") return "" + s;
@@ -30,17 +41,17 @@ enum TokenType {
   DOLLAR_IDENT = "DOLLAR_IDENT",
 }
 
-export type TokenHandler = (token: TLEX.Token, tape: TLEX.Tape, owner: any) => TLEX.Token;
+export type TokenHandler = (token: Token, tape: Tape, owner: any) => Token;
 
 export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any = null) {
-  const tape = new TLEX.Tape(input);
+  const tape = new DefaultTape(input);
   const et = InputTokenizer();
-  const ntFunc = (tape: TLEX.Tape) => {
+  const ntFunc = (tape: Tape) => {
     return et.next(tape, context);
   };
-  const tokenizer = new TLEX.TokenBuffer(ntFunc, context);
+  const tokenizer = new TokenBuffer(ntFunc, context);
   let regexSyntax = "js";
-  const generatedTokenizer = new TLEX.Tokenizer();
+  const generatedTokenizer = new Tokenizer();
 
   function parseDirective(directive: string): string | null {
     if (directive == "resyntax") {
@@ -86,26 +97,26 @@ export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any
     return null;
   }
 
-  function parseRegex(tag?: string, priority = 0, syntax = ""): TLEX.Rule {
+  function parseRegex(tag?: string, priority = 0, syntax = ""): Rule {
     if (syntax == "") syntax = regexSyntax;
     if (syntax == "js") {
       const tokPattern = tokenizer.expectToken(tape, TokenType.STRING, TokenType.NUMBER, TokenType.REGEX);
-      let rule: TLEX.Rule;
+      let rule: Rule;
       if (!tag || tag.length == 0) {
         tag = "/" + tokPattern.value[0] + "/" + tokPattern.value[1];
       }
       if (tokPattern.tag == TokenType.STRING || tokPattern.tag == TokenType.NUMBER) {
         const pattern = str2regex(tokPattern.value);
-        rule = TLEX.Builder.build(pattern, { tag: tag, priority: priority + 20 });
+        rule = Builder.build(pattern, { tag: tag, priority: priority + 20 });
       } else if (tokPattern.tag == TokenType.REGEX) {
         let re = tokPattern.value[0];
         if (tokPattern.value[1].length > 0) {
           // Flags given so create
           re = new RegExp(tokPattern.value[0], tokPattern.value[1]);
         }
-        rule = TLEX.Builder.build(re, { tag: tag, priority: priority + 10 });
+        rule = Builder.build(re, { tag: tag, priority: priority + 10 });
       } else {
-        throw new TLEX.UnexpectedTokenError(tokPattern);
+        throw new UnexpectedTokenError(tokPattern);
       }
       return rule;
     } else {
@@ -119,11 +130,11 @@ export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any
       if (!tag || tag.length == 0) {
         tag = "/" + patternStr + "/";
       }
-      return new TLEX.Rule(TLEX.Builder.exprFromFlexRE(patternStr), { tag: tag, priority: priority });
+      return new Rule(Builder.exprFromFlexRE(patternStr), { tag: tag, priority: priority });
     }
   }
 
-  function parseTokenHandler(tape: TLEX.Tape): TLEX.RuleMatchHandler | null {
+  function parseTokenHandler(tape: Tape): RuleMatchHandler | null {
     if (!tokenizer.consumeIf(tape, TokenType.OPEN_BRACE)) {
       return null;
     }
@@ -131,7 +142,7 @@ export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any
     const funcName = tokenizer.expectToken(tape, TokenType.IDENT);
 
     // how do we use the funcName to
-    const out = (rule: TLEX.Rule, tape: TLEX.Tape, token: any, owner: any) => {
+    const out = (rule: Rule, tape: Tape, token: any, owner: any) => {
       const handler = tokenHandlers[funcName.value];
       if (!handler) throw new Error("Handler method not found: " + funcName.value);
       token = handler(token, tape, owner);
@@ -158,8 +169,8 @@ export function TokenizerFromDSL(input: string, tokenHandlers: any, context: any
   return generatedTokenizer;
 }
 
-function InputTokenizer(): TLEX.Tokenizer {
-  const lexer = new TLEX.Tokenizer();
+function InputTokenizer(): Tokenizer {
+  const lexer = new Tokenizer();
   lexer.add(/->/, { tag: TokenType.ARROW });
   lexer.add(/\[/, { tag: TokenType.OPEN_SQ });
   lexer.add(/\]/, { tag: TokenType.CLOSE_SQ });
@@ -176,56 +187,36 @@ function InputTokenizer(): TLEX.Tokenizer {
   lexer.add(/\s+/m, { tag: TokenType.SPACES }, () => null);
   lexer.add(/\/\*.*?\*\//s, { tag: TokenType.COMMENT }, () => null);
   lexer.add(/\/\/.*$/m, { tag: TokenType.COMMENT }, () => null);
-  lexer.add(
-    TLEX.Samples.DOUBLE_QUOTE_STRING,
-    { tag: TokenType.STRING },
-    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
-      token.value = tape.substring(token.start + 1, token.end - 1);
-      return token;
-    },
-  );
-  lexer.add(
-    TLEX.Samples.SINGLE_QUOTE_STRING,
-    { tag: TokenType.STRING },
-    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
-      token.value = tape.substring(token.start + 1, token.end - 1);
-      return token;
-    },
-  );
-  lexer.add(
-    TLEX.Samples.JS_REGEX,
-    { tag: TokenType.REGEX },
-    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
-      const pattern = tape.substring(token.positions[1][0], token.positions[1][1]);
-      const flags = tape.substring(token.positions[3][0], token.positions[3][1]);
-      token.value = [pattern, flags];
-      return token;
-    },
-  );
-  lexer.add(/\d+/, { tag: TokenType.NUMBER }, (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
+  lexer.add(Samples.DOUBLE_QUOTE_STRING, { tag: TokenType.STRING }, (rule: Rule, tape: Tape, token: Token) => {
+    token.value = tape.substring(token.start + 1, token.end - 1);
+    return token;
+  });
+  lexer.add(Samples.SINGLE_QUOTE_STRING, { tag: TokenType.STRING }, (rule: Rule, tape: Tape, token: Token) => {
+    token.value = tape.substring(token.start + 1, token.end - 1);
+    return token;
+  });
+  lexer.add(Samples.JS_REGEX, { tag: TokenType.REGEX }, (rule: Rule, tape: Tape, token: Token) => {
+    const pattern = tape.substring(token.positions[1][0], token.positions[1][1]);
+    const flags = tape.substring(token.positions[3][0], token.positions[3][1]);
+    token.value = [pattern, flags];
+    return token;
+  });
+  lexer.add(/\d+/, { tag: TokenType.NUMBER }, (rule: Rule, tape: Tape, token: Token) => {
     token.value = parseInt(tape.substring(token.start, token.end));
     return token;
   });
-  lexer.add(
-    /%([\w][\w\d_]*)/,
-    { tag: TokenType.PCT_IDENT },
-    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
-      token.value = tape.substring(token.start + 1, token.end);
-      return token;
-    },
-  );
-  lexer.add(/\$\d+/, { tag: TokenType.DOLLAR_NUM }, (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
+  lexer.add(/%([\w][\w\d_]*)/, { tag: TokenType.PCT_IDENT }, (rule: Rule, tape: Tape, token: Token) => {
+    token.value = tape.substring(token.start + 1, token.end);
+    return token;
+  });
+  lexer.add(/\$\d+/, { tag: TokenType.DOLLAR_NUM }, (rule: Rule, tape: Tape, token: Token) => {
     token.value = parseInt(tape.substring(token.start + 1, token.end));
     return token;
   });
-  lexer.add(
-    /\$([\w][\w\d_]*)/,
-    { tag: TokenType.DOLLAR_IDENT },
-    (rule: TLEX.Rule, tape: TLEX.TapeInterface, token: TLEX.Token) => {
-      token.value = tape.substring(token.start + 1, token.end);
-      return token;
-    },
-  );
+  lexer.add(/\$([\w][\w\d_]*)/, { tag: TokenType.DOLLAR_IDENT }, (rule: Rule, tape: Tape, token: Token) => {
+    token.value = tape.substring(token.start + 1, token.end);
+    return token;
+  });
   lexer.add(/[\w][\w\d_]*/, { tag: TokenType.IDENT });
   return lexer;
 }

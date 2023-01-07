@@ -1,12 +1,12 @@
 import React from "react";
 import defaultStyles from "./view.module.scss";
-import * as events from "../events"
+import * as events from "../events";
 import BaseComponent from "../BaseComponent";
 import * as TSU from "@panyam/tsutils";
 import * as TLEX from "tlex";
 import { timeIt, stripLinePrefixSpaces } from "../utils";
 
-export default class InputView extends BaseComponent<{ styles?: any, }> {
+export default class InputView extends BaseComponent<{ styles?: any }> {
   state: any;
   incrementalCheckRef = React.createRef<HTMLInputElement>();
   inputTextareaRef = React.createRef<HTMLTextAreaElement>();
@@ -18,7 +18,7 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
       input: props.input || "",
     };
   }
-    
+
   get styles() {
     return this.props.styles || defaultStyles;
   }
@@ -27,20 +27,19 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
     const styles = this.styles;
     const state = this.state;
     return (
-      <div className = {styles.rootView}>
+      <div className={styles.rootView}>
         <div className={styles.headingView}>
           <span>Enter Input:</span>
         </div>
         <textarea ref={this.inputTextareaRef} className={styles.inputTextArea} />
         <div className={styles.optionsArea}>
-            <label>
-              <input type="checkbox"
-                     onChange={e => this.onIncrementalChanged()}
-                     ref={this.incrementalCheckRef} />
-              Incremental
-            </label>
-            <button onClick={e => this.tokenize()}
-                    style={{float: "right"}}>Tokenize</button>
+          <label>
+            <input type="checkbox" onChange={(e) => this.onIncrementalChanged()} ref={this.incrementalCheckRef} />
+            Incremental
+          </label>
+          <button onClick={() => this.tokenize()} style={{ float: "right" }}>
+            Tokenize
+          </button>
         </div>
       </div>
     );
@@ -69,11 +68,11 @@ export default class InputView extends BaseComponent<{ styles?: any, }> {
   tokenize() {
     const tokens = timeIt("Tokenized in: ", () => {
       const tape = new TLEX.Tape(this.inputText);
-      const tokens = this.tokenizer.tokenize(tape);
+      const tokens = this.tokenizer?.tokenize(tape);
       console.log("Tokens: ", tokens);
       return tokens;
     });
-    this.eventHub.emit(events.INPUT_TOKENIZED, this, {tokens: tokens});
+    this.eventHub.emit(events.INPUT_TOKENIZED, this, { tokens: tokens });
     return tokens;
   }
 }
