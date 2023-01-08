@@ -13,7 +13,7 @@ handlers:
 
 - url: /demo/(.*)
   static_files: demo/server/pages/\1
-  upload: demo/server/pages/(.*)/
+  upload: demo/server/pages/(.*)
 
 - url: /tutorial/_next/static
   static_dir: tutorial/static
@@ -22,9 +22,22 @@ handlers:
   static_files: tutorial/server/pages/index.html
   upload: tutorial/server/pages/index.html
 
+# Can these manual ones be auto-genned?
+- url: /tutorial/getting-started
+  static_files: tutorial/server/pages/getting-started.html
+  upload: tutorial/server/pages/getting-started.html
+
+- url: /tutorial/error-handling
+  static_files: tutorial/server/pages/error-handling.html
+  upload: tutorial/server/pages/error-handling.html
+
+- url: /tutorial/rule-configs
+  static_files: tutorial/server/pages/rule-configs.html
+  upload: tutorial/server/pages/rule-configs.html
+
 - url: /tutorial/(.*)
   static_files: tutorial/server/pages/\1
-  upload: tutorial/server/pages/(.*)/
+  upload: tutorial/server/pages/(.*)
 
 - url: /docs(/?)
   static_files: docs/index.html
