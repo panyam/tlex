@@ -29,11 +29,11 @@
     "test"
   ],
   "scripts": {
-    "clean": "rm -Rf lib && jest --clearCache && rm -rf static/lib",
+    "clean": "rm -Rf sites/dist && rm -Rf lib && jest --clearCache && rm -rf static/lib",
     "buildsites": "( cd sites/demo && npm run build ) ; ( cd sites/tutorial && npm run build )",
-    "buildall": "npm run buildsites && npm run build",
-    "build": "npm run  clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
-    "docs": "npx typedoc src/index.ts --name 'TLEX' --out './sites/docs'",
+    "buildall": "npm run clean && npm run buildsites && npm run docs && npm run build",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "docs": "npx typedoc src/index.ts --name 'TLEX' --out './sites/dist/docs'",
     "test": "jest --coverage --runInBand",
     "start": "webpack-dev-server --mode=development",
     "lint": "eslint './src' --quiet --ext .ts --resolve-plugins-relative-to .",
@@ -44,7 +44,9 @@
     "prepublishOnly": "echo prepublishOnly...",
     "preversion": "npm run build && npm run lintfix",
     "version": "git add -A src",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "predeploy": "npm run buildall && cp app.yaml sites/dist && cp .gcloudignore sites/dist",
+    "deploy": "cd sites/dist ; gcloud app deploy --project tlexer --verbosity=info"
   },
   "dependencies": {
     "@panyam/tsutils": "*"

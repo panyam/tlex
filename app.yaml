@@ -1,0 +1,43 @@
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+
+- url: /demo/_next/static
+  static_dir: demo/static
+
+- url: /demo(/?)
+  static_files: demo/server/pages/index.html
+  upload: demo/server/pages/index.html
+
+- url: /demo/(.*)
+  static_files: demo/server/pages/\1
+  upload: demo/server/pages/(.*)/
+
+- url: /tutorial/_next/static
+  static_dir: tutorial/static
+
+- url: /tutorial(/?)
+  static_files: tutorial/server/pages/index.html
+  upload: tutorial/server/pages/index.html
+
+- url: /tutorial/(.*)
+  static_files: tutorial/server/pages/\1
+  upload: tutorial/server/pages/(.*)/
+
+- url: /docs(/?)
+  static_files: docs/index.html
+  upload: docs/index.html
+
+- url: /docs/(.*)
+  static_files: docs/\1
+  upload: docs/(.*)/
+
+- url: /
+  static_files: homepage/index.html
+  upload: homepage/index.html
+
+- url: /(.*)
+  static_files: homepage/\1
+  upload: homepage/(.*)
