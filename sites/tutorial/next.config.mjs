@@ -1,27 +1,6 @@
 /** @type {import('next').NextConfig} */
 import nextMDX from '@next/mdx';
 
-//const withPlugins = require('next-compose-plugins');
-// const unified = import("unified");
-
-
-// const rehypePrism = require("@mapbox/rehype-prism");
-// const remarkSnippets = require("remark-snippets");
-
-/*
-const nextConfig = require("next-mdx-enhanced")({
-  fileExtensions: ["mdx", "md"],
-  // rehypePlugins: [rehypePrism],
-  // remarkPlugins: [require("remark-prism"), remarkSnippets],
-  // rehypePlugins: [require("rehype-prism")],
-});
-
-const withNextra = require("nextra")({
-  theme: "nextra-theme-docs",
-  themeConfig: "./theme.config.jsx",
-});
-*/
-
 import remarkFrontmatter  from "remark-frontmatter";
 // const rehypeHighlight = import("rehype-highlight");
 import rehypeHighlight from "rehype-highlight";
@@ -68,6 +47,7 @@ const withMDX = nextMDX({
     // providerImportSource: "@mdx-js/react",
   },
 });
+
 const finalConfig = withMDX({
   // Append the default value with md extensions
   basePath: "/tutorial",
