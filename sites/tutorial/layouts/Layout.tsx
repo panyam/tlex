@@ -3,6 +3,7 @@ import TableOfContents from "../components/TableOfContents";
 import styles from "../styles/Home.module.scss";
 
 const Layout = (props: any) => {
+  console.log("props.children: ", props.children)
   return (
     <div>
       <Header styles={styles}/>
