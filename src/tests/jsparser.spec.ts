@@ -87,6 +87,10 @@ describe("Regex Tests", () => {
     testRegex("^.$", ["Cat", {}, ["^", ".", "$"]]);
   });
 
+  test("Test FrontMatter", () => {
+    testRegex("^---$.*^---$", ["Cat", {}, ["^", "-", "-", "-", "$", ["*?", {}, "."], "^", "-", "-", "-", "$"]]);
+  });
+
   test("Test LookAheads", () => {
     testRegex("hello (?=world)", [
       "LookAhead",
