@@ -347,7 +347,7 @@ export class PlaygroundPage {
 
     try {
       this.tokenizer = TokenizerFromDSL(rules, {});
-      const elapsed = (1000 * (performance.now() - startTime)).toFixed(2);
+      const elapsed = (performance.now() - startTime).toFixed(2);
       this.log(`Compiled in ${elapsed}ms`, "info");
       this.eventHub.emit(Events.LEXER_COMPILED, this.tokenizer);
     } catch (e: any) {
@@ -365,7 +365,7 @@ export class PlaygroundPage {
     try {
       const tape = new T.Tape(input);
       const tokens = this.tokenizer.tokenize(tape);
-      const elapsed = (1000 * (performance.now() - startTime)).toFixed(2);
+      const elapsed = (performance.now() - startTime).toFixed(2);
       this.log(`Tokenized ${tokens.length} tokens in ${elapsed}ms`, "info");
       this.eventHub.emit(Events.TOKENS_GENERATED, tokens);
     } catch (e: any) {
