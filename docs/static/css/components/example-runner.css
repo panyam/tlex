@@ -1,0 +1,184 @@
+/* ============================================
+   ExampleRunner Styles
+   Interactive tokenizer examples
+   ============================================ */
+
+.example-runner {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: 1.5rem 0;
+  background: var(--color-bg);
+}
+
+.example-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 300px;
+}
+
+@media (max-width: 768px) {
+  .example-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.example-column {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+}
+
+.example-column:last-child {
+  border-right: none;
+}
+
+.example-io-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.example-io-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+}
+
+.example-input-row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.example-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.example-panel-title {
+  flex: 1;
+}
+
+.example-token-count {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
+.example-copy-btn,
+.example-run-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.example-copy-btn:hover,
+.example-run-btn:hover {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.example-run-btn {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.example-run-btn:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: white;
+}
+
+.example-editor-container {
+  flex: 1;
+  min-height: 100px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.example-output-container {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  background: var(--color-bg);
+}
+
+.example-tokens {
+  display: flex;
+  flex-direction: column;
+}
+
+.example-tokens .token-row {
+  display: grid;
+  grid-template-columns: 2rem 4rem 6rem 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+}
+
+.example-tokens .token-row:hover {
+  background: var(--color-bg-alt);
+}
+
+.example-tokens .token-index {
+  color: var(--color-text-light);
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+.example-tokens .token-range {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.example-tokens .token-tag {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.example-tokens .token-value {
+  color: var(--color-accent);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.75rem;
+}
+
+.example-error {
+  color: var(--color-error);
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.example-loading,
+.example-empty {
+  color: var(--color-text-muted);
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Ace editor theme matching */
+.example-editor-container .ace_editor {
+  font-family: var(--font-mono) !important;
+}

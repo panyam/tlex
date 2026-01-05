@@ -59,6 +59,8 @@
     <!-- JavaScript -->
     {{ if .FrontMatter.usePlayground }}
     {{# include "gen.PlaygroundPage.html" #}}
+    {{ else if .FrontMatter.useExamples }}
+    {{# include "gen.ExampleRunner.html" #}}
     {{ else }}
     {{# include "gen.DocsPage.html" #}}
     {{ end }}

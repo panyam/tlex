@@ -2,6 +2,7 @@
 title: Getting Started
 description: Learn how to install and use TLEX in your project
 section: getting-started
+useExamples: true
 ---
 
 ## What is TLEX?
@@ -54,6 +55,12 @@ for (const token of tokens) {
 // OPERATOR: "*" at 7-8
 // IDENTIFIER: "y" at 9-10
 ```
+
+### Try It Live
+
+Edit the rules and input below to see tokenization in action:
+
+<div id="example-quickstart" data-example-runner data-example-config='{"rules": "%token NUMBER /[0-9]+/\n%token IDENTIFIER /[a-zA-Z_][a-zA-Z0-9_]*/\n%token OPERATOR /[+*\\/-]/\n%skip /\\s+/", "input": "x + 42 * y"}'></div>
 
 ## Pattern Formats
 

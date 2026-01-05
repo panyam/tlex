@@ -14,3 +14,6 @@
 
 /* Playground (DockView-based) */
 @import url('./components/playground.css');
+
+/* Interactive example runner */
+@import url('./components/example-runner.css');
