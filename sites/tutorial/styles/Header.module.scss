@@ -1,0 +1,51 @@
+.headerContainer {
+  @if $fixedHeightHeader {
+    height: $headerHeightIfFixed;
+  }
+  background-color: #4285f4;
+  box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  z-index: 10;
+}
+
+.headerTitle {
+  display: block;
+  font-size: 2em;
+  padding: 10px 20px;
+  text-decoration: none;
+}
+
+.homeButtonImage {
+  height: 40px;
+}
+
+.homeButton {
+  display: block;
+  float: left;
+  font-size: 2em;
+  padding-top: 10px;
+  padding-left: 10px;
+  padding-bottom: 0px;
+  text-decoration: none;
+}
+
+.headerLogo {
+  display: block;
+  float: left;
+  font-size: 2em;
+  padding-top: 10px;
+  padding-left: 20px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  text-decoration: none;
+}
+
+// Control Compressing of Logi
+@media (min-width: $minWidthForCompressingLogo) {
+  .headerLogo {
+    content: "N";
+  }
+}
+

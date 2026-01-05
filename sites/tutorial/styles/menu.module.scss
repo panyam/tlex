@@ -1,0 +1,152 @@
+/* menu */
+
+.headerContainer ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  // background-color: #fff;
+}
+
+.headerContainer li a {
+  display: block;
+  padding: 20px 20px;
+  border-left: 1px solid #f4f4f4;
+  text-decoration: none;
+}
+
+.headerContainer li a:hover,
+.headerContainer .menuButton:hover {
+  background-color: #f4f4f4;
+}
+
+.headerContainer .menu {
+  clear: both;
+  max-height: 0;
+  transition: max-height 0.2s ease-out;
+}
+
+/* menu icon */
+
+.headerContainer .menuIconLabel {
+  cursor: pointer;
+  display: inline-block;
+  float: right;
+  padding: 28px 20px;
+  position: relative;
+  user-select: none;
+}
+
+.headerContainer .menuIconLabel .menuNavicon {
+  background: #333;
+  display: block;
+  height: 2px;
+  position: relative;
+  transition: background 0.2s ease-out;
+  width: 18px;
+}
+
+.headerContainer .menuIconLabel .menuNavicon:before,
+.headerContainer .menuIconLabel .menuNavicon:after {
+  background: #333;
+  content: "";
+  display: block;
+  height: 100%;
+  position: absolute;
+  transition: all 0.2s ease-out;
+  width: 100%;
+}
+
+.headerContainer .menuIconLabel .menuNavicon:before {
+  top: 5px;
+}
+
+.headerContainer .menuIconLabel .menuNavicon:after {
+  top: -5px;
+}
+
+/* menu btn */
+
+.headerContainer .menuButton {
+  display: none;
+}
+
+.headerContainer .menuButton:checked ~ .menu {
+  max-height: 480px;
+  display: block;
+}
+
+.headerContainer .menuButton:checked ~ .menuIconLabel .menuNavicon {
+  background: transparent;
+}
+
+.headerContainer .menuButton:checked ~ .menuIconLabel .menuNavicon:before {
+  transform: rotate(-45deg);
+}
+
+.headerContainer .menuButton:checked ~ .menuIconLabel .menuNavicon:after {
+  transform: rotate(45deg);
+}
+
+.headerContainer .menuButton:checked ~ .menuIconLabel:not(.steps) .menuNavicon:before,
+.headerContainer .menuButton:checked ~ .menuIconLabel:not(.steps) .menuNavicon:after {
+  top: 0;
+}
+
+// If hamburger menu is showing *and* we have a screen wider than minWidthForFullWidthMenu
+// then show the menu as a "small" menu that doesnt take up the entire screen width
+// if screen.width > minWidthForFullWidthMenu AND screen.width < minWidthForHamburgerMenu
+@media screen and (min-width: $minWidthForFullWidthMenu) and (max-width: $minWidthForHamburgerMenu) {
+  .headerContainer .menu {
+    position: absolute;
+    top: 50px;
+    right: 0px;
+    float: right;
+  }
+  .headerContainer .menuButton:checked ~ .menu {
+    position: absolute;
+    top: 50px;
+    right: 0px;
+    float: right;
+  }
+}
+
+// Ultra low screen
+@media screen and (max-width: 400px) {
+  .headerContainer .menu {
+    display: block;
+  }
+}
+
+// if screen.width > minWidthForHamburgerMenu
+@media screen and (min-width: $minWidthForHamburgerMenu) {
+  .headerContainer .menu {
+    clear: none;
+    float: right;
+    max-height: none;
+  }
+  .headerContainer .menuIconLabel {
+    display: none;
+  }
+}
+
+// Apply if screen is less than this size
+@media screen and (max-width: $minWidthForHamburgerMenu) {
+  // Control Hamburger Menu
+  .headerContainer li {
+    text-align: center;
+    background: bisque;
+  }
+}
+
+// Apply if screen is greater than this size
+@media screen and (min-width: $minWidthForHamburgerMenu) {
+  .headerContainer li {
+    float: left;
+    text-align: left;
+    background: transparent;
+  }
+  .headerContainer li a {
+    padding: 20px 30px;
+  }
+}
