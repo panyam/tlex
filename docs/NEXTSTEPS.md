@@ -16,16 +16,22 @@
 
 ## In Progress
 
-- [ ] Flex Syntax documentation - Flex-specific patterns and differences
-- [ ] Rule Configuration documentation - priority, skip, activeStates
-- [ ] Tokenizer States documentation - State machine usage
-- [ ] Examples content - JSON tokenizer, Calculator, C lexer with states
+- [ ] C Lexer example - C-style language with comments and states
 
 ## Pending
 
 - [ ] Concepts documentation
   - [ ] Regex AST - Document all node types
   - [ ] VM Architecture - Thompson NFA, threads, execution model
+
+## Completed (Reference)
+
+- [x] Flex Syntax documentation - Comprehensive Flex regex features
+- [x] Rule Configuration documentation - priority, skip, activeStates, callbacks
+- [x] Tokenizer States documentation - State management patterns
+- [x] Examples overview - Quick start patterns and common use cases
+- [x] JSON Tokenizer example - Complete with interactive demo
+- [x] Calculator example - Operators, functions, constants
 
 ## Known Issues
 
