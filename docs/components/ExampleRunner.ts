@@ -8,6 +8,7 @@
  */
 
 import * as T from "tlex";
+import { IncrementalTokenizer } from "tlex";
 import ace from "ace-builds";
 import "ace-builds/src-min-noconflict/mode-text";
 import "ace-builds/src-min-noconflict/mode-javascript";
@@ -20,6 +21,7 @@ interface ExampleConfig {
   rules?: string;
   input?: string;
   showRules?: boolean; // Default true - show rules editor
+  mode?: "basic" | "incremental"; // Default basic - incremental shows side-by-side comparison
 }
 
 export class ExampleRunner {
@@ -30,6 +32,15 @@ export class ExampleRunner {
   private inputEditor: ace.Ace.Editor | null = null;
   private outputContainer: HTMLElement | null = null;
 
+  // Incremental mode state
+  private tokenizer: T.Tokenizer | null = null;
+  private incrementalTokenizer: IncrementalTokenizer | null = null;
+  private lastInput: string = "";
+  private fullOutputContainer: HTMLElement | null = null;
+  private incrementalOutputContainer: HTMLElement | null = null;
+  private fullStatsEl: HTMLElement | null = null;
+  private incrementalStatsEl: HTMLElement | null = null;
+
   constructor(containerId: string, config: ExampleConfig) {
     const container = document.getElementById(containerId);
     if (!container) {
@@ -39,6 +50,7 @@ export class ExampleRunner {
     this.container = container;
     this.config = {
       showRules: true,
+      mode: "basic",
       ...config,
     };
 
@@ -73,7 +85,16 @@ export class ExampleRunner {
 
   private render(): void {
     const showRules = this.config.showRules !== false;
+    const isIncremental = this.config.mode === "incremental";
 
+    if (isIncremental) {
+      this.renderIncrementalMode(showRules);
+    } else {
+      this.renderBasicMode(showRules);
+    }
+  }
+
+  private renderBasicMode(showRules: boolean): void {
     this.container.innerHTML = `
       <div class="example-runner">
         <div class="example-main">
@@ -121,6 +142,67 @@ export class ExampleRunner {
     `;
   }
 
+  private renderIncrementalMode(showRules: boolean): void {
+    this.container.innerHTML = `
+      <div class="example-runner example-runner-incremental">
+        <div class="example-main">
+          ${
+            showRules
+              ? `
+          <div class="example-column example-rules-column">
+            <div class="example-panel-header">
+              <span class="example-panel-title">Lexer Rules</span>
+              <button class="example-copy-btn" data-target="rules" title="Copy rules">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="example-editor-container" id="${this.container.id}-rules-editor"></div>
+          </div>
+          `
+              : ""
+          }
+          <div class="example-column example-io-column">
+            <div class="example-io-row example-input-row">
+              <div class="example-panel-header">
+                <span class="example-panel-title">Input</span>
+                <span class="example-hint">(Edit to see incremental updates)</span>
+                <button class="example-run-btn" title="Run">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Run
+                </button>
+              </div>
+              <div class="example-editor-container example-input-editor" id="${this.container.id}-input-editor"></div>
+            </div>
+            <div class="example-io-row example-output-row example-comparison-row">
+              <div class="example-comparison-columns">
+                <div class="example-comparison-column">
+                  <div class="example-panel-header">
+                    <span class="example-panel-title">Full Tokenizer</span>
+                    <span class="example-token-count" id="${this.container.id}-full-stats"></span>
+                  </div>
+                  <div class="example-output-container" id="${this.container.id}-full-output"></div>
+                </div>
+                <div class="example-comparison-column">
+                  <div class="example-panel-header">
+                    <span class="example-panel-title">Incremental</span>
+                    <span class="example-token-count" id="${this.container.id}-incremental-stats"></span>
+                  </div>
+                  <div class="example-output-container" id="${this.container.id}-incremental-output"></div>
+                </div>
+              </div>
+              <div class="example-speedup-bar" id="${this.container.id}-speedup"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private setupEditors(): void {
     const theme = this.getEditorTheme();
 
@@ -156,8 +238,15 @@ export class ExampleRunner {
       });
     }
 
-    // Output container
-    this.outputContainer = document.getElementById(`${this.container.id}-output`);
+    // Output containers
+    if (this.config.mode === "incremental") {
+      this.fullOutputContainer = document.getElementById(`${this.container.id}-full-output`);
+      this.incrementalOutputContainer = document.getElementById(`${this.container.id}-incremental-output`);
+      this.fullStatsEl = document.getElementById(`${this.container.id}-full-stats`);
+      this.incrementalStatsEl = document.getElementById(`${this.container.id}-incremental-stats`);
+    } else {
+      this.outputContainer = document.getElementById(`${this.container.id}-output`);
+    }
   }
 
   private setupEventListeners(): void {
@@ -188,6 +277,15 @@ export class ExampleRunner {
       bindKey: { win: "Ctrl-Enter", mac: "Cmd-Enter" },
       exec: () => this.run(),
     });
+
+    // Real-time updates for incremental mode
+    if (this.config.mode === "incremental" && this.inputEditor) {
+      let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+      this.inputEditor.session.on("change", () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.run(), 50);
+      });
+    }
   }
 
   private updateEditorThemes(): void {
@@ -223,6 +321,14 @@ export class ExampleRunner {
   }
 
   private run(): void {
+    if (this.config.mode === "incremental") {
+      this.runIncremental();
+    } else {
+      this.runBasic();
+    }
+  }
+
+  private runBasic(): void {
     if (!this.outputContainer) return;
 
     const rulesText = this.rulesEditor?.getValue() || this.config.rules || "";
@@ -250,6 +356,139 @@ export class ExampleRunner {
     } catch (e: any) {
       this.outputContainer.innerHTML = `<div class="example-error">${this.escapeHtml(e.message)}</div>`;
     }
+  }
+
+  private runIncremental(): void {
+    const rulesText = this.rulesEditor?.getValue() || this.config.rules || "";
+    const inputText = this.inputEditor?.getValue() || "";
+
+    try {
+      // Build tokenizers if not yet created or rules changed
+      if (!this.tokenizer) {
+        this.tokenizer = TokenizerFromDSL(rulesText, {});
+        const incBase = TokenizerFromDSL(rulesText, {});
+        this.incrementalTokenizer = new IncrementalTokenizer(incBase);
+        this.lastInput = "";
+      }
+
+      // Run full tokenizer
+      const fullStartTime = performance.now();
+      this.tokenizer.reset();
+      const fullTokens = this.tokenizer.tokenize(inputText);
+      const fullElapsed = performance.now() - fullStartTime;
+
+      // Run incremental tokenizer
+      const incStartTime = performance.now();
+      let incrementalTokens: T.Token[] = [];
+
+      if (this.lastInput === "") {
+        // First run - full tokenization
+        incrementalTokens = this.incrementalTokenizer!.tokenize(inputText);
+      } else {
+        // Compute edit and update incrementally
+        const edit = this.computeEdit(this.lastInput, inputText);
+        if (edit) {
+          incrementalTokens = this.incrementalTokenizer!.update(inputText, edit);
+        } else {
+          incrementalTokens = this.incrementalTokenizer!.getTokens();
+        }
+      }
+      const incElapsed = performance.now() - incStartTime;
+      this.lastInput = inputText;
+
+      // Display comparison
+      this.displayComparison(fullTokens, fullElapsed, incrementalTokens, incElapsed);
+    } catch (e: any) {
+      if (this.fullOutputContainer) {
+        this.fullOutputContainer.innerHTML = `<div class="example-error">${this.escapeHtml(e.message)}</div>`;
+      }
+    }
+  }
+
+  private computeEdit(oldInput: string, newInput: string): T.EditRange | null {
+    if (oldInput === newInput) return null;
+
+    // Find common prefix
+    let prefixLen = 0;
+    const minLen = Math.min(oldInput.length, newInput.length);
+    while (prefixLen < minLen && oldInput[prefixLen] === newInput[prefixLen]) {
+      prefixLen++;
+    }
+
+    // Find common suffix
+    let suffixLen = 0;
+    while (
+      suffixLen < minLen - prefixLen &&
+      oldInput[oldInput.length - 1 - suffixLen] === newInput[newInput.length - 1 - suffixLen]
+    ) {
+      suffixLen++;
+    }
+
+    return {
+      start: prefixLen,
+      end: oldInput.length - suffixLen,
+      newText: newInput.slice(prefixLen, newInput.length - suffixLen),
+    };
+  }
+
+  private displayComparison(
+    fullTokens: T.Token[],
+    fullElapsed: number,
+    incrementalTokens: T.Token[],
+    incElapsed: number
+  ): void {
+    // Display full tokenizer results
+    if (this.fullOutputContainer) {
+      this.fullOutputContainer.innerHTML = this.renderTokenRows(fullTokens);
+    }
+    if (this.fullStatsEl) {
+      this.fullStatsEl.textContent = `${fullTokens.length} in ${fullElapsed.toFixed(2)}ms`;
+    }
+
+    // Display incremental results
+    if (this.incrementalOutputContainer) {
+      this.incrementalOutputContainer.innerHTML = this.renderTokenRows(incrementalTokens);
+    }
+    if (this.incrementalStatsEl) {
+      this.incrementalStatsEl.textContent = `${incrementalTokens.length} in ${incElapsed.toFixed(2)}ms`;
+    }
+
+    // Show speedup bar
+    const speedupEl = document.getElementById(`${this.container.id}-speedup`);
+    if (speedupEl && fullElapsed > 0) {
+      const speedup = fullElapsed / Math.max(incElapsed, 0.01);
+      const tokensMatch = this.tokensEqual(fullTokens, incrementalTokens);
+      speedupEl.innerHTML = `
+        <span class="speedup-label ${tokensMatch ? 'match' : 'mismatch'}">
+          ${tokensMatch ? '✓' : '✗'} Speedup: ${speedup.toFixed(1)}x faster
+        </span>
+      `;
+    }
+  }
+
+  private renderTokenRows(tokens: T.Token[]): string {
+    return tokens
+      .map(
+        (t, i) => `
+        <div class="token-row">
+          <span class="token-index">${i}</span>
+          <span class="token-range">${t.start}-${t.end}</span>
+          <span class="token-tag">${this.escapeHtml(String(t.tag))}</span>
+          <span class="token-value">${this.escapeHtml(JSON.stringify(t.value))}</span>
+        </div>
+      `
+      )
+      .join("");
+  }
+
+  private tokensEqual(a: T.Token[], b: T.Token[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].tag !== b[i].tag || a[i].start !== b[i].start || a[i].end !== b[i].end) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private displayTokens(tokens: T.Token[]): void {
@@ -283,7 +522,7 @@ export class ExampleRunner {
   }
 }
 
-// Auto-initialize from data attributes
+// Auto-initialize from data attributes or script blocks
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize common page setup (sidebar highlighting, etc.)
   initPageSetup();
@@ -291,15 +530,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const containers = document.querySelectorAll("[data-example-runner]");
   containers.forEach((container) => {
     const id = container.id;
+    if (!id) return;
+
+    // Try to get config from data-example-config attribute (legacy)
     const configAttr = container.getAttribute("data-example-config");
-    if (id && configAttr) {
+    if (configAttr) {
       try {
         const config = JSON.parse(configAttr);
         new ExampleRunner(id, config);
       } catch (e) {
         console.error("Failed to parse example config:", e);
       }
+      return;
     }
+
+    // Otherwise, load from hidden pre blocks
+    const rulesPre = document.getElementById(`${id}-rules`);
+    const inputPre = document.getElementById(`${id}-input`);
+
+    const config: ExampleConfig = {
+      rules: rulesPre?.textContent?.trim() || "",
+      input: inputPre?.textContent?.trim() || "",
+      mode: (container.getAttribute("data-example-mode") as "basic" | "incremental") || "basic",
+      showRules: container.getAttribute("data-example-show-rules") !== "false",
+    };
+
+    new ExampleRunner(id, config);
   });
 });
 

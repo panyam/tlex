@@ -15,6 +15,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 300px;
+  max-height: 640px;
 }
 
 @media (max-width: 768px) {
@@ -181,4 +182,120 @@
 /* Ace editor theme matching */
 .example-editor-container .ace_editor {
   font-family: var(--font-mono) !important;
+}
+
+/* ============================================
+   Incremental Mode Styles
+   Side-by-side comparison view
+   ============================================ */
+
+.example-runner-incremental .example-hint {
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 0.5rem;
+}
+
+.example-comparison-row {
+  flex: 1.5;
+}
+
+.example-comparison-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.example-comparison-column {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  min-height: 0;
+}
+
+.example-comparison-column:last-child {
+  border-right: none;
+}
+
+.example-comparison-column .example-panel-header {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.example-comparison-column .example-output-container {
+  flex: 1;
+  overflow: auto;
+  max-height: 300px;
+}
+
+/* Compact token rows for comparison view */
+.example-comparison-column .token-row {
+  display: grid;
+  grid-template-columns: 1.5rem 3rem 4rem 1fr;
+  gap: 0.25rem;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.7rem;
+}
+
+.example-comparison-column .token-index {
+  font-size: 0.65rem;
+}
+
+.example-comparison-column .token-range {
+  font-size: 0.65rem;
+}
+
+.example-comparison-column .token-tag {
+  font-size: 0.7rem;
+}
+
+.example-comparison-column .token-value {
+  font-size: 0.65rem;
+}
+
+/* Speedup bar */
+.example-speedup-bar {
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-alt);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.speedup-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.speedup-label.match {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success, #22c55e);
+}
+
+.speedup-label.mismatch {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .example-comparison-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .example-comparison-column {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .example-comparison-column:last-child {
+    border-bottom: none;
+  }
 }

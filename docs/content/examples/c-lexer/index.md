@@ -85,7 +85,29 @@ cLexer.add(/\s+/, { skip: true });
 
 ## Try It Live
 
-<div id="example-c-basic" data-example-runner data-example-config='{"rules": "%token KEYWORD /\\b(if|else|while|for|return|int|void|char|float|double|struct|typedef|const|static|extern|sizeof)\\b/ 20\n%token IDENTIFIER /[a-zA-Z_][a-zA-Z0-9_]*/ 10\n%token HEX /0[xX][0-9a-fA-F]+/\n%token FLOAT /[0-9]+\\.[0-9]*([eE][+-]?[0-9]+)?/\n%token INTEGER /[0-9]+/\n%token STRING /\"(?:[^\"\\\\]|\\\\.)*\"/\n%token CHAR /'\''(?:[^'\''\\\\]|\\\\.)+'\''/\n%token OPERATOR /->|<<|>>|<=|>=|==|!=|&&|\\|\\||\\+\\+|--|[+\\-*\\/%&|^]=?|[+\\-*\\/%<>=!&|^~?:]/\n%token PUNCTUATION /[{}()\\[\\];,.]/\n%token PREPROCESSOR /#\\s*[a-z]+[^\\n]*/\n%skip /\\/\\/[^\\n]*/\n%skip /\\/\\*[\\s\\S]*?\\*\\//\n%skip /\\s+/", "input": "#include <stdio.h>\n\nint main(void) {\n    int x = 42;\n    float pi = 3.14;\n    // This is a comment\n    if (x >= 10 && x <= 100) {\n        printf(\"x = %d\\n\", x);\n    }\n    return 0;\n}"}'></div>
+<div id="example-c-basic" data-example-runner></div>
+<pre id="example-c-basic-rules" style="display:none">%token KEYWORD /\b(if|else|while|for|return|int|void|char|float|double|struct|typedef|const|static|extern|sizeof)\b/ 20
+%token IDENTIFIER /[a-zA-Z_][a-zA-Z0-9_]*/ 10
+%token HEX /0[xX][0-9a-fA-F]+/
+%token FLOAT /[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?/
+%token INTEGER /[0-9]+/
+%token STRING /"(?:[^"\\]|\\.)*"/
+%token CHAR /'(?:[^'\\]|\\.)+'/
+%token OPERATOR /->|<<|>>|<=|>=|==|!=|&&|\|\||\+\+|--|[+\-*\/%&|^]=?|[+\-*\/%<>=!&|^~?:]/
+%token PUNCTUATION /[{}()\[\];,.]/
+%token PREPROCESSOR /#\s*[a-z]+[^\n]*/
+%skip /\/\/[^\n]*/
+%skip /\/\*[\s\S]*?\*\//
+%skip /\s+/</pre>
+<pre id="example-c-basic-input" style="display:none">int main(void) {
+    int x = 42;
+    float pi = 3.14;
+    // This is a comment
+    if (x >= 10 && x <= 100) {
+        printf("x = %d\n", x);
+    }
+    return 0;
+}</pre>
 
 ---
 
@@ -388,7 +410,7 @@ for (const token of tokens) {
 
 Output:
 
-```
+```text
 INCLUDE         #include <stdio.h>
 INT             int
 IDENTIFIER      factorial
@@ -440,8 +462,83 @@ function getColumn(input: string, index: number): number {
 
 ---
 
+## Incremental Lexing Demo
+
+Try editing the code below to see incremental lexing in action. The left column shows full re-tokenization, while the right shows incremental updates. Watch the speedup indicator!
+
+<div id="example-c-incremental" data-example-runner data-example-mode="incremental" data-example-show-rules="false"></div>
+<pre id="example-c-incremental-rules" style="display:none">%token KEYWORD /\b(if|else|while|for|return|int|void|char|float|double|struct|typedef|const|static|extern|sizeof)\b/ 20
+%token IDENTIFIER /[a-zA-Z_][a-zA-Z0-9_]*/ 10
+%token HEX /0[xX][0-9a-fA-F]+/
+%token FLOAT /[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?/
+%token INTEGER /[0-9]+/
+%token STRING /"(?:[^"\\]|\\.)*"/
+%token CHAR /'(?:[^'\\]|\\.)+'/
+%token OPERATOR /->|<<|>>|<=|>=|==|!=|&&|\|\||\+\+|--|[+\-*\/%&|^]=?|[+\-*\/%<>=!&|^~?:]/
+%token PUNCTUATION /[{}()\[\];,.]/
+%skip /\/\/[^\n]*/
+%skip /\/\*[\s\S]*?\*\//
+%skip /\s+/</pre>
+<pre id="example-c-incremental-input" style="display:none">int factorial(int n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+
+int main(void) {
+    int result = factorial(5);
+    printf("Result: %d\n", result);
+    return 0;
+}</pre>
+
+**Try these edits:**
+- Add a digit to a number (e.g., change `5` to `50`)
+- Add a new variable declaration
+- Type a comment `// test`
+
+### How It Works
+
+```text
+Tokens BEFORE edit: Reused (no re-lex)
+  ┌─────────────────────────┐
+  │ INT, IDENTIFIER, ...    │  ← kept as-is
+  └─────────────────────────┘
+
+Affected token: Re-lexed
+  ┌─────────────────┐
+  │ NUMBER "5"      │  → NUMBER "50"
+  └─────────────────┘
+
+Tokens AFTER edit: Positions adjusted
+  ┌─────────────────────────────┐
+  │ PUNCTUATION, RETURN, ...    │  ← shifted by +1
+  └─────────────────────────────┘
+```
+
+Incremental lexing is typically **20-50x faster** for single-character edits.
+
+### Code Example
+
+```typescript
+import { IncrementalTokenizer } from 'tlex';
+
+const incLexer = new IncrementalTokenizer(createCLexer());
+
+// Initial tokenization
+const tokens = incLexer.tokenize(code);
+
+// On edit, compute the change
+const edit = { start: 31, end: 31, newText: "0" };
+const newTokens = incLexer.update(newCode, edit);
+```
+
+See [Incremental Tokenizer API](/tlex/reference/incremental-tokenizer/) for full documentation.
+
+---
+
 ## See Also
 
 - [Tokenizer States](/tlex/reference/tokenizer-states/) - State management patterns
 - [Rule Configuration](/tlex/reference/rule-config/) - Priority and activeStates
+- [Incremental Tokenizer](/tlex/reference/incremental-tokenizer/) - Full API reference
+- [Editor Integration](/tlex/guides/editor-integration/) - Monaco, CodeMirror, Ace integration
 - [JSON Tokenizer](/tlex/examples/json-tokenizer/) - Simpler example
