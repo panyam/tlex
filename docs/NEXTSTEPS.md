@@ -18,14 +18,11 @@
 - [x] Playground comparison view - Two-column full vs incremental tokenizer comparison
 - [x] Real-time tokenization modes - On-click and real-time (as you type) modes
 - [x] Concepts documentation - Regex AST and VM Architecture
-
-## In Progress
-
-- [ ] C Lexer example - C-style language with comments and states
+- [x] C Lexer example - State-based comments, preprocessor, operators
 
 ## Pending
 
-(No pending documentation tasks)
+(No pending tasks - documentation complete!)
 
 ## Completed (Reference)
 
