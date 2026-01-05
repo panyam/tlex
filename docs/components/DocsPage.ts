@@ -4,7 +4,7 @@
  */
 
 import * as T from "tlex";
-import { initCodeBlocks, initPageSetup } from "@panyam/tsappkit";
+import { initCodeBlocks, initPageSetup } from "@panyam/tsappkit/docs";
 
 // Import base documentation CSS from tsappkit (webpack will bundle this)
 import "@panyam/tsappkit/dist/DocsPage.css";
