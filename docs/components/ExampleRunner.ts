@@ -14,7 +14,7 @@ import "ace-builds/src-min-noconflict/mode-javascript";
 import "ace-builds/src-min-noconflict/theme-monokai";
 import "ace-builds/src-min-noconflict/theme-github";
 import { initPageSetup } from "@panyam/tsappkit/docs";
-import "@panyam/tsappkit/dist/DocsPage.css";
+import "@panyam/tsappkit/dist/docs/DocsPage.css";
 import { TokenizerFromDSL } from "./playground/dsl";
 
 interface ExampleConfig {

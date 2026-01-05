@@ -6,7 +6,7 @@ import { DockviewComponent, DockviewApi } from "dockview-core";
 import "dockview-core/dist/styles/dockview.css";
 
 // Import base documentation CSS from tsappkit (header, nav, etc.)
-import "@panyam/tsappkit/dist/DocsPage.css";
+import "@panyam/tsappkit/dist/docs/DocsPage.css";
 
 import * as T from "tlex";
 import { EventHub, Events } from "./EventHub";
