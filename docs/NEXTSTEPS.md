@@ -17,6 +17,7 @@
 - [x] Editor Integration guide - Monaco, CodeMirror, Ace integration patterns
 - [x] Playground comparison view - Two-column full vs incremental tokenizer comparison
 - [x] Real-time tokenization modes - On-click and real-time (as you type) modes
+- [x] Concepts documentation - Regex AST and VM Architecture
 
 ## In Progress
 
@@ -24,9 +25,7 @@
 
 ## Pending
 
-- [ ] Concepts documentation
-  - [ ] Regex AST - Document all node types
-  - [ ] VM Architecture - Thompson NFA, threads, execution model
+(No pending documentation tasks)
 
 ## Completed (Reference)
 
