@@ -6,9 +6,6 @@
 import * as T from "tlex";
 import { initCodeBlocks, initPageSetup } from "@panyam/tsappkit/docs";
 
-// Import base documentation CSS from tsappkit (webpack will bundle this)
-import "@panyam/tsappkit/dist/docs/DocsPage.css";
-
 // Expose tlex globally for debugging
 (window as any).T = T;
 
