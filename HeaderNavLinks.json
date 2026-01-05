@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Getting Started",
+    "url": "getting-started/"
+  },
+  {
+    "name": "Playground",
+    "url": "playground/"
+  },
+  {
+    "name": "Concepts",
+    "url": "concepts/",
+    "children": [
+      { "name": "Regex AST", "url": "concepts/regex-ast/" },
+      { "name": "VM Architecture", "url": "concepts/vm-architecture/" }
+    ]
+  },
+  {
+    "name": "Reference",
+    "url": "reference/",
+    "children": [
+      { "name": "API Reference", "url": "reference/api/" },
+      { "name": "Incremental Tokenizer", "url": "reference/incremental-tokenizer/" },
+      { "name": "JavaScript Regex", "url": "reference/js-regex-syntax/" },
+      { "name": "Flex Syntax", "url": "reference/flex-syntax/" },
+      { "name": "Rule Config", "url": "reference/rule-config/" },
+      { "name": "Tokenizer States", "url": "reference/tokenizer-states/" }
+    ]
+  },
+  {
+    "name": "Guides",
+    "url": "guides/",
+    "children": [
+      { "name": "Editor Integration", "url": "guides/editor-integration/" }
+    ]
+  },
+  {
+    "name": "Examples",
+    "url": "examples/",
+    "children": [
+      { "name": "JSON Tokenizer", "url": "examples/json-tokenizer/" },
+      { "name": "Calculator", "url": "examples/calculator/" },
+      { "name": "C Lexer", "url": "examples/c-lexer/" }
+    ]
+  }
+]

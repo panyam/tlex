@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Understanding the regex abstract syntax tree">
+    <title>Regex AST - TLEX</title>
+
+    
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    
+    <link rel="stylesheet" href="/tlex/static/css/tsappkit-docs.css">
+    <link rel="stylesheet" href="/tlex/static/css/main.css">
+    
+
+    
+    <link rel="icon" type="image/png" href="/tlex/static/images/favicon.png">
+</head>
+<body class="">
+    
+    
+<header class="site-header">
+    <div class="header-container">
+        
+        <div class="logo">
+            <a href="/tlex/">
+                <span class="logo-text">TLEX</span>
+            </a>
+        </div>
+
+        <nav class="main-nav">
+            
+            
+            <div class="nav-item">
+                <a href="/tlex/getting-started/" class="nav-link">
+                    
+                    Getting Started
+                </a>
+                
+            </div>
+            
+            <div class="nav-item">
+                <a href="/tlex/playground/" class="nav-link">
+                    
+                    Playground
+                </a>
+                
+            </div>
+            
+            <div class="nav-item has-children">
+                <a href="/tlex/concepts/" class="nav-link">
+                    
+                    Concepts
+                </a>
+                
+                <div class="nav-dropdown">
+                    
+                    <a href="/tlex/concepts/regex-ast/" class="dropdown-item">Regex AST</a>
+                    
+                    <a href="/tlex/concepts/vm-architecture/" class="dropdown-item">VM Architecture</a>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="nav-item has-children">
+                <a href="/tlex/reference/" class="nav-link">
+                    
+                    Reference
+                </a>
+                
+                <div class="nav-dropdown">
+                    
+                    <a href="/tlex/reference/api/" class="dropdown-item">API Reference</a>
+                    
+                    <a href="/tlex/reference/incremental-tokenizer/" class="dropdown-item">Incremental Tokenizer</a>
+                    
+                    <a href="/tlex/reference/js-regex-syntax/" class="dropdown-item">JavaScript Regex</a>
+                    
+                    <a href="/tlex/reference/flex-syntax/" class="dropdown-item">Flex Syntax</a>
+                    
+                    <a href="/tlex/reference/rule-config/" class="dropdown-item">Rule Config</a>
+                    
+                    <a href="/tlex/reference/tokenizer-states/" class="dropdown-item">Tokenizer States</a>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="nav-item has-children">
+                <a href="/tlex/guides/" class="nav-link">
+                    
+                    Guides
+                </a>
+                
+                <div class="nav-dropdown">
+                    
+                    <a href="/tlex/guides/editor-integration/" class="dropdown-item">Editor Integration</a>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="nav-item has-children">
+                <a href="/tlex/examples/" class="nav-link">
+                    
+                    Examples
+                </a>
+                
+                <div class="nav-dropdown">
+                    
+                    <a href="/tlex/examples/json-tokenizer/" class="dropdown-item">JSON Tokenizer</a>
+                    
+                    <a href="/tlex/examples/calculator/" class="dropdown-item">Calculator</a>
+                    
+                    <a href="/tlex/examples/c-lexer/" class="dropdown-item">C Lexer</a>
+                    
+                </div>
+                
+            </div>
+            
+        </nav>
+
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+            <a href="https://github.com/panyam/tlex" class="btn-github" target="_blank" rel="noopener">
+                GitHub
+            </a>
+        </div>
+    </div>
+</header>
+
+
+    
+    <div class="page-container">
+        
+        
+<aside class="sidebar">
+    <div class="sidebar-content">
+        
+
+        
+        <nav class="section-nav">
+            
+            <div class="section-nav-content">
+                <h3>Concepts</h3>
+                <ul>
+                    <li><a href="/tlex/concepts/">Overview</a></li>
+                    <li><a href="/tlex/concepts/regex-ast/">Regex AST</a></li>
+                    <li><a href="/tlex/concepts/vm-architecture/">VM Architecture</a></li>
+                </ul>
+            </div>
+            
+        </nav>
+    </div>
+</aside>
+
+
+        
+        <main class="main-content">
+            
+<article class="content">
+    
+    
+    <header class="content-header">
+        <h1>Regex AST</h1>
+        
+        <p class="lead">Understanding the regex abstract syntax tree</p>
+        
+    </header>
+    
+
+    
+    <div class="content-body">
+        
+            
+            
+            <p>TLEX represents regular expressions as an Abstract Syntax Tree (AST). This allows for:</p>
+<ul>
+<li>Programmatic pattern construction</li>
+<li>Pattern analysis and optimization</li>
+<li>Support for multiple regex syntaxes (JavaScript, Flex)</li>
+<li>Reversible patterns for lookbehind assertions</li>
+</ul>
+<h2 id="node-hierarchy">Node Hierarchy <a class="anchor" href="#node-hierarchy">¶</a></h2>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span>Regex (abstract base)
+</span></span><span style="display:flex;"><span>├── Anchors
+</span></span><span style="display:flex;"><span>│   ├── StartOfInput    (^)
+</span></span><span style="display:flex;"><span>│   ├── EndOfInput      ($)
+</span></span><span style="display:flex;"><span>│   ├── StartOfWord     (\b start)
+</span></span><span style="display:flex;"><span>│   └── EndOfWord       (\b end)
+</span></span><span style="display:flex;"><span>├── Assertions
+</span></span><span style="display:flex;"><span>│   ├── LookAhead       (?=...) (?!...)
+</span></span><span style="display:flex;"><span>│   └── LookBack        (?&lt;=...) (?&lt;!...)
+</span></span><span style="display:flex;"><span>├── Combinators
+</span></span><span style="display:flex;"><span>│   ├── Cat             (concatenation: ab)
+</span></span><span style="display:flex;"><span>│   ├── Union           (alternation: a|b)
+</span></span><span style="display:flex;"><span>│   └── Quant           (quantifiers: *, +, ?, {n,m})
+</span></span><span style="display:flex;"><span>├── Character Matchers
+</span></span><span style="display:flex;"><span>│   ├── LeafChar        (single chars, classes)
+</span></span><span style="display:flex;"><span>│   └── CharGroup       (ranges, unions)
+</span></span><span style="display:flex;"><span>└── References
+</span></span><span style="display:flex;"><span>    ├── Var             (named variables)
+</span></span><span style="display:flex;"><span>    ├── BackNamedRef    (\k&lt;name&gt;)
+</span></span><span style="display:flex;"><span>    └── BackNumRef      (\1, \2, etc.)
+</span></span></code></pre></code></pre><hr />
+<h2 id="base-class-regex">Base Class: Regex <a class="anchor" href="#base-class-regex">¶</a></h2>
+<p>All AST nodes extend the abstract <code>Regex</code> class.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Regex</span>, <span style="color:#a6e22e">RegexType</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span></code></pre></code></pre><h3 id="common-properties">Common Properties <a class="anchor" href="#common-properties">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tag</code></td>
+<td><code>RegexType</code></td>
+<td>Node type identifier</td>
+</tr>
+<tr>
+<td><code>parent</code></td>
+<td><code>Regex | null</code></td>
+<td>Parent node in tree</td>
+</tr>
+<tr>
+<td><code>groupIndex</code></td>
+<td><code>number</code></td>
+<td>Capture group index (-1 if not a group)</td>
+</tr>
+<tr>
+<td><code>groupName</code></td>
+<td><code>string | null</code></td>
+<td>Named capture group name</td>
+</tr>
+<tr>
+<td><code>groupIsSilent</code></td>
+<td><code>boolean</code></td>
+<td>Non-capturing group flag</td>
+</tr>
+<tr>
+<td><code>ignoreCase</code></td>
+<td><code>boolean | null</code></td>
+<td>Case-insensitive flag</td>
+</tr>
+<tr>
+<td><code>dotAll</code></td>
+<td><code>boolean | null</code></td>
+<td>Dot matches newlines flag</td>
+</tr>
+<tr>
+<td><code>multiline</code></td>
+<td><code>boolean | null</code></td>
+<td><code>^</code>/<code>$</code> match line boundaries</td>
+</tr>
+</tbody>
+</table>
+<h3 id="regextype-enum">RegexType Enum <a class="anchor" href="#regextype-enum">¶</a></h3>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">RegexType</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">START_OF_INPUT</span>,   <span style="color:#75715e">// ^
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">END_OF_INPUT</span>,     <span style="color:#75715e">// $
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">START_OF_WORD</span>,    <span style="color:#75715e">// \b (word start)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">END_OF_WORD</span>,      <span style="color:#75715e">// \b (word end)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">UNION</span>,            <span style="color:#75715e">// a|b
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">CAT</span>,              <span style="color:#75715e">// ab
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">VAR</span>,              <span style="color:#75715e">// {variable}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">BACK_NAMED_REF</span>,   <span style="color:#75715e">// \k&lt;name&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">BACK_NUM_REF</span>,     <span style="color:#75715e">// \1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">QUANT</span>,            <span style="color:#75715e">// *, +, ?, {n,m}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">LOOK_AHEAD</span>,       <span style="color:#75715e">// (?=...) (?!...)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">LOOK_BACK</span>,        <span style="color:#75715e">// (?&lt;=...) (?&lt;!...)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">CHAR</span>,             <span style="color:#75715e">// Character matchers
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></code></pre><hr />
+<h2 id="anchors">Anchors <a class="anchor" href="#anchors">¶</a></h2>
+<h3 id="startofinput--endofinput">StartOfInput / EndOfInput <a class="anchor" href="#startofinput--endofinput">¶</a></h3>
+<p>Match the start (<code>^</code>) or end (<code>$</code>) of input.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">StartOfInput</span>, <span style="color:#a6e22e">EndOfInput</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">start</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">StartOfInput</span>();  <span style="color:#75715e">// Matches ^
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">EndOfInput</span>();      <span style="color:#75715e">// Matches $
+</span></span></span></code></pre></code></pre><p>With <code>multiline</code> flag, these also match at line boundaries.</p>
+<h3 id="startofword--endofword">StartOfWord / EndOfWord <a class="anchor" href="#startofword--endofword">¶</a></h3>
+<p>Match word boundaries (<code>\b</code>).</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">StartOfWord</span>, <span style="color:#a6e22e">EndOfWord</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">wordStart</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">StartOfWord</span>();  <span style="color:#75715e">// \b at word start
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">wordEnd</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">EndOfWord</span>();      <span style="color:#75715e">// \b at word end
+</span></span></span></code></pre></code></pre><hr />
+<h2 id="combinators">Combinators <a class="anchor" href="#combinators">¶</a></h2>
+<h3 id="cat-concatenation">Cat (Concatenation) <a class="anchor" href="#cat-concatenation">¶</a></h3>
+<p>Matches patterns in sequence: <code>ab</code> matches &ldquo;a&rdquo; followed by &ldquo;b&rdquo;.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Cat</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Match &#34;abc&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">abc</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;c&#39;</span>)
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Add more children
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">abc</span>.<span style="color:#a6e22e">add</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;d&#39;</span>));  <span style="color:#75715e">// Now matches &#34;abcd&#34;
+</span></span></span></code></pre></code></pre><p>Cat automatically flattens nested concatenations:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">a</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>));
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">b</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;c&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;d&#39;</span>));
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">flat</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(<span style="color:#a6e22e">a</span>, <span style="color:#a6e22e">b</span>);  <span style="color:#75715e">// Equivalent to Cat(&#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;)
+</span></span></span></code></pre></code></pre><h3 id="union-alternation">Union (Alternation) <a class="anchor" href="#union-alternation">¶</a></h3>
+<p>Matches any one of the alternatives: <code>a|b</code> matches &ldquo;a&rdquo; or &ldquo;b&rdquo;.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Union</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Match &#34;cat&#34; or &#34;dog&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">catOrDog</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Union</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;c&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;t&#39;</span>)),
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;d&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;o&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;g&#39;</span>))
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Add more alternatives
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">catOrDog</span>.<span style="color:#a6e22e">add</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;x&#39;</span>));  <span style="color:#75715e">// Now matches &#34;cat&#34;, &#34;dog&#34;, or &#34;x&#34;
+</span></span></span></code></pre></code></pre><h3 id="quant-quantifiers">Quant (Quantifiers) <a class="anchor" href="#quant-quantifiers">¶</a></h3>
+<p>Matches a pattern a specified number of times.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Quant</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">a</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a* (zero or more)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">star</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">0</span>, <span style="color:#66d9ef">Infinity</span>, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a+ (one or more)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">plus</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">Infinity</span>, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a? (zero or one)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">optional</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a{3} (exactly 3)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">exactly3</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a{2,5} (2 to 5)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">range</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">5</span>, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a{3,} (3 or more)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">atLeast3</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">a</span>, <span style="color:#ae81ff">3</span>, <span style="color:#66d9ef">Infinity</span>, <span style="color:#66d9ef">true</span>);
+</span></span></code></pre></code></pre><p><strong>Constructor:</strong></p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">expr</span>: <span style="color:#66d9ef">Regex</span>,       <span style="color:#75715e">// Pattern to repeat
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">minCount</span>: <span style="color:#66d9ef">number</span>,  <span style="color:#75715e">// Minimum repetitions (default: 1)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">maxCount</span>: <span style="color:#66d9ef">number</span>,  <span style="color:#75715e">// Maximum repetitions (default: 1, use Infinity for unlimited)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">greedy</span>: <span style="color:#66d9ef">boolean</span>    <span style="color:#75715e">// Greedy matching (default: true)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)
+</span></span></code></pre></code></pre><p><strong>Properties:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>expr</code></td>
+<td><code>Regex</code></td>
+<td>The repeated pattern</td>
+</tr>
+<tr>
+<td><code>minCount</code></td>
+<td><code>number</code></td>
+<td>Minimum repetitions</td>
+</tr>
+<tr>
+<td><code>maxCount</code></td>
+<td><code>number</code></td>
+<td>Maximum repetitions</td>
+</tr>
+<tr>
+<td><code>greedy</code></td>
+<td><code>boolean</code></td>
+<td>Greedy (true) or lazy (false)</td>
+</tr>
+<tr>
+<td><code>isUnlimited</code></td>
+<td><code>boolean</code></td>
+<td>True if maxCount is unlimited</td>
+</tr>
+<tr>
+<td><code>isVariable</code></td>
+<td><code>boolean</code></td>
+<td>True if min != max</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="character-matchers">Character Matchers <a class="anchor" href="#character-matchers">¶</a></h2>
+<h3 id="leafchar">LeafChar <a class="anchor" href="#leafchar">¶</a></h3>
+<p>Matches individual characters or character classes.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">LeafChar</span>, <span style="color:#a6e22e">CharType</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Any character (.)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">any</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Any</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Single character
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">a</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">tab</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;\t&#39;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Character class (\d, \w, \s, etc.)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">digit</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Class</span>(<span style="color:#a6e22e">CharClassType</span>.<span style="color:#a6e22e">Digit</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">word</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Class</span>(<span style="color:#a6e22e">CharClassType</span>.<span style="color:#a6e22e">Word</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">space</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Class</span>(<span style="color:#a6e22e">CharClassType</span>.<span style="color:#a6e22e">Space</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Negated versions
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">notDigit</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Class</span>(<span style="color:#a6e22e">CharClassType</span>.<span style="color:#a6e22e">Digit</span>, <span style="color:#66d9ef">true</span>);  <span style="color:#75715e">// \D
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">notAny</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Any</span>(<span style="color:#66d9ef">true</span>);  <span style="color:#75715e">// [^\s\S] (matches nothing)
+</span></span></span></code></pre></code></pre><p><strong>CharType Enum:</strong></p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">CharType</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">AnyChar</span>,         <span style="color:#75715e">// .
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">SingleChar</span>,      <span style="color:#75715e">// Literal character
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">CharRange</span>,       <span style="color:#75715e">// a-z
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">PropertyEscape</span>,  <span style="color:#75715e">// \p{...}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">CharClass</span>,       <span style="color:#75715e">// \d, \w, \s
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">Union</span>,           <span style="color:#75715e">// [abc]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">Intersection</span>,    <span style="color:#75715e">// [a&amp;&amp;b]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></code></pre><h3 id="chargroup">CharGroup <a class="anchor" href="#chargroup">¶</a></h3>
+<p>Matches character ranges, unions, or intersections.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">CharGroup</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Range: a-z
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">lowercase</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;z&#39;</span>)
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Union: [aeiou]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vowels</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Union</span>(<span style="color:#66d9ef">false</span>, [
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;e&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;i&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;o&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;u&#39;</span>)
+</span></span><span style="display:flex;"><span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Negated: [^0-9]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">notDigit</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;0&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;9&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">true</span>  <span style="color:#75715e">// negated
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Complex: [a-zA-Z_]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">identifier</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Union</span>(<span style="color:#66d9ef">false</span>, [
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;z&#39;</span>)),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;A&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;Z&#39;</span>)),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;_&#39;</span>)
+</span></span><span style="display:flex;"><span>]);
+</span></span></code></pre></code></pre><hr />
+<h2 id="assertions">Assertions <a class="anchor" href="#assertions">¶</a></h2>
+<h3 id="lookahead">LookAhead <a class="anchor" href="#lookahead">¶</a></h3>
+<p>Matches without consuming input (zero-width).</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">LookAhead</span>, <span style="color:#a6e22e">Cat</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Positive lookahead: a(?=b) - matches &#34;a&#34; only if followed by &#34;b&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">aFollowedByB</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">LookAhead</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),     <span style="color:#75715e">// expr: what to match
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),     <span style="color:#75715e">// cond: what must follow
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">false</span>                      <span style="color:#75715e">// negate: false for positive
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Negative lookahead: a(?!b) - matches &#34;a&#34; only if NOT followed by &#34;b&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">aNotFollowedByB</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">LookAhead</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">true</span>                       <span style="color:#75715e">// negate: true for negative
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>);
+</span></span></code></pre></code></pre><h3 id="lookback">LookBack <a class="anchor" href="#lookback">¶</a></h3>
+<p>Matches based on what precedes (zero-width).</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">LookBack</span>, <span style="color:#a6e22e">LeafChar</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Positive lookbehind: (?&lt;=a)b - matches &#34;b&#34; only if preceded by &#34;a&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">bPrecededByA</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">LookBack</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),     <span style="color:#75715e">// expr: what to match
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),     <span style="color:#75715e">// cond: what must precede
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">false</span>                      <span style="color:#75715e">// negate: false for positive
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Negative lookbehind: (?&lt;!a)b - matches &#34;b&#34; only if NOT preceded by &#34;a&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">bNotPrecededByA</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">LookBack</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">true</span>                       <span style="color:#75715e">// negate: true for negative
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>);
+</span></span></code></pre></code></pre><hr />
+<h2 id="references">References <a class="anchor" href="#references">¶</a></h2>
+<h3 id="var-variable-reference">Var (Variable Reference) <a class="anchor" href="#var-variable-reference">¶</a></h3>
+<p>References a named pattern defined elsewhere.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Var</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Reference a variable named &#34;DIGIT&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">digitRef</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Var</span>(<span style="color:#e6db74">&#39;DIGIT&#39;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// For reverse matching (lookbehind)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">reversedDigitRef</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Var</span>(<span style="color:#e6db74">&#39;DIGIT&#39;</span>, <span style="color:#66d9ef">true</span>);
+</span></span></code></pre></code></pre><p>Variables are resolved during compilation against the tokenizer&rsquo;s variable registry.</p>
+<h3 id="backnamedref--backnumref">BackNamedRef / BackNumRef <a class="anchor" href="#backnamedref--backnumref">¶</a></h3>
+<p>Backreferences to captured groups.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">BackNamedRef</span>, <span style="color:#a6e22e">BackNumRef</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Named backreference: \k&lt;quote&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">quoteRef</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">BackNamedRef</span>(<span style="color:#e6db74">&#39;quote&#39;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Numeric backreference: \1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">firstGroup</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">BackNumRef</span>(<span style="color:#ae81ff">1</span>);
+</span></span></code></pre></code></pre><hr />
+<h2 id="building-patterns">Building Patterns <a class="anchor" href="#building-patterns">¶</a></h2>
+<h3 id="from-javascript-regex">From JavaScript Regex <a class="anchor" href="#from-javascript-regex">¶</a></h3>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">exprFromJSRE</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parse JS regex string to AST
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">ast</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">exprFromJSRE</span>(<span style="color:#e6db74">&#39;[a-z]+&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">astWithFlags</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">exprFromJSRE</span>(<span style="color:#e6db74">&#39;hello&#39;</span>, <span style="color:#e6db74">&#39;i&#39;</span>);  <span style="color:#75715e">// case-insensitive
+</span></span></span></code></pre></code></pre><h3 id="from-flex-syntax">From Flex Syntax <a class="anchor" href="#from-flex-syntax">¶</a></h3>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">exprFromFlex</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parse Flex-style pattern
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">ast</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">exprFromFlex</span>(<span style="color:#e6db74">&#39;[a-z]+&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">withVar</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">exprFromFlex</span>(<span style="color:#e6db74">&#39;{DIGIT}+&#39;</span>);  <span style="color:#75715e">// Uses variable
+</span></span></span></code></pre></code></pre><h3 id="programmatic-construction">Programmatic Construction <a class="anchor" href="#programmatic-construction">¶</a></h3>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Cat</span>, <span style="color:#a6e22e">Union</span>, <span style="color:#a6e22e">Quant</span>, <span style="color:#a6e22e">LeafChar</span>, <span style="color:#a6e22e">CharGroup</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#39;tlex&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Build: [a-zA-Z_][a-zA-Z0-9_]*
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">identifier</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// First char: [a-zA-Z_]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Union</span>(<span style="color:#66d9ef">false</span>, [
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;z&#39;</span>)),
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;A&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;Z&#39;</span>)),
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;_&#39;</span>)
+</span></span><span style="display:flex;"><span>  ]),
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Rest: [a-zA-Z0-9_]*
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Union</span>(<span style="color:#66d9ef">false</span>, [
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;z&#39;</span>)),
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;A&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;Z&#39;</span>)),
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">CharGroup</span>.<span style="color:#a6e22e">Range</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;0&#39;</span>), <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;9&#39;</span>)),
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;_&#39;</span>)
+</span></span><span style="display:flex;"><span>    ]),
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">0</span>, <span style="color:#66d9ef">Infinity</span>, <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  )
+</span></span><span style="display:flex;"><span>);
+</span></span></code></pre></code></pre><hr />
+<h2 id="pattern-reversal">Pattern Reversal <a class="anchor" href="#pattern-reversal">¶</a></h2>
+<p>All AST nodes support <code>reverse()</code> for lookbehind matching:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">abc</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;c&#39;</span>)
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">cba</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">abc</span>.<span style="color:#a6e22e">reverse</span>();  <span style="color:#75715e">// Matches &#34;cba&#34;
+</span></span></span></code></pre></code></pre><p>This is used internally for lookbehind assertions, which match backwards from the current position.</p>
+<hr />
+<h2 id="string-representation">String Representation <a class="anchor" href="#string-representation">¶</a></h2>
+<p>Get the regex string representation:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">pattern</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Cat</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;a&#39;</span>),
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Quant</span>(<span style="color:#a6e22e">LeafChar</span>.<span style="color:#a6e22e">Single</span>(<span style="color:#e6db74">&#39;b&#39;</span>), <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">Infinity</span>, <span style="color:#66d9ef">true</span>)
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">pattern</span>.<span style="color:#a6e22e">toString</span>);  <span style="color:#75715e">// &#34;ab+&#34;
+</span></span></span></code></pre></code></pre><hr />
+<h2 id="see-also">See Also <a class="anchor" href="#see-also">¶</a></h2>
+<ul>
+<li><a href="/tlex/concepts/vm-architecture/">VM Architecture</a> - How patterns are compiled and executed</li>
+<li><a href="/tlex/reference/js-regex-syntax/">JavaScript Regex Syntax</a> - JS regex features</li>
+<li><a href="/tlex/reference/flex-syntax/">Flex Syntax</a> - Flex-style patterns</li>
+</ul>
+
+        
+    </div>
+
+    
+    
+</article>
+
+        </main>
+    </div>
+    
+
+    
+    
+    
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h4>TLEX</h4>
+            <p>A powerful lexer generator and tokenizer library for TypeScript</p>
+            <p class="version">Version 1.0.0</p>
+        </div>
+
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="/tlex/getting-started/">Getting Started</a></li>
+                <li><a href="/tlex/concepts/">Concepts</a></li>
+                <li><a href="/tlex/reference/">Reference</a></li>
+                <li><a href="/tlex/examples/">Examples</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Community</h4>
+            <ul>
+                <li><a href="https://github.com/panyam/tlex" target="_blank" rel="noopener">GitHub Repository</a></li>
+                <li><a href="https://github.com/panyam/tlex/issues" target="_blank" rel="noopener">Report Issues</a></li>
+                <li><a href="https://www.npmjs.com/package/tlex" target="_blank" rel="noopener">npm Package</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>License</h4>
+            <p>Licensed under <a href="https://github.com/panyam/tlex/blob/master/LICENSE">MIT</a></p>
+            <p>&copy;  Sriram Panyam</p>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>Built with <a href="https://github.com/panyam/s3gen" target="_blank">s3gen</a></p>
+    </div>
+</footer>
+
+    
+
+    
+    
+    <script defer="defer" src="/tlex/static/js/gen/59.53f8ed6f679c11016011.js"></script>
+<script defer="defer" src="/tlex/static/js/gen/513.f5749b8d6a5fba145786.js"></script>
+<script defer="defer" src="/tlex/static/js/gen/DocsPage.c50725eb494e4eb17a75.js"></script>
+    
+
+    
+    <script>
+        (function() {
+            var toggle = document.getElementById('theme-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', function() {
+                    var isDark = document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+/* ============================================
+   TLEX Documentation - Main Stylesheet
+
+   This file aggregates all component styles.
+   Base documentation styles are loaded via webpack
+   from @panyam/tsappkit.
+   ============================================ */
+
+/* Theme variables - TLEX purple/teal theme */
+@import url('./components/variables.css');
+
+/* Token display styles */
+@import url('./components/tokens.css');
+
+/* Playground (DockView-based) */
+@import url('./components/playground.css');
+
+/* Interactive example runner */
+@import url('./components/example-runner.css');
