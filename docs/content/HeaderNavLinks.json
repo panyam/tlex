@@ -20,10 +20,18 @@
     "url": "reference/",
     "children": [
       { "name": "API Reference", "url": "reference/api/" },
+      { "name": "Incremental Tokenizer", "url": "reference/incremental-tokenizer/" },
       { "name": "JavaScript Regex", "url": "reference/js-regex-syntax/" },
       { "name": "Flex Syntax", "url": "reference/flex-syntax/" },
       { "name": "Rule Config", "url": "reference/rule-config/" },
       { "name": "Tokenizer States", "url": "reference/tokenizer-states/" }
+    ]
+  },
+  {
+    "name": "Guides",
+    "url": "guides/",
+    "children": [
+      { "name": "Editor Integration", "url": "guides/editor-integration/" }
     ]
   },
   {

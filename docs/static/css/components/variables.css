@@ -14,6 +14,7 @@
   --color-bg: #fafafa;
   --color-bg-alt: #f1f5f9;
   --color-bg-code: #f8f8fc;        /* Light purple tint for code blocks */
+  --color-code-text: #1e1e3f;      /* Dark text for code in light mode */
 
   --color-text: #1e1e3f;           /* Dark purple text */
   --color-text-muted: #64748b;
@@ -32,6 +33,7 @@
   --color-bg: #0f0f1a;             /* Deep dark purple */
   --color-bg-alt: #1a1a2e;         /* Dark purple alt */
   --color-bg-code: #0f0f1a;
+  --color-code-text: #e2e8f0;      /* Light text for code in dark mode */
 
   --color-text: #e2e8f0;
   --color-text-muted: #a0a0b8;

@@ -13,6 +13,10 @@
 - [x] API Reference documentation - Tokenizer, Token, TokenBuffer, Tape, Rule, RuleConfig
 - [x] JS Regex Syntax documentation - Full JavaScript regex feature reference
 - [x] ExampleRunner component - Interactive code examples (like Galore's)
+- [x] Incremental Tokenizer API reference - Full IncrementalTokenizer documentation
+- [x] Editor Integration guide - Monaco, CodeMirror, Ace integration patterns
+- [x] Playground comparison view - Two-column full vs incremental tokenizer comparison
+- [x] Real-time tokenization modes - On-click and real-time (as you type) modes
 
 ## In Progress
 
@@ -32,6 +36,7 @@
 - [x] Examples overview - Quick start patterns and common use cases
 - [x] JSON Tokenizer example - Complete with interactive demo
 - [x] Calculator example - Operators, functions, constants
+- [x] Guides section - New section for integration tutorials
 
 ## Known Issues
 

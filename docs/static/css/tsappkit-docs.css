@@ -333,7 +333,7 @@ pre {
 }
 .content-body pre {
   background: var(--color-bg-code);
-  color: #e2e8f0;
+  color: var(--color-code-text, #1e1e3f);
   padding: var(--spacing-md);
   border-radius: var(--radius-md);
   overflow-x: auto;

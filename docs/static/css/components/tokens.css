@@ -26,6 +26,51 @@
 .token-operator { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 .token-identifier { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
+/* Split container for two-column token display */
+.tokens-split-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 1px;
+  background: var(--color-border);
+}
+
+.tokens-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-bg);
+}
+
+.tokens-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.75rem;
+}
+
+.tokens-column-title {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tokens-column-stats {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.tokens-column-stats.match {
+  color: var(--color-success, #10b981);
+}
+
+.tokens-column-stats.mismatch {
+  color: var(--color-error, #ef4444);
+}
+
 /* Tokens list display (used in playground) */
 .tokens-container {
   flex: 1;

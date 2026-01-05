@@ -98,6 +98,29 @@
   color: var(--color-text-muted);
 }
 
+/* Incremental mode selector */
+.incremental-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.incremental-mode-label span {
+  white-space: nowrap;
+}
+
+.incremental-mode-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
 .editor-container {
   flex: 1;
   min-height: 0;

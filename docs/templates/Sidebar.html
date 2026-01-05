@@ -11,6 +11,7 @@
                 <ul>
                     <li><a href="{{.Site.PathPrefix}}/reference/">Overview</a></li>
                     <li><a href="{{.Site.PathPrefix}}/reference/api/">API Reference</a></li>
+                    <li><a href="{{.Site.PathPrefix}}/reference/incremental-tokenizer/">Incremental Tokenizer</a></li>
                     <li><a href="{{.Site.PathPrefix}}/reference/js-regex-syntax/">JavaScript Regex</a></li>
                     <li><a href="{{.Site.PathPrefix}}/reference/flex-syntax/">Flex Syntax</a></li>
                     <li><a href="{{.Site.PathPrefix}}/reference/rule-config/">Rule Configuration</a></li>
@@ -34,6 +35,14 @@
                     <li><a href="{{.Site.PathPrefix}}/examples/json-tokenizer/">JSON Tokenizer</a></li>
                     <li><a href="{{.Site.PathPrefix}}/examples/calculator/">Calculator</a></li>
                     <li><a href="{{.Site.PathPrefix}}/examples/c-lexer/">C Lexer</a></li>
+                </ul>
+            </div>
+            {{ else if eq $section "guides" }}
+            <div class="section-nav-content">
+                <h3>Guides</h3>
+                <ul>
+                    <li><a href="{{.Site.PathPrefix}}/guides/">Overview</a></li>
+                    <li><a href="{{.Site.PathPrefix}}/guides/editor-integration/">Editor Integration</a></li>
                 </ul>
             </div>
             {{ else }}

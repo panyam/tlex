@@ -7,6 +7,7 @@ section: reference
 ## API Reference
 
 - [API Reference](/tlex/reference/api/) - Complete API documentation
+- [Incremental Tokenizer](/tlex/reference/incremental-tokenizer/) - Incremental lexing API
 
 ## Syntax Reference
 
