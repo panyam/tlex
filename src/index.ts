@@ -6,6 +6,7 @@ export * from "./errors";
 export * from "./tape";
 export * from "./token";
 export * from "./tokenizer";
+export * from "./incremental";
 export * from "./vm";
 export * as JS from "./jsparser";
 export * as Flex from "./flexparser";

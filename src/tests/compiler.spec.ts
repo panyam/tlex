@@ -401,7 +401,7 @@ describe("Regex Compile Tests", () => {
   });
 
   test("Test Invalid Vars", () => {
-    expect(() => compile(null, Builder.build("a{hello}c"))).toThrowError("Cannot find expression: hello");
+    expect(() => compile(null, Builder.build("a{hello}c"))).toThrow("Cannot find expression: hello");
   });
 
   test("Test JS SL Comment", () => {

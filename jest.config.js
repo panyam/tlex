@@ -2,11 +2,6 @@
 // const { compilerOptions } = require("./tsconfig");
 
 module.exports = {
-  globals: {
-    "ts-jest": {
-      tsConfig: "./tsconfig.json",
-    },
-  },
   preset: "ts-jest",
   testEnvironment: "node",
   testPathIgnorePatterns: [
@@ -19,8 +14,8 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   // moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths /*, { prefix: '<rootDir>/' } */),
   transform: {
-    "^.+\\.jsx?$": "babel-jest", // Adding this line solved the issue
-    "^.+\\.(ts|tsx)?$": "ts-jest",
+    "^.+\\.jsx?$": "babel-jest",
+    "^.+\\.(ts|tsx)?$": ["ts-jest", { tsconfig: "./tsconfig.json" }],
   },
   moduleDirectories: ["node_modules", "src"],
 };

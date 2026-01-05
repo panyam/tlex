@@ -95,7 +95,7 @@ describe("Regex Tests", () => {
     testRegex("a(bc){10}", ["Cat", {}, ["a", ["{10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
     testRegex("a(bc){,10}", ["Cat", {}, ["a", ["{0,10}?", {}, ["Cat", { groupIndex: 0 }, ["b", "c"]]]]]);
     testRegex("((ab)*)*", ["*?", {}, ["*?", { groupIndex: 0 }, ["Cat", { groupIndex: 1 }, ["a", "b"]]]]);
-    expect(() => testRegex("a{1,2,3}", [])).toThrowError();
+    expect(() => testRegex("a{1,2,3}", [])).toThrow();
     testRegex("a[a-z]{2,4}?", ["Cat", {}, ["a", ["{2,4}", {}, "[a-z]"]]]);
   });
 

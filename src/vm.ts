@@ -191,6 +191,22 @@ export class VM {
   // Initial state is always 0
   protected currState = 0;
 
+  /**
+   * Get the current lexer state (for incremental lexing support).
+   * State is used to track context-sensitive lexing (e.g., inside string, comment).
+   */
+  getState(): number {
+    return this.currState;
+  }
+
+  /**
+   * Set the lexer state (for incremental lexing support).
+   * Allows restarting lexing from a saved state.
+   */
+  setState(state: number): void {
+    this.currState = state;
+  }
+
   protected gen = 0;
   // Records which "generation" of the match a particular
   // offset is in.  If a thread is added at a particular

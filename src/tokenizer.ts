@@ -153,6 +153,35 @@ export class BaseTokenizer {
  */
 export class Tokenizer extends BaseTokenizer {
   idCounter = 0;
+
+  /**
+   * Get the current lexer state (for incremental lexing support).
+   * State is used to track context-sensitive lexing modes.
+   */
+  getState(): number {
+    return this.vm.getState();
+  }
+
+  /**
+   * Set the lexer state (for incremental lexing support).
+   * Allows restarting lexing from a saved state.
+   */
+  setState(state: number): void {
+    this.vm.setState(state);
+  }
+
+  /**
+   * Reset the tokenizer state. Useful for incremental lexing
+   * when restarting from a different position.
+   */
+  reset(): void {
+    this.idCounter = 0;
+    // Reset VM state to initial
+    if (this._vm) {
+      this._vm.setState(0);
+    }
+  }
+
   next(tape: Tape, owner: any): Token | null {
     if (!tape.hasMore) {
       return null;

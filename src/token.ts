@@ -11,6 +11,29 @@ export class Token {
   value: any = null;
   groups: TSU.NumMap<number[]> = {};
   positions: TSU.NumMap<[number, number]> = {};
+
+  // Incremental lexing support fields
+  /**
+   * Lexer state when this token was constructed.
+   * 0 = INITIAL state. Higher numbers represent other states (e.g., inside string, comment).
+   * Used for incremental lexing to restart from a token boundary.
+   */
+  state = 0;
+
+  /**
+   * Number of characters read beyond this token's lexeme to determine it.
+   * Most tokens need 1 char lookahead to know they're complete (e.g., identifier ends on non-alnum).
+   * Used for incremental lexing dependency tracking.
+   */
+  lookahead = 1;
+
+  /**
+   * Number of preceding tokens whose lookahead reaches this token.
+   * Default 1 means the previous token's lookahead extends into this token.
+   * Used for incremental lexing to find affected region on edit.
+   */
+  lookback = 1;
+
   constructor(public tag: TokenType, public readonly matchIndex: number, public start: number, public end: number) {}
 
   isOneOf(...expected: any[]): boolean {

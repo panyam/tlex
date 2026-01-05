@@ -1179,7 +1179,8 @@ describe("ECMA Tests - Lookaheads - 15.10.2.8", () => {
       .join("")}`;
     const matches = expectMatchIndexes(execute({}, "hello", pattern), 0, 5);
     expect(matches.length).toBe(1);
-    expect(matches).toEqual([
+    // Use toMatchObject for partial matching (Token class has additional fields like state, lookahead, lookback)
+    expect(matches).toMatchObject([
       {
         matchIndex: 0,
         id: 549,
@@ -1573,28 +1574,28 @@ describe("ECMA Tests - Unicode Char Tests", () => {
   });
   test(testFileLink("unicode_restricted_character_class_escape"), () => {
     // Leading CharacterClassEscape.
-    expect(() => parse("[\\d-a]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\D-a]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\s-a]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\S-a]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\w-a]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\W-a]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\d-a]")).toThrow(SyntaxError);
+    expect(() => parse("[\\D-a]")).toThrow(SyntaxError);
+    expect(() => parse("[\\s-a]")).toThrow(SyntaxError);
+    expect(() => parse("[\\S-a]")).toThrow(SyntaxError);
+    expect(() => parse("[\\w-a]")).toThrow(SyntaxError);
+    expect(() => parse("[\\W-a]")).toThrow(SyntaxError);
 
     // Trailing CharacterClassEscape.
-    expect(() => parse("[a-\\d]")).toThrowError(SyntaxError);
-    expect(() => parse("[a-\\D]")).toThrowError(SyntaxError);
-    expect(() => parse("[a-\\s]")).toThrowError(SyntaxError);
-    expect(() => parse("[a-\\S]")).toThrowError(SyntaxError);
-    expect(() => parse("[a-\\w]")).toThrowError(SyntaxError);
-    expect(() => parse("[a-\\W]")).toThrowError(SyntaxError);
+    expect(() => parse("[a-\\d]")).toThrow(SyntaxError);
+    expect(() => parse("[a-\\D]")).toThrow(SyntaxError);
+    expect(() => parse("[a-\\s]")).toThrow(SyntaxError);
+    expect(() => parse("[a-\\S]")).toThrow(SyntaxError);
+    expect(() => parse("[a-\\w]")).toThrow(SyntaxError);
+    expect(() => parse("[a-\\W]")).toThrow(SyntaxError);
 
     // Leading and trailing CharacterClassEscape.
-    expect(() => parse("[\\d-\\d]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\D-\\D]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\s-\\s]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\S-\\S]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\w-\\w]")).toThrowError(SyntaxError);
-    expect(() => parse("[\\W-\\W]")).toThrowError(SyntaxError);
+    expect(() => parse("[\\d-\\d]")).toThrow(SyntaxError);
+    expect(() => parse("[\\D-\\D]")).toThrow(SyntaxError);
+    expect(() => parse("[\\s-\\s]")).toThrow(SyntaxError);
+    expect(() => parse("[\\S-\\S]")).toThrow(SyntaxError);
+    expect(() => parse("[\\w-\\w]")).toThrow(SyntaxError);
+    expect(() => parse("[\\W-\\W]")).toThrow(SyntaxError);
   });
   test.skip(testFileLink("unicode_restricted_identity_escape"), () => {
     //
@@ -1655,195 +1656,195 @@ describe("ECMA Tests - Unicode Char Tests", () => {
     //
     // AtomEscape[U] :: DecimalEscape
     // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
-    expect(() => parse("\\1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\2", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\3", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\4", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\5", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\6", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\7", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\8", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\9", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("\\1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\2", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\3", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\4", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\5", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\6", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\7", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\8", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\9", { unicode: true })).toThrow(SyntaxError);
 
     // DecimalEscape without leading 0 in ClassEscape.
     //
     // ClassEscape[U] :: DecimalEscape
     // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
-    expect(() => parse("[\\1]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\2]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\3]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\4]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\5]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\6]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\7]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\8]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\9]", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("[\\1]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\2]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\3]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\4]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\5]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\6]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\7]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\8]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\9]", { unicode: true })).toThrow(SyntaxError);
 
     // DecimalEscape with leading 0 in AtomEscape.
     //
     // Atom[U] :: DecimalEscape
     // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
-    expect(() => parse("\\00", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\01", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\02", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\03", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\04", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\05", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\06", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\07", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\08", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\09", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("\\00", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\01", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\02", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\03", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\04", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\05", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\06", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\07", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\08", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\09", { unicode: true })).toThrow(SyntaxError);
 
     // DecimalEscape with leading 0 in ClassEscape.
     //
     // ClassEscape[U] :: DecimalEscape
     // DecimalEscape :: DecimalIntegerLiteral [lookahead /= DecimalDigit]
-    expect(() => parse("[\\00]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\01]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\02]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\03]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\04]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\05]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\06]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\07]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\08]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\09]", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("[\\00]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\01]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\02]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\03]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\04]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\05]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\06]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\07]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\08]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\09]", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_quantifiable_assertion"), () => {
     // Positive lookahead with quantifier.
-    expect(() => parse("(?=.)*", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)+", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,2}", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)*", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)+", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,2}", { unicode: true })).toThrow(SyntaxError);
 
     // Positive lookahead with reluctant quantifier.
-    expect(() => parse("(?=.)*?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)+?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)??", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,2}?", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)*?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)+?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)??", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,2}?", { unicode: true })).toThrow(SyntaxError);
 
     // Negative lookahead with quantifier.
-    expect(() => parse("(?!.)*", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)+", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,2}", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)*", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)+", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,2}", { unicode: true })).toThrow(SyntaxError);
 
     // Negative lookahead with reluctant quantifier.
-    expect(() => parse("(?!.)*?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)+?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)??", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,2}?", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)*?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)+?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)??", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,2}?", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_quantifier_without_atom"), () => {
     // Quantifier without atom.
-    expect(() => parse("*", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("+", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,2}", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("*", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("+", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,2}", { unicode: true })).toThrow(SyntaxError);
 
     // Reluctant quantifier without atom.
-    expect(() => parse("*?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("+?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("??", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,2}?", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("*?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("+?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("??", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,2}?", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_quantifiable_assertion"), () => {
     // Positive lookahead with quantifier.
-    expect(() => parse("(?=.)*", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)+", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,2}", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)*", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)+", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,2}", { unicode: true })).toThrow(SyntaxError);
 
     // Positive lookahead with reluctant quantifier.
-    expect(() => parse("(?=.)*?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)+?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.)??", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?=.){1,2}?", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?=.)*?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)+?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.)??", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?=.){1,2}?", { unicode: true })).toThrow(SyntaxError);
 
     // Negative lookahead with quantifier.
-    expect(() => parse("(?!.)*", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)+", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,2}", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)*", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)+", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,2}", { unicode: true })).toThrow(SyntaxError);
 
     // Negative lookahead with reluctant quantifier.
-    expect(() => parse("(?!.)*?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)+?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.)??", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,}?", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("(?!.){1,2}?", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("(?!.)*?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)+?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.)??", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,}?", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("(?!.){1,2}?", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_incomplete_quantifier"), () => {
     // Incomplete quantifier with atom.
-    expect(() => parse("a{", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("a{1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("a{1,", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("a{1,2", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("{1,2", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("a{", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("a{1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("a{1,", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("a{1,2", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("{1,2", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_identity_escape_x.js"), () => {
-    expect(() => parse("\\x", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\x1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\x]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\x1]", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("\\x", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\x1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\x]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\x1]", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_identity_escape_u.js"), () => {
     // Incomplete RegExpUnicodeEscapeSequence in AtomEscape not parsed as IdentityEscape.
     //
     // AtomEscape[U] :: CharacterEscape[?U]
     // CharacterEscape[U] :: RegExpUnicodeEscapeSequence[?U]
-    expect(() => parse("\\u", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u12", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u123", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u{", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u{}", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u{1", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u{12", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("\\u{123", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("\\u", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u12", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u123", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u{", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u{}", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u{1", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u{12", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("\\u{123", { unicode: true })).toThrow(SyntaxError);
 
     // Incomplete RegExpUnicodeEscapeSequence in ClassEscape not parsed as IdentityEscape.
     //
     // ClassEscape[U] :: CharacterEscape[?U]
     // CharacterEscape[U] :: RegExpUnicodeEscapeSequence[?U]
-    expect(() => parse("[\\u]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u1]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u12]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u123]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u{]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u{}]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u{1]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u{12]", { unicode: true })).toThrowError(SyntaxError);
-    expect(() => parse("[\\u{123]", { unicode: true })).toThrowError(SyntaxError);
+    expect(() => parse("[\\u]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u1]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u12]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u123]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u{]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u{}]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u{1]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u{12]", { unicode: true })).toThrow(SyntaxError);
+    expect(() => parse("[\\u{123]", { unicode: true })).toThrow(SyntaxError);
   });
   test(testFileLink("unicode_restricted_identity_escape_c.js"), () => {
     function isAlpha(c: string): boolean {
       return ("A" <= c && c <= "Z") || ("a" <= c && c <= "z");
     }
 
-    expect(() => parse("\\c", true)).toThrowError(SyntaxError);
+    expect(() => parse("\\c", true)).toThrow(SyntaxError);
     for (let cu = 0x00; cu <= 0x7f; ++cu) {
       const s = String.fromCharCode(cu);
       if (!isAlpha(s)) {
@@ -1851,12 +1852,12 @@ describe("ECMA Tests - Unicode Char Tests", () => {
         //
         // AtomEscape[U] :: CharacterEscape[?U]
         // CharacterEscape[U] :: c ControlLetter
-        expect(() => parse("\\c" + s, { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("\\c" + s, { unicode: true })).toThrow(SyntaxError);
         // "c ControlLetter" sequence in ClassEscape.
         //
         // ClassEscape[U] :: CharacterEscape[?U]
         // CharacterEscape[U] :: c ControlLetter
-        expect(() => parse("[\\c" + s + "]", { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("[\\c" + s + "]", { unicode: true })).toThrow(SyntaxError);
       }
     }
   });
@@ -1913,13 +1914,13 @@ describe("ECMA Tests - Unicode Char Tests", () => {
     for (let cu = 0x41 /* A */; cu <= 0x5a /* Z */; ++cu) {
       const s = String.fromCharCode(cu);
       if (!isValidAlphaEscapeInAtom(s)) {
-        expect(() => parse("\\" + s, { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("\\" + s, { unicode: true })).toThrow(SyntaxError);
       }
     }
     for (let cu = 0x61 /* a */; cu <= 0x7a /* z */; ++cu) {
       const s = String.fromCharCode(cu);
       if (!isValidAlphaEscapeInAtom(s)) {
-        expect(() => parse("\\" + s, { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("\\" + s, { unicode: true })).toThrow(SyntaxError);
       }
     }
 
@@ -1927,13 +1928,13 @@ describe("ECMA Tests - Unicode Char Tests", () => {
     for (let cu = 0x41 /* A */; cu <= 0x5a /* Z */; ++cu) {
       const s = String.fromCharCode(cu);
       if (!isValidAlphaEscapeInClass(s)) {
-        expect(() => parse("[\\" + s + "]", { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("[\\" + s + "]", { unicode: true })).toThrow(SyntaxError);
       }
     }
     for (let cu = 0x61 /* a */; cu <= 0x7a /* z */; ++cu) {
       const s = String.fromCharCode(cu);
       if (!isValidAlphaEscapeInClass(s)) {
-        expect(() => parse("[\\" + s + "]", { unicode: true })).toThrowError(SyntaxError);
+        expect(() => parse("[\\" + s + "]", { unicode: true })).toThrow(SyntaxError);
       }
     }
   });

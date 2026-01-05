@@ -1,6 +1,6 @@
 {
   "name": "tlex-docs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Documentation site for the TLEX lexer generator",
   "private": true,
   "scripts": {
