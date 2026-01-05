@@ -1,0 +1,10 @@
+{
+  "siteName": "TLEX",
+  "siteDescription": "A powerful lexer generator and tokenizer library for TypeScript",
+  "version": "1.0.0",
+  "author": "Sriram Panyam",
+  "repository": "https://github.com/panyam/tlex",
+  "issues": "https://github.com/panyam/tlex/issues",
+  "npm": "https://www.npmjs.com/package/tlex",
+  "license": "MIT"
+}

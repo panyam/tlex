@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+static/js/gen/
+
+# Local links for development
+locallinks/
+
+# IDE
+.vscode/
+.idea/

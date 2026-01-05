@@ -1,0 +1,51 @@
+---
+title: TLEX
+description: A powerful lexer generator and tokenizer library for TypeScript
+hideTitle: true
+---
+
+<div class="hero">
+    <h1>TLEX</h1>
+    <p class="hero-subtitle">Lexer Generator for TypeScript</p>
+    <p class="hero-description">
+        Build powerful tokenizers and lexical analyzers with an intuitive API.
+        Supports JavaScript regex and Flex syntax.
+    </p>
+    <div class="hero-actions">
+        <a href="getting-started/" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/panyam/tlex" class="btn btn-secondary" target="_blank">View on GitHub</a>
+    </div>
+</div>
+
+<div class="features">
+    <div class="feature">
+        <h3>Multiple Regex Syntaxes</h3>
+        <p>Use JavaScript RegExp or Flex-style extended syntax. Choose what works best for your use case.</p>
+    </div>
+    <div class="feature">
+        <h3>High Performance</h3>
+        <p>VM-based regex matching with efficient bytecode compilation for fast tokenization.</p>
+    </div>
+    <div class="feature">
+        <h3>Flexible Rules</h3>
+        <p>Define rules with priorities, states, and callbacks for complete control over tokenization.</p>
+    </div>
+    <div class="feature">
+        <h3>TypeScript First</h3>
+        <p>Written in TypeScript with full type definitions. Works seamlessly in modern JavaScript projects.</p>
+    </div>
+</div>
+
+<div class="quick-example">
+    <h2>Quick Example</h2>
+    <pre><code class="language-typescript">import { Tokenizer } from 'tlex';
+
+const lexer = new Tokenizer();
+lexer.add(/[0-9]+/, { tag: "NUMBER" });
+lexer.add(/[a-z]+/, { tag: "IDENT" });
+lexer.add(/\s+/, { skip: true });
+
+const tokens = lexer.tokenize("abc 123 def");
+// [Token(tag="IDENT"), Token(tag="NUMBER"), Token(tag="IDENT")]
+</code></pre>
+</div>
