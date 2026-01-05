@@ -12,6 +12,7 @@ module.exports = (_env, options) => {
     devtool: "source-map",
     entry: {
       DocsPage: path.join(__dirname, "./components/DocsPage.ts"),
+      PlaygroundPage: path.join(__dirname, "./components/playground/PlaygroundPage.ts"),
     },
     module: {
       rules: [
@@ -75,7 +76,23 @@ module.exports = (_env, options) => {
       new HtmlWebpackPlugin({
         chunks: ["DocsPage"],
         filename: path.resolve(__dirname, "./templates/gen.DocsPage.html"),
-        templateContent: "",
+        templateContent: ({ htmlWebpackPlugin }) =>
+          htmlWebpackPlugin.tags.headTags
+            .filter(tag => tag.tagName === 'script')
+            .map(tag => `<script defer src="${tag.attributes.src}"></script>`)
+            .join('\n'),
+        inject: false,
+        minify: { collapseWhitespace: false },
+      }),
+      new HtmlWebpackPlugin({
+        chunks: ["PlaygroundPage"],
+        filename: path.resolve(__dirname, "./templates/gen.PlaygroundPage.html"),
+        templateContent: ({ htmlWebpackPlugin }) =>
+          htmlWebpackPlugin.tags.headTags
+            .filter(tag => tag.tagName === 'script')
+            .map(tag => `<script defer src="${tag.attributes.src}"></script>`)
+            .join('\n'),
+        inject: false,
         minify: { collapseWhitespace: false },
       }),
     ],

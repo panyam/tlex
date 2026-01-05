@@ -1,65 +1,16 @@
 /* ============================================
    TLEX Documentation - Main Stylesheet
 
-   Base styles are loaded via webpack from tsappkit.
-   This file contains tlex-specific theme overrides.
+   This file aggregates all component styles.
+   Base documentation styles are loaded via webpack
+   from @panyam/tsappkit.
    ============================================ */
 
-/* TLEX Theme Overrides - Purple/Green lexer theme */
-:root {
-  /* Colors - Light Mode - Purple/Teal theme */
-  --color-primary: #7c3aed;        /* Violet */
-  --color-primary-dark: #6d28d9;   /* Darker violet */
-  --color-primary-subtle: rgba(124, 58, 237, 0.1);
-  --color-secondary: #64748b;
-  --color-accent: #14b8a6;         /* Teal accent */
+/* Theme variables - TLEX purple/teal theme */
+@import url('./components/variables.css');
 
-  --color-bg: #fafafa;
-  --color-bg-alt: #f1f5f9;
-  --color-bg-code: #1e1e3f;        /* Dark purple for code blocks */
+/* Token display styles */
+@import url('./components/tokens.css');
 
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
-}
-
-/* Dark Mode - TLEX Purple theme */
-:root.dark {
-  --color-bg: #0f0f1a;             /* Deep dark purple */
-  --color-bg-alt: #1a1a2e;         /* Dark purple alt */
-  --color-bg-code: #0f0f1a;
-
-  --color-text: #e2e8f0;
-  --color-text-muted: #a0a0b8;
-  --color-text-light: #6b6b80;
-
-  --color-border: #2d2d44;
-  --color-border-dark: #3d3d55;
-
-  --color-primary: #a78bfa;        /* Light violet for dark mode */
-  --color-primary-dark: #8b5cf6;
-  --color-primary-subtle: rgba(167, 139, 250, 0.15);
-
-  --color-accent: #2dd4bf;         /* Bright teal */
-}
-
-/* TLEX-specific styling for code/token display */
-.token-display {
-  font-family: var(--font-mono);
-  background: var(--color-bg-code);
-  border-radius: var(--radius-md);
-}
-
-.token {
-  display: inline-block;
-  padding: 2px 6px;
-  margin: 2px;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-}
-
-.token-string { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-.token-number { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.token-keyword { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
-.token-operator { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-.token-identifier { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+/* Playground (DockView-based) */
+@import url('./components/playground.css');

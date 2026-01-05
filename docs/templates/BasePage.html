@@ -57,7 +57,11 @@
     {{ end }}
 
     <!-- JavaScript -->
+    {{ if .FrontMatter.usePlayground }}
+    {{# include "gen.PlaygroundPage.html" #}}
+    {{ else }}
     {{# include "gen.DocsPage.html" #}}
+    {{ end }}
 
     <!-- Theme toggle handler -->
     <script>

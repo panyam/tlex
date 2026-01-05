@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "tlex": "file:../",
-    "@panyam/tsappkit": "file:../../../golang/goapplib/tsappkit"
+    "@panyam/tsappkit": "file:../../../golang/goapplib/tsappkit",
+    "dockview-core": "^4.3.1",
+    "ace-builds": "^1.32.0"
   }
 }

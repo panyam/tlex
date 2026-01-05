@@ -1,0 +1,54 @@
+---
+title: "Playground"
+description: "Interactive tokenizer playground"
+usePlayground: true
+fullWidth: true
+hideFooter: true
+hideTitle: true
+bodyClass: "playground-page"
+---
+
+<div id="playground-container" class="playground-container">
+    <!-- DockView will be initialized here by PlaygroundPage.ts -->
+    <div id="dockview-container" class="dockview-container" style="height: 100%"></div>
+</div>
+
+<!-- Hidden panel templates -->
+<div style="display: none;">
+    <div id="rules-panel-template" class="panel-content">
+        <div class="panel-toolbar">
+            <select id="lexer-select" class="lexer-select">
+                <option value="json">JSON</option>
+                <option value="c11">C11</option>
+            </select>
+            <button id="compile-btn" class="btn btn-primary btn-sm">Compile</button>
+        </div>
+        <div id="rules-editor" class="editor-container"></div>
+    </div>
+
+    <div id="input-panel-template" class="panel-content">
+        <div class="panel-toolbar">
+            <label class="incremental-label">
+                <input type="checkbox" id="incremental-check"/>
+                Incremental
+            </label>
+            <button id="tokenize-btn" class="btn btn-primary btn-sm" style="float: right">Tokenize</button>
+        </div>
+        <div id="input-editor" class="editor-container"></div>
+    </div>
+
+    <div id="tokens-panel-template" class="panel-content">
+        <div class="panel-toolbar">
+            <span class="token-count" id="token-count">0 tokens</span>
+            <button id="clear-tokens-btn" class="btn btn-sm" style="float: right">Clear</button>
+        </div>
+        <div id="tokens-container" class="tokens-container"></div>
+    </div>
+
+    <div id="console-panel-template" class="panel-content">
+        <div class="panel-toolbar">
+            <button id="clear-console-btn" class="btn btn-sm">Clear</button>
+        </div>
+        <div id="console-output" class="console-output"></div>
+    </div>
+</div>

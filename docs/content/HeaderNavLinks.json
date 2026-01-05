@@ -4,6 +4,10 @@
     "url": "getting-started/"
   },
   {
+    "name": "Playground",
+    "url": "playground/"
+  },
+  {
     "name": "Concepts",
     "url": "concepts/",
     "children": [

@@ -4,7 +4,7 @@ go 1.24
 
 toolchain go1.24.6
 
-require github.com/panyam/s3gen v0.1.3
+require github.com/panyam/s3gen v0.1.4
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -24,6 +24,7 @@ require (
 )
 
 // For local development, uncomment these:
-// replace github.com/panyam/s3gen => ./locallinks/s3gen/
+// replace github.com/panyam/s3gen => ../../../golang/s3gen/
+
 // replace github.com/panyam/templar => ./locallinks/templar/
 // replace github.com/panyam/goutils => ./locallinks/goutils/

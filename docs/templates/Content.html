@@ -12,11 +12,12 @@
 
     <!-- Page Content -->
     <div class="content-body">
-        {{/* For MD files, ParseMD and MDToHtml are available. For HTML files, they're not. */}}
         {{ if or (eq .Res.Ext ".md") (eq .Res.Ext ".mdx") }}
+            {{/* For markdown files, parse and render to HTML */}}
             {{ $parsed := ParseMD .Content }}
             {{ MDToHtml $parsed.Doc }}
         {{ else }}
+            {{/* For HTML files, output directly */}}
             {{ BytesToString .Content | HTML }}
         {{ end }}
     </div>
