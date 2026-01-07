@@ -46,7 +46,7 @@ export class Token {
   }
 }
 
-export type NextTokenFunc = (tape: Tape, owner: any) => TSU.Nullable<Token>;
+export type NextTokenFunc = (tape: Tape, owner: any) => Token | null;
 
 /**
  * A wrapper on a tokenizer for providing features like k-lookahead, token
@@ -57,7 +57,7 @@ export class TokenBuffer {
 
   constructor(public readonly nextToken: NextTokenFunc, public tokenizerContext: any) {}
 
-  next(tape: Tape): TSU.Nullable<Token> {
+  next(tape: Tape): Token | null {
     const out = this.peek(tape);
     if (out != null) {
       this.consume();
@@ -68,7 +68,7 @@ export class TokenBuffer {
   /**
    * Peek at the nth token in the token stream.
    */
-  peek(tape: Tape, nth = 0): TSU.Nullable<Token> {
+  peek(tape: Tape, nth = 0): Token | null {
     while (this.buffer.length <= nth) {
       const tok = this.nextToken(tape, this.tokenizerContext);
       if (tok == null) return null;
@@ -83,7 +83,7 @@ export class TokenBuffer {
     ensure = false,
     consume = true,
     nextAction?: (token: Token) => boolean | undefined,
-  ): TSU.Nullable<Token> {
+  ): Token | null {
     const token = this.peek(tape);
     if (token != null) {
       if (matchFunc(token)) {
@@ -109,7 +109,7 @@ export class TokenBuffer {
     this.buffer.splice(0, 1);
   }
 
-  consumeIf(tape: Tape, ...expected: TokenType[]): TSU.Nullable<Token> {
+  consumeIf(tape: Tape, ...expected: TokenType[]): Token | null {
     return this.match(tape, (t) => t.isOneOf(...expected));
   }
 
@@ -121,7 +121,7 @@ export class TokenBuffer {
     return this.match(tape, (t) => t.isOneOf(...expected), true, false) as Token;
   }
 
-  nextMatches(tape: Tape, ...expected: TokenType[]): TSU.Nullable<Token> {
+  nextMatches(tape: Tape, ...expected: TokenType[]): Token | null {
     const token = this.peek(tape);
     if (token == null) return null;
     for (const tok of expected) {
