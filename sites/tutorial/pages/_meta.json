@@ -1,8 +1,0 @@
-[
-  { "title": "Introduction", "link": "/", "file": "index" },
-  { "title": "Getting started", "file": "getting-started" },
-  { "title": "Configuring Rules", "file": "rule-configs" },
-  { "title": "Error handling", "file": "error-handling" },
-  { "title": "Using a DSL", "file": "using-a-dsl" },
-  { "title": "Examples", "file": "examples" }
-]
