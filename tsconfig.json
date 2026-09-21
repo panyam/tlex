@@ -3,6 +3,7 @@
     "node_modules",
     "lib",
     "./src/**/*.spec.ts",
+    "./src/tests/**",
     "./sites/**/*.spec.ts"
   ],
   "compilerOptions": {
@@ -15,7 +16,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "outDir": "lib/esm",
-    "removeComments": true,
+    "removeComments": false,
     "skipLibCheck": true,
     "sourceMap": true,
     "inlineSources": true,

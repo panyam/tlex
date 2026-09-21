@@ -37,5 +37,8 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Package check
+        run: pnpm run check:package
+
       - name: Test
         run: pnpm test

@@ -18,9 +18,10 @@ pnpm test                 # jest --coverage --runInBand
 pnpm run lint             # eslint 9 flat config in eslint.config.mjs
 pnpm run lintfix
 pnpm run docs             # typedoc into sites/dist/docs
+pnpm run check:package    # asserts the tarball has no test code and keeps its JSDoc
 ```
 
-CI is `.github/workflows/tests.yml`: lint, build and test on node 20 and 22, with `pnpm install --frozen-lockfile`. The older `static.yml` deploys the Pages site.
+CI is `.github/workflows/tests.yml`: lint, build, package check and test on node 20 and 22, with `pnpm install --frozen-lockfile`. The older `static.yml` deploys the Pages site.
 
 ## Gotchas
 
@@ -30,6 +31,7 @@ CI is `.github/workflows/tests.yml`: lint, build and test on node 20 and 22, wit
 - **The eslint config tunes two rules rather than disabling them** (issue 4). `no-fallthrough` runs with `allowEmptyCase`, because the conformance suite groups case labels under comments quoting the grammar production each one covers. `no-control-regex`, `no-useless-backreference` and `no-empty-character-class` are off for `src/tests/**` only, since that suite quotes pathological patterns out of ECMA-262 on purpose. Keep them live in `src/`, where they once found a real bug.
 - **`prettier/prettier` is an error rule,** so formatting is not optional and `pnpm run lintfix` is part of normal work.
 - **Dependabot runs fail on this repo** with `path_dependencies_not_reachable` for `@panyam/tsappkit`, a `file:../../../golang/goapplib/tsappkit` dependency in `docs/package.json`. It has nothing to do with the library or with any given PR, so do not go chasing it when a red run shows up.
+- **`tsconfig.json` shapes what gets published, in two ways that bite.** `exclude` has to name `./src/tests/**` and not just `./src/**/*.spec.ts`, because `src/tests/utils.ts` is a helper rather than a spec and otherwise compiles into `lib/` and ships (issue 10). And `removeComments` strips JSDoc from the emitted `.d.ts` as well as the `.js`, so turning it on means no exported symbol shows hover docs at a call site (issue 11). `pnpm run check:package` guards both and runs in CI.
 - **npm registry lag is real.** A fresh publish can take minutes to appear through `npm view`, and npm's metadata cache lags further, so a clean install can still resolve the previous version for a while. Check `registry.npmjs.org/tlex` directly before concluding a publish failed.
 
 ## Buffer and tokenizer contracts
