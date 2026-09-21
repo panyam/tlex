@@ -144,9 +144,21 @@ tokenizer.addVar("DIGIT", /[0-9]/);
 // Now use {DIGIT} in flex-style patterns
 ```
 
+Adding a name that already exists widens it rather than replacing it. The name ends up
+standing for the alternation of every expression added under it, in the order the calls
+were made, so the earliest definition takes priority where two of them could match the
+same input.
+
+```typescript
+tokenizer.addVar("HEXCH", Builder.exprFromFlexRE("[0-9]"));
+tokenizer.addVar("HEXCH", Builder.exprFromFlexRE("[a-f]"));
+// {HEXCH} now means ([0-9]|[a-f])
+```
+
 #### getVar(name)
 
-Get a named variable.
+Get a named variable, or `null` if the name was never defined. After several `addVar`
+calls under one name this returns the `Union` of everything added, not the last one.
 
 ```typescript
 const digitRegex = tokenizer.getVar("DIGIT");

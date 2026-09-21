@@ -56,23 +56,37 @@ export class BaseTokenizer {
     return out;
   });
 
+  /**
+   * Returns the expression a named variable currently stands for, or null if the name
+   * was never defined.  After several addVar calls for the same name this is the Union
+   * of everything added, not the most recent expression.
+   *
+   * @param name        The variable name, as it would appear inside {} in a pattern.
+   */
   getVar(name: string): Regex | null {
     return this.variables.get(name) || null;
   }
 
+  /**
+   * Defines a named variable that patterns can then refer to by name.
+   *
+   * Defining a name that already exists widens it instead of replacing it: the stored
+   * expression becomes the alternation of everything added under that name, in the order
+   * the calls were made.  Callers that want replacement have to clear the entry first.
+   * Because the alternatives keep call order they also keep match priority, so the
+   * earliest definition wins where two of them could match the same input.
+   *
+   * @param name        The variable name, as it would appear inside {} in a pattern.
+   * @param regex       The expression to add under that name.
+   */
   addVar(name: string, regex: Regex): this {
-    // The union built here is thrown away and only `regex` is stored, which is a
-    // bug (panyam/tlex#5).  Left alone because fixing it changes behavior and
-    // wants a test of its own.
-    /* eslint-disable no-useless-assignment */
     let currValue = this.variables.get(name) || null;
     if (currValue == null) {
       currValue = regex;
     } else {
       currValue = new Union(currValue, regex);
     }
-    /* eslint-enable no-useless-assignment */
-    this.variables.set(name, regex);
+    this.variables.set(name, currValue);
     return this;
   }
 

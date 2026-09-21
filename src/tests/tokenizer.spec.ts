@@ -3,6 +3,8 @@ import { InstrDebugValue } from "../vm";
 import { Tape } from "../tape";
 import { Tokenizer } from "../tokenizer";
 import { Token } from "../token";
+import { RegexType, Union } from "../core";
+import * as Builder from "../builder";
 
 export enum TokenType {
   STRING = "STRING",
@@ -246,5 +248,60 @@ describe("Tokenizer Error Tests", () => {
       expect(err.offset).toEqual(5);
       expect(err.length).toEqual(9);
     }
+  });
+});
+
+describe("Tokenizer Variable Tests", () => {
+  function tokensOf(t: Tokenizer, input: string): any[] {
+    const tape = new Tape(input);
+    const out = [] as any[];
+    let next = t.next(tape, null);
+    while (next) {
+      out.push({ tag: next.tag, value: next.value });
+      next = t.next(tape, null);
+    }
+    return out;
+  }
+
+  test("Redefining A Variable Matches Either Alternative", () => {
+    const t = new Tokenizer();
+    t.addVar("HEXCH", Builder.exprFromFlexRE("[0-9]"));
+    t.addVar("HEXCH", Builder.exprFromFlexRE("[a-f]"));
+    t.add(Builder.flexRE`{HEXCH}+`, { tag: "HEX" });
+    expect(tokensOf(t, "12")).toEqual([{ tag: "HEX", value: "12" }]);
+    expect(tokensOf(t, "ab")).toEqual([{ tag: "HEX", value: "ab" }]);
+    expect(tokensOf(t, "1a2b")).toEqual([{ tag: "HEX", value: "1a2b" }]);
+  });
+
+  test("Redefining A Variable Unions In Call Order", () => {
+    const t = new Tokenizer();
+    const digit = Builder.exprFromFlexRE("[0-9]");
+    const letter = Builder.exprFromFlexRE("[a-f]");
+    t.addVar("HEXCH", digit);
+    t.addVar("HEXCH", letter);
+    const union = t.getVar("HEXCH") as Union;
+    expect(union.tag).toEqual(RegexType.UNION);
+    expect(union.options.length).toEqual(2);
+    expect(union.options[0]).toBe(digit);
+    expect(union.options[1]).toBe(letter);
+  });
+
+  test("A Third Definition Extends The Same Union Instead Of Nesting", () => {
+    const t = new Tokenizer();
+    t.addVar("ABC", Builder.exprFromFlexRE("a"));
+    t.addVar("ABC", Builder.exprFromFlexRE("b"));
+    t.addVar("ABC", Builder.exprFromFlexRE("c"));
+    const union = t.getVar("ABC") as Union;
+    expect(union.options.length).toEqual(3);
+    expect(union.options.filter((o) => o.tag == RegexType.UNION)).toEqual([]);
+  });
+
+  test("A Single Definition Is Stored As Given", () => {
+    const t = new Tokenizer();
+    const digit = Builder.exprFromFlexRE("[0-9]");
+    t.addVar("DIGIT", digit);
+    expect(t.getVar("DIGIT")).toBe(digit);
+    t.add(Builder.flexRE`{DIGIT}+`, { tag: "NUM" });
+    expect(tokensOf(t, "123")).toEqual([{ tag: "NUM", value: "123" }]);
   });
 });
