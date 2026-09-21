@@ -61,12 +61,17 @@ export class BaseTokenizer {
   }
 
   addVar(name: string, regex: Regex): this {
+    // The union built here is thrown away and only `regex` is stored, which is a
+    // bug (panyam/tlex#5).  Left alone because fixing it changes behavior and
+    // wants a test of its own.
+    /* eslint-disable no-useless-assignment */
     let currValue = this.variables.get(name) || null;
     if (currValue == null) {
       currValue = regex;
     } else {
       currValue = new Union(currValue, regex);
     }
+    /* eslint-enable no-useless-assignment */
     this.variables.set(name, regex);
     return this;
   }
@@ -191,7 +196,7 @@ export class Tokenizer extends BaseTokenizer {
     const m = this.vm.match(tape);
     if (m == null) {
       // no match so we have an error
-      let err: Error | null = null;
+      let err: Error | null;
       if (tape.index == startIndex + 1) {
         err = new TokenizerError(`Unexpected Character: ${startChar}`, startIndex, 1, "UnexpectedCharacter", startChar);
       } else {

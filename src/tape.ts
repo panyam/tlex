@@ -78,7 +78,10 @@ export class Tape extends TapeInterface {
   protected _rawInput: string;
   readonly input: string[];
 
-  constructor(input: string, public forward = true) {
+  constructor(
+    input: string,
+    public forward = true,
+  ) {
     super(forward);
     this._rawInput = input;
     this.input = [...input];

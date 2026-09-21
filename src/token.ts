@@ -34,7 +34,12 @@ export class Token {
    */
   lookback = 1;
 
-  constructor(public tag: TokenType, public readonly matchIndex: number, public start: number, public end: number) {}
+  constructor(
+    public tag: TokenType,
+    public readonly matchIndex: number,
+    public start: number,
+    public end: number,
+  ) {}
 
   isOneOf(...expected: any[]): boolean {
     for (const tok of expected) {
@@ -55,7 +60,10 @@ export type NextTokenFunc = (tape: Tape, owner: any) => Token | null;
 export class TokenBuffer {
   buffer: Token[] = [];
 
-  constructor(public readonly nextToken: NextTokenFunc, public tokenizerContext: any) {}
+  constructor(
+    public readonly nextToken: NextTokenFunc,
+    public tokenizerContext: any,
+  ) {}
 
   /**
    * Drops every token that has been read from the tokenizer but not yet consumed,

@@ -31,7 +31,10 @@ export class RegexParser {
    * @param pattern The pattern string being parsed.
    * @param config  Configs for the regex to include whether parsing is unicode or plain ASCII.
    */
-  constructor(public readonly pattern: string, config?: { unicode?: boolean }) {
+  constructor(
+    public readonly pattern: string,
+    config?: { unicode?: boolean },
+  ) {
     this.counter = new GroupCounter();
     this.unicode = config?.unicode || false;
   }
@@ -343,7 +346,7 @@ export class RegexParser {
         return [LeafChar.Single("\v"), 2];
       case "t":
         return [LeafChar.Single("\t"), 2];
-      case "c":
+      case "c": {
         // ControlEscape:
         // https://262.ecma-international.org/5.1/#sec-15.10.2.10
         if (this.unicode || index >= end) {
@@ -351,7 +354,8 @@ export class RegexParser {
         }
         const next = pattern.charCodeAt(index + 1) % 32;
         return [LeafChar.Single(next), 3];
-      case "x":
+      }
+      case "x": {
         // 2 digit hex digits
         index++;
         if (index >= end) {
@@ -361,7 +365,9 @@ export class RegexParser {
         const hexVal = parseInt(hexSeq, 16);
         TSU.assert(!isNaN(hexVal), `Invalid hex sequence: '${hexSeq}'`);
         return [LeafChar.Single(hexVal), 4];
-      case "u": // this could \uABCD or \u{ABCDEF}
+      }
+      case "u": {
+        // this could \uABCD or \u{ABCDEF}
         index++;
         // 4 digit hex digits for unicode
         if (index > end - 3) {
@@ -373,6 +379,7 @@ export class RegexParser {
           this.throwError(`Invalid unicode sequence: '${ucodeSeq}'`);
         }
         return [LeafChar.Single(ucodeVal), 6];
+      }
       case "^": // List of special operators that need to be escaped
       case "$":
       case ".":

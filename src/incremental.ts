@@ -176,9 +176,7 @@ export class IncrementalTokenizer {
 
       // Apply the edit to current input
       currentInput =
-        currentInput.slice(0, adjustedEdit.start) +
-        adjustedEdit.newText +
-        currentInput.slice(adjustedEdit.end);
+        currentInput.slice(0, adjustedEdit.start) + adjustedEdit.newText + currentInput.slice(adjustedEdit.end);
 
       result = this.update(currentInput, adjustedEdit);
       cumulativeDelta += editDelta;
@@ -198,10 +196,7 @@ export class IncrementalTokenizer {
    * @param config Configuration options
    * @param onUpdate Callback invoked when accumulated edits are applied
    */
-  configureAccumulator(
-    config: EditAccumulatorConfig,
-    onUpdate: (tokens: Token[]) => void,
-  ): void {
+  configureAccumulator(config: EditAccumulatorConfig, onUpdate: (tokens: Token[]) => void): void {
     this.accumulatorConfig = config;
     this.onAccumulatedUpdate = onUpdate;
   }
@@ -279,8 +274,7 @@ export class IncrementalTokenizer {
     for (const edit of originalEdits) {
       const adjustedStart = edit.start + adjustmentDelta;
       const adjustedEnd = edit.end + adjustmentDelta;
-      input =
-        input.slice(0, adjustedStart) + edit.newText + input.slice(adjustedEnd);
+      input = input.slice(0, adjustedStart) + edit.newText + input.slice(adjustedEnd);
       adjustmentDelta += edit.newText.length - (edit.end - edit.start);
     }
 
@@ -501,12 +495,7 @@ export class IncrementalTokenizer {
       // Only check for convergence AFTER we've passed the edit region
       // This prevents false convergence on tokens before the edit
       if (token.end > editEndInNew) {
-        convergeIdx = this.findConvergencePoint(
-          token,
-          oldTokens,
-          startIdx,
-          delta,
-        );
+        convergeIdx = this.findConvergencePoint(token, oldTokens, startIdx, delta);
         if (convergeIdx >= 0) {
           break;
         }
@@ -542,12 +531,7 @@ export class IncrementalTokenizer {
    * Binary search is valid because tokens are ordered by position,
    * and we're searching for a specific adjusted position.
    */
-  private findConvergencePoint(
-    newToken: Token,
-    oldTokens: Token[],
-    searchStartIdx: number,
-    delta: number,
-  ): number {
+  private findConvergencePoint(newToken: Token, oldTokens: Token[], searchStartIdx: number, delta: number): number {
     if (oldTokens.length === 0 || searchStartIdx >= oldTokens.length) {
       return -1;
     }
@@ -571,11 +555,7 @@ export class IncrementalTokenizer {
       } else {
         // Found token with matching end position
         // Verify full convergence criteria
-        if (
-          oldTok.tag === newToken.tag &&
-          oldTok.state === newToken.state &&
-          oldTok.start + delta === newToken.start
-        ) {
+        if (oldTok.tag === newToken.tag && oldTok.state === newToken.state && oldTok.start + delta === newToken.start) {
           return mid;
         }
         // Position matched but other criteria didn't
