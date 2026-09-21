@@ -278,6 +278,23 @@ if (buffer.nextMatches(tape, "COMMA")) {
 }
 ```
 
+#### reset()
+
+Drop buffered lookahead so the next peek scans afresh.  Use it when one buffer
+serves several independent runs, eg a parser moving on to its next input, or
+carrying on after a run that threw and left its offending token buffered.
+
+The tape is not rewound and `tokenizerContext` is kept, so a run starting over
+on the same tape has to reposition that tape itself.
+
+```typescript
+try {
+  parseSomething(buffer, tape);
+} catch (e) {
+  buffer.reset(); // the token that failed is no longer first in line
+}
+```
+
 ---
 
 ## Tape

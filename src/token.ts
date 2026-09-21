@@ -57,6 +57,24 @@ export class TokenBuffer {
 
   constructor(public readonly nextToken: NextTokenFunc, public tokenizerContext: any) {}
 
+  /**
+   * Drops every token that has been read from the tokenizer but not yet consumed,
+   * so the next peek or next call scans afresh.
+   *
+   * This exists for owners that reuse a buffer across several independent runs -
+   * eg a parser parsing one input after another, or after a run that failed part
+   * way and left its offending token buffered.  Without this the stale token is
+   * what the following run sees first.
+   *
+   * Two things are deliberately left alone.  The tape is not rewound, so tokens
+   * that were peeked at (and thus already scanned off the tape) are lost rather
+   * than re-read; an owner starting over on the same tape has to reposition the
+   * tape itself.  And tokenizerContext is kept, since it belongs to whoever set it.
+   */
+  reset(): void {
+    this.buffer = [];
+  }
+
   next(tape: Tape): Token | null {
     const out = this.peek(tape);
     if (out != null) {
