@@ -1,6 +1,6 @@
 {
   "name": "tlex",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Sriram Panyam",
   "description": "A lexical analyser and generator for typescript.",
   "homepage": "https://github.com/panyam/tlex#readme",
@@ -36,8 +36,8 @@
     "docs": "npx typedoc src/index.ts --name 'TLEX' --out './sites/dist/docs'",
     "test": "jest --coverage --runInBand",
     "start": "webpack-dev-server --mode=development",
-    "lint": "eslint './src' --quiet --ext .ts --resolve-plugins-relative-to .",
-    "lintfix": "eslint 'src/**/*.ts' --quiet --fix --resolve-plugins-relative-to .",
+    "lint": "eslint src --quiet",
+    "lintfix": "eslint src --quiet --fix",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "precommit-msg": "echo 'Pre-commit checks...' && exit 0",
     "prepare": "npm run build",
@@ -52,6 +52,7 @@
     "@panyam/tsutils": "*"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
@@ -69,7 +70,8 @@
     "prettier": "^3.7.4",
     "ts-jest": "^29.4.6",
     "typedoc": "^0.28.15",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0"
   },
   "directories": {
     "doc": "docs",

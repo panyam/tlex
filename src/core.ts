@@ -173,7 +173,11 @@ abstract class Assertion extends Regex {
    * @param expr - The regex to match before asserting.
    * @param cond  - The Condition to check.
    */
-  constructor(public readonly expr: Regex, public readonly cond: Regex, public readonly negate = false) {
+  constructor(
+    public readonly expr: Regex,
+    public readonly cond: Regex,
+    public readonly negate = false,
+  ) {
     super();
   }
 }
@@ -228,7 +232,12 @@ export class LookBack extends Assertion {
 
 export class Quant extends Regex {
   readonly tag: RegexType = RegexType.QUANT;
-  constructor(public expr: Regex, public minCount = 1, public maxCount = 1, public greedy = true) {
+  constructor(
+    public expr: Regex,
+    public minCount = 1,
+    public maxCount = 1,
+    public greedy = true,
+  ) {
     super();
   }
 
@@ -387,7 +396,10 @@ export abstract class Char extends Regex {
   readonly tag: RegexType = RegexType.CHAR;
 
   // Type of opcode for this char match
-  protected constructor(public readonly op: CharType, public readonly neg = false) {
+  protected constructor(
+    public readonly op: CharType,
+    public readonly neg = false,
+  ) {
     super();
   }
 
@@ -411,7 +423,11 @@ export abstract class Char extends Regex {
 }
 
 export class LeafChar extends Char {
-  protected constructor(public readonly op: CharType, public readonly neg = false, readonly args: number[] = []) {
+  protected constructor(
+    public readonly op: CharType,
+    public readonly neg = false,
+    readonly args: number[] = [],
+  ) {
     super(op, neg);
   }
 
@@ -477,7 +493,11 @@ export class LeafChar extends Char {
 }
 
 export class CharGroup extends Char {
-  protected constructor(public readonly op: CharType, public readonly neg = false, readonly chars: Char[] = []) {
+  protected constructor(
+    public readonly op: CharType,
+    public readonly neg = false,
+    readonly chars: Char[] = [],
+  ) {
     super(op, neg);
   }
 
@@ -543,7 +563,10 @@ export class CharGroup extends Char {
  */
 export class Var extends Regex {
   readonly tag: RegexType = RegexType.VAR;
-  constructor(public readonly name: string, public readonly reversed = false) {
+  constructor(
+    public readonly name: string,
+    public readonly reversed = false,
+  ) {
     super();
   }
 
@@ -565,7 +588,10 @@ export class Var extends Regex {
  */
 export class BackNamedRef extends Regex {
   readonly tag: RegexType = RegexType.BACK_NAMED_REF;
-  constructor(public readonly name: string, public readonly reversed = false) {
+  constructor(
+    public readonly name: string,
+    public readonly reversed = false,
+  ) {
     super();
   }
 
@@ -587,7 +613,10 @@ export class BackNamedRef extends Regex {
  */
 export class BackNumRef extends Regex {
   readonly tag: RegexType = RegexType.BACK_NUM_REF;
-  constructor(public readonly num: number, public readonly reversed = false) {
+  constructor(
+    public readonly num: number,
+    public readonly reversed = false,
+  ) {
     super();
   }
 
@@ -693,7 +722,10 @@ export class Rule {
    *
    * @param pattern   - The pattern to match for the rule.
    */
-  constructor(public expr: Regex, config?: RuleConfig) {
+  constructor(
+    public expr: Regex,
+    config?: RuleConfig,
+  ) {
     config = config || ({} as RuleConfig);
     this.tag = config.tag || null;
     if (config.priority == 0) {

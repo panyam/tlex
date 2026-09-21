@@ -20,7 +20,10 @@ export class UnexpectedTokenError extends Error {
   readonly name: string = "UnexpectedTokenError";
   expectedTokens: Token[];
 
-  constructor(public foundToken: TSU.Nullable<Token>, ...expectedTokens: Token[]) {
+  constructor(
+    public foundToken: TSU.Nullable<Token>,
+    ...expectedTokens: Token[]
+  ) {
     super(
       `Found Token: ${foundToken?.tag || "EOF"} (${foundToken?.value || ""}), Expected: ${expectedTokens.join(", ")}`,
     );

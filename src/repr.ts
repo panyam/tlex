@@ -17,7 +17,7 @@ import {
 import { Instr, OpCode, Prog } from "./vm";
 
 export function reprInstr(instr: Instr): string {
-  let out = "";
+  let out: string;
   if (instr.char) {
     out = `new Instr(OpCode.${OpCode[instr.opcode]}, ${reprRegex(instr.char)})`;
   } else {
@@ -32,7 +32,7 @@ export function reprInstr(instr: Instr): string {
 export function reprProg(prog: Prog): string {
   let out = "";
   prog.instrs.forEach((instr) => {
-    let irs = "";
+    let irs: string;
     if (instr.char) {
       irs = `OpCode.${OpCode[instr.opcode]}, ${reprRegex(instr.char)}`;
     } else {
@@ -48,7 +48,7 @@ export function reprProg(prog: Prog): string {
 
 export function reprRegex(ex: Regex): string {
   const repr = reprRegex;
-  let out = "";
+  let out: string;
   switch (ex.tag) {
     case RegexType.START_OF_INPUT:
       out = "new StartOfInput()";
@@ -81,7 +81,7 @@ export function reprRegex(ex: Regex): string {
     case RegexType.UNION:
       out = `new Union(${(ex as Union).options.map(reprRegex)})`;
       break;
-    case RegexType.CHAR:
+    case RegexType.CHAR: {
       const char = ex as Char;
       switch (char.op) {
         case CharType.AnyChar:
@@ -110,9 +110,9 @@ export function reprRegex(ex: Regex): string {
           break;
         default:
           throw new Error("Custom Char Group - TBD i: " + char.op);
-          break;
       }
       break;
+    }
     case RegexType.VAR:
       out = `new Var(${(ex as Var).name}, ${(ex as Var).reversed})`;
       break;

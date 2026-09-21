@@ -30,12 +30,7 @@ function createTestTokenizer(): Tokenizer {
 function tokensEqual(a: Token[], b: Token[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (
-      a[i].tag !== b[i].tag ||
-      a[i].start !== b[i].start ||
-      a[i].end !== b[i].end ||
-      a[i].value !== b[i].value
-    ) {
+    if (a[i].tag !== b[i].tag || a[i].start !== b[i].start || a[i].end !== b[i].end || a[i].value !== b[i].value) {
       return false;
     }
   }

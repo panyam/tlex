@@ -9,7 +9,12 @@ function isNewLineChar(ch: string): boolean {
 export class Match {
   groups: [number, number][] = [];
   positions: number[] = [];
-  constructor(public priority = 10, public matchIndex = -1, public start = -1, public end = -1) {}
+  constructor(
+    public priority = 10,
+    public matchIndex = -1,
+    public start = -1,
+    public end = -1,
+  ) {}
 }
 
 export enum OpCode {
@@ -53,7 +58,10 @@ export class Prog {
   instrs: Instr[] = [];
   stateMapping: Map<string, number>;
 
-  constructor(public readonly startCondition = "INITIAL", public readonly scIsInclusive = true) {
+  constructor(
+    public readonly startCondition = "INITIAL",
+    public readonly scIsInclusive = true,
+  ) {
     this.stateMapping = new Map<string, number>();
     this.registerState("INITIAL");
     this.registerState(startCondition);
@@ -103,7 +111,10 @@ export class Instr {
   comment = "";
   args: number[] = [];
   // used for char match instructions - if opcode == Char or CIChar
-  constructor(public readonly opcode: any, public char: null | Char = null) {
+  constructor(
+    public readonly opcode: any,
+    public char: null | Char = null,
+  ) {
     this.char = char;
   }
 
@@ -137,7 +148,10 @@ export class Thread {
   /**
    * Create a thread at the given offset
    */
-  constructor(public readonly offset: number = 0, public readonly gen: number = 0) {}
+  constructor(
+    public readonly offset: number = 0,
+    public readonly gen: number = 0,
+  ) {}
 
   regIncr(regId: number): void {
     if (!(regId in this.registers)) {
@@ -384,7 +398,7 @@ export class VM {
           }
         }
         break;
-      case OpCode.Begin:
+      case OpCode.Begin: {
         // This results in a new VM being created for this sub program and
         // kicking off a backtracking execution - Making these as explicit
         // constructs for the user to use means the user can make this choice
@@ -411,7 +425,8 @@ export class VM {
           }
         }
         break;
-      case OpCode.EnsureState:
+      }
+      case OpCode.EnsureState: {
         const states = instr.args;
         for (const state of states) {
           if (this.currState == state) {
@@ -420,6 +435,7 @@ export class VM {
           }
         }
         break;
+      }
       default:
         if (this.tracer) this.tracer.threadQueued(thread, tape.index);
         list.push(thread);
@@ -543,7 +559,7 @@ export class VM {
       case OpCode.RBegin:
         throw new Error("Invalid state.  Reverse matches must be handled in addThread");
         break;
-      case OpCode.Begin:
+      case OpCode.Begin: {
         const [consume, negate, end] = instr.args;
         TSU.assert(consume == 1, "Plain lookahead cannot be here");
         const [matchSuccess, matchEnd] = this.recurseMatch(tape, tape.index, instr.offset + 1, end, true, negate == 1);
@@ -554,13 +570,14 @@ export class VM {
           this.addThread(this.jumpTo(thread, end + 1), this.nextThreads, tape);
         }
         break;
-      case OpCode.End:
+      }
+      case OpCode.End: {
         // Return back to calling VM - very similar to a match
         const out = new Match(-1, -1, this.startPos, tape.index);
         out.groups = thread.groups;
         out.positions = thread.positions;
         return out;
-        break;
+      }
       case OpCode.Match:
         // we have a match on this thread so return it
         // Update the match if we are a higher prioirty or longer match
