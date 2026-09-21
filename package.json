@@ -37,6 +37,7 @@
     "test": "jest --coverage --runInBand",
     "start": "webpack-dev-server --mode=development",
     "lint": "eslint src --quiet",
+    "check:package": "node scripts/check-package.mjs",
     "lintfix": "eslint src --quiet --fix",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "precommit-msg": "echo 'Pre-commit checks...' && exit 0",
