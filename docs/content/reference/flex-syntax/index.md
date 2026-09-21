@@ -202,6 +202,9 @@ tokenizer.add(flexRE`{DIGIT}+`, { tag: "NUMBER" });
 tokenizer.add(flexRE`{LETTER}({LETTER}|{DIGIT})*`, { tag: "IDENT" });
 ```
 
+Defining the same name twice widens it into an alternation rather than overwriting the
+first definition, so two `%define` lines for one name give you both alternatives.
+
 In DSL syntax:
 
 ```
